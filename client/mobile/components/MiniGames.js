@@ -106,20 +106,17 @@ window.MiniGames = {
     },
 
     loadDragDrop(gameData) {
-        const workflows = [
-            {
-                title: "專案開發流程",
-                items: ["需求分析", "設計規劃", "開發實作", "測試驗證", "部署上線"],
-                shuffled: ["測試驗證", "需求分析", "部署上線", "設計規劃", "開發實作"]
-            }
-        ];
-
-        const workflow = workflows[0];
+        // Use server-provided workflow data
+        const workflow = {
+            title: gameData.data.title || "流程排序",
+            items: gameData.data.correctOrder || [],
+            shuffled: gameData.data.shuffledItems || []
+        };
         
         this.gameContainer.innerHTML = `
             <div class="mini-game drag-drop">
-                <h3>🔄 流程排序</h3>
-                <p>請將以下項目按正確順序排列：</p>
+                <h3>🔄 ${workflow.title}</h3>
+                <p>${gameData.data.description || '請將以下項目按正確順序排列：'}</p>
                 <div class="drop-zone" id="dropZone">
                     <!-- Drop items here -->
                 </div>
@@ -225,7 +222,7 @@ window.MiniGames = {
         const dropZone = document.getElementById('dropZone');
         const droppedItems = Array.from(dropZone.children);
         if (droppedItems[index]) {
-            const itemText = droppedItems[index].textContent.replace(/^\d+\.\s*/, '').replace('×', '').trim();
+            const itemText = droppedItems[index].textContent.replace(/^(\d+\.)+\s*/, '').replace('×', '').trim();
             const originalItem = document.querySelector(`[data-item="${itemText}"]`);
             if (originalItem) {
                 originalItem.style.opacity = '1';
@@ -234,7 +231,7 @@ window.MiniGames = {
             
             // Update dropped items array
             const currentItems = Array.from(droppedItems).map(item => 
-                item.textContent.replace(/^\d+\.\s*/, '').replace('×', '').trim()
+                item.textContent.replace(/^(\d+\.)+\s*/, '').replace('×', '').trim()
             );
             currentItems.splice(index, 1);
             this.updateDropZone(currentItems);
