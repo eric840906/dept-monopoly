@@ -205,7 +205,7 @@ class GameScene extends Phaser.Scene {
 
     updateGameState(gameState) {
         this.gameState = gameState;
-        this.updateTeamPositions();
+        this.updateTeamTokens();
     }
 
     setBoard(board) {
@@ -215,26 +215,92 @@ class GameScene extends Phaser.Scene {
         }
     }
 
-    updateTeamPositions() {
+    updateTeamTokens() {
         if (!this.gameState || !this.gameState.teams) return;
         
-        this.gameState.teams.forEach((team, index) => {
-            const token = this.teamTokens[team.id];
-            if (token && this.boardTiles[team.position]) {
-                const tileData = this.boardTiles[team.position];
-                const offsetX = (index % 2) * 20 - 10;
-                const offsetY = Math.floor(index / 2) * 20 - 10;
-                
-                // Animate token movement
-                this.tweens.add({
-                    targets: [token.token, token.emoji],
-                    x: tileData.x + offsetX,
-                    y: tileData.y + offsetY,
-                    duration: 1000,
-                    ease: 'Power2'
-                });
+        // Get current team IDs from game state
+        const currentTeamIds = new Set(this.gameState.teams.map(team => team.id));
+        
+        // Remove tokens for teams that no longer exist
+        Object.keys(this.teamTokens).forEach(teamId => {
+            if (!currentTeamIds.has(teamId)) {
+                console.log(`Removing token for deleted team: ${teamId}`);
+                const token = this.teamTokens[teamId];
+                if (token.token) token.token.destroy();
+                if (token.emoji) token.emoji.destroy();
+                delete this.teamTokens[teamId];
             }
         });
+        
+        // Update existing tokens and create new ones if needed
+        this.gameState.teams.forEach((team, index) => {
+            if (!this.teamTokens[team.id]) {
+                // Create new token for new team
+                this.createTeamToken(team, index);
+            } else {
+                // Update existing token position
+                this.updateTeamTokenPosition(team, index);
+            }
+        });
+    }
+
+    createTeamToken(team, index) {
+        const position = team.position || 0;
+        const tileData = this.boardTiles[position];
+        
+        if (!tileData) return;
+        
+        // Calculate position with slight offset for multiple teams on same tile
+        const offsetX = (index % 2) * 20 - 10;
+        const offsetY = Math.floor(index / 2) * 20 - 10;
+        
+        const token = this.add.image(
+            tileData.x + offsetX, 
+            tileData.y + offsetY, 
+            `team-token-${index}`
+        );
+        token.setDisplaySize(30, 30);
+        
+        // Add team emoji as text overlay
+        const emoji = this.add.text(
+            tileData.x + offsetX, 
+            tileData.y + offsetY, 
+            team.emoji, {
+            fontSize: '16px',
+            align: 'center'
+        });
+        emoji.setOrigin(0.5);
+        
+        this.teamTokens[team.id] = {
+            token: token,
+            emoji: emoji,
+            team: team
+        };
+        
+        console.log(`Created token for team: ${team.id}`);
+    }
+
+    updateTeamTokenPosition(team, index) {
+        const token = this.teamTokens[team.id];
+        if (!token || !this.boardTiles[team.position]) return;
+        
+        const tileData = this.boardTiles[team.position];
+        const offsetX = (index % 2) * 20 - 10;
+        const offsetY = Math.floor(index / 2) * 20 - 10;
+        
+        // Animate token movement
+        this.tweens.add({
+            targets: [token.token, token.emoji],
+            x: tileData.x + offsetX,
+            y: tileData.y + offsetY,
+            duration: 1000,
+            ease: 'Power2'
+        });
+    }
+
+    updateTeamPositions() {
+        // Legacy function - now using updateTeamTokens
+        this.updateTeamTokens();
     }
 
     handleDiceRoll(data) {

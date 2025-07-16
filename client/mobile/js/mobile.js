@@ -287,6 +287,27 @@ class MobileGameApp {
 
             // Update game screen team info
             this.updateGameTeamInfo();
+        } else {
+            // Player's team no longer exists (was removed due to being empty)
+            console.log('Player team no longer exists, clearing team data');
+            this.teamData = null;
+            
+            // Update lobby team display
+            const playerTeamEl = document.getElementById('playerTeam');
+            if (playerTeamEl) {
+                playerTeamEl.textContent = '隊伍已解散，請重新分配';
+            }
+
+            // Hide team info card
+            const teamInfoCard = document.getElementById('teamInfo');
+            if (teamInfoCard) {
+                teamInfoCard.classList.add('hidden');
+            }
+
+            // Show message if in game screen
+            if (this.currentScreen === 'gameScreen') {
+                this.showError('您的隊伍已解散，遊戲已結束');
+            }
         }
     }
 

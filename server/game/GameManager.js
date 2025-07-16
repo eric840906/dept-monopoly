@@ -95,11 +95,52 @@ class GameManager {
       const team = this.gameState.teams.find(t => t.id === player.teamId);
       if (team) {
         team.members = team.members.filter(m => m.id !== playerId);
+        
+        // If team is now empty, remove it from the game
+        if (team.members.length === 0) {
+          console.log(`Team ${team.id} is now empty, removing from game`);
+          this.gameState.teams = this.gameState.teams.filter(t => t.id !== team.id);
+          
+          // If the removed team was the current turn team, skip to next team
+          if (this.gameState.currentTurnTeamId === team.id) {
+            this.skipToNextTeam();
+          }
+        }
       }
     }
 
     delete this.gameState.players[playerId];
     this.broadcastGameState();
+  }
+
+  skipToNextTeam() {
+    if (this.gameState.teams.length === 0) {
+      // No teams left, end the game
+      this.endGame('no_teams_remaining');
+      return;
+    }
+
+    // Find next valid team
+    const currentTeamIndex = this.gameState.teams.findIndex(
+      t => t.id === this.gameState.currentTurnTeamId
+    );
+    
+    let nextTeamIndex;
+    if (currentTeamIndex === -1) {
+      // Current team was removed, start from first team
+      nextTeamIndex = 0;
+    } else {
+      // Move to next team
+      nextTeamIndex = (currentTeamIndex + 1) % this.gameState.teams.length;
+    }
+    
+    this.gameState.currentTurnTeamId = this.gameState.teams[nextTeamIndex].id;
+    
+    // Reset turn timer
+    this.clearTurnTimer();
+    this.startTurnTimer();
+    
+    console.log(`Skipped to next team: ${this.gameState.currentTurnTeamId}`);
   }
 
   assignTeams() {
