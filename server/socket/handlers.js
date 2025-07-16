@@ -109,6 +109,9 @@ function setupSocketHandlers(io, gameManager) {
           case 'end_game':
             gameManager.endGame('host_ended');
             break;
+          case 'reset_game':
+            gameManager.resetGame();
+            break;
           default:
             throw new Error(`Unknown host action: ${action}`);
         }

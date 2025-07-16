@@ -201,6 +201,11 @@ class GameManager {
       this.assignTeams();
     }
 
+    // Safety check: ensure we have teams after assignment
+    if (this.gameState.teams.length === 0) {
+      throw new Error('Cannot start game - no teams available');
+    }
+
     this.gameState.phase = GamePhase.IN_PROGRESS;
     this.gameState.isGameStarted = true;
     this.gameState.currentTurnTeamId = this.gameState.teams[0].id;
@@ -338,6 +343,13 @@ class GameManager {
   endTurn() {
     this.clearTurnTimer();
     
+    // Check if there are any teams left
+    if (this.gameState.teams.length === 0) {
+      console.log('No teams remaining, ending game');
+      this.endGame('no_teams_remaining');
+      return;
+    }
+    
     const currentTeamIndex = this.gameState.teams.findIndex(
       t => t.id === this.gameState.currentTurnTeamId
     );
@@ -424,6 +436,30 @@ class GameManager {
     });
 
     this.broadcastGameState();
+  }
+
+  resetGame() {
+    console.log('Resetting game state');
+    
+    // Clear all timers
+    this.clearTurnTimer();
+    if (this.gameTimer) {
+      clearTimeout(this.gameTimer);
+      this.gameTimer = null;
+    }
+    
+    // Reset game state to initial values
+    this.gameState = createGameState();
+    
+    // Generate new board for fresh game
+    this.board = this.generateBoard();
+    
+    // Clear mini-games
+    this.miniGameProcessor.activeGames.clear();
+    
+    console.log('Game reset complete - ready for new players');
+    this.broadcastGameState();
+    this.io.emit('board_state', this.board);
   }
 
   broadcastGameState() {
