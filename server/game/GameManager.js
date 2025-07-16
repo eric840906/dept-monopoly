@@ -1,0 +1,317 @@
+const { 
+  GamePhase, 
+  TileType,
+  createPlayer, 
+  createTeam, 
+  createGameState, 
+  createTile 
+} = require('../../shared/types');
+const { 
+  GAME_CONFIG, 
+  TEAM_COLORS, 
+  TEAM_EMOJIS, 
+  SOCKET_EVENTS,
+  BOARD_LAYOUT 
+} = require('../../shared/constants');
+
+class GameManager {
+  constructor() {
+    this.gameState = createGameState();
+    this.io = null;
+    this.turnTimer = null;
+    this.gameTimer = null;
+    this.board = this.generateBoard();
+  }
+
+  setIO(io) {
+    this.io = io;
+  }
+
+  generateBoard() {
+    const board = [];
+    const safeCount = Math.floor(GAME_CONFIG.BOARD_SIZE * BOARD_LAYOUT.SAFE_TILE_PERCENTAGE);
+    const eventCount = GAME_CONFIG.BOARD_SIZE - safeCount - 1; // -1 for start tile
+    
+    // Start tile
+    board.push(createTile(0, TileType.START));
+    
+    // Generate remaining tiles
+    for (let i = 1; i < GAME_CONFIG.BOARD_SIZE; i++) {
+      const remainingSafe = safeCount - board.filter(t => t.type === TileType.SAFE).length;
+      const remainingEvent = eventCount - board.filter(t => t.type === TileType.EVENT).length;
+      const remainingTotal = GAME_CONFIG.BOARD_SIZE - i;
+      
+      if (remainingSafe === 0) {
+        board.push(createTile(i, TileType.EVENT, this.generateRandomEvent()));
+      } else if (remainingEvent === 0) {
+        board.push(createTile(i, TileType.SAFE));
+      } else {
+        // Random choice weighted by remaining tiles
+        const safeChance = remainingSafe / remainingTotal;
+        const tileType = Math.random() < safeChance ? TileType.SAFE : TileType.EVENT;
+        const event = tileType === TileType.EVENT ? this.generateRandomEvent() : null;
+        board.push(createTile(i, tileType, event));
+      }
+    }
+    
+    return board;
+  }
+
+  generateRandomEvent() {
+    const events = [
+      'multiple_choice_quiz',
+      'drag_drop_workflow',
+      'format_matching',
+      'team_info_pairing',
+      'random_stat_check'
+    ];
+    return events[Math.floor(Math.random() * events.length)];
+  }
+
+  addPlayer(playerId, nickname, department) {
+    if (this.gameState.phase !== GamePhase.LOBBY) {
+      throw new Error('Cannot join game in progress');
+    }
+    
+    if (Object.keys(this.gameState.players).length >= GAME_CONFIG.MAX_PLAYERS) {
+      throw new Error('Game is full');
+    }
+
+    const player = createPlayer(playerId, nickname, department);
+    this.gameState.players[playerId] = player;
+    
+    this.broadcastGameState();
+    return player;
+  }
+
+  removePlayer(playerId) {
+    const player = this.gameState.players[playerId];
+    if (!player) return;
+
+    // Remove from team if assigned
+    if (player.teamId) {
+      const team = this.gameState.teams.find(t => t.id === player.teamId);
+      if (team) {
+        team.members = team.members.filter(m => m.id !== playerId);
+      }
+    }
+
+    delete this.gameState.players[playerId];
+    this.broadcastGameState();
+  }
+
+  assignTeams() {
+    const players = Object.values(this.gameState.players);
+    const teamCount = Math.min(
+      GAME_CONFIG.MAX_TEAMS,
+      Math.max(GAME_CONFIG.MIN_TEAMS, Math.ceil(players.length / 10))
+    );
+
+    // Clear existing teams
+    this.gameState.teams = [];
+
+    // Create teams
+    for (let i = 0; i < teamCount; i++) {
+      const team = createTeam(
+        `team_${i}`,
+        TEAM_COLORS[i % TEAM_COLORS.length],
+        TEAM_EMOJIS[i % TEAM_EMOJIS.length]
+      );
+      this.gameState.teams.push(team);
+    }
+
+    // Shuffle players and assign to teams
+    const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
+    shuffledPlayers.forEach((player, index) => {
+      const teamIndex = index % teamCount;
+      const team = this.gameState.teams[teamIndex];
+      
+      player.teamId = team.id;
+      team.members.push(player);
+    });
+
+    this.broadcastGameState();
+    return this.gameState.teams;
+  }
+
+  startGame() {
+    if (this.gameState.teams.length === 0) {
+      this.assignTeams();
+    }
+
+    this.gameState.phase = GamePhase.IN_PROGRESS;
+    this.gameState.isGameStarted = true;
+    this.gameState.currentTurnTeamId = this.gameState.teams[0].id;
+    
+    this.startTurnTimer();
+    this.startGameTimer();
+    
+    this.broadcastGameState();
+    this.io.emit(SOCKET_EVENTS.GAME_START, {
+      gameState: this.gameState,
+      board: this.board
+    });
+  }
+
+  rollDice(teamId) {
+    if (this.gameState.currentTurnTeamId !== teamId) {
+      throw new Error('Not your turn');
+    }
+
+    const dice1 = Math.floor(Math.random() * 6) + 1;
+    const dice2 = Math.floor(Math.random() * 6) + 1;
+    const total = dice1 + dice2;
+
+    const team = this.gameState.teams.find(t => t.id === teamId);
+    const oldPosition = team.position;
+    team.position = (team.position + total) % GAME_CONFIG.BOARD_SIZE;
+
+    const landedTile = this.board[team.position];
+
+    this.io.emit(SOCKET_EVENTS.DICE_ROLL, {
+      teamId,
+      dice: [dice1, dice2],
+      total,
+      oldPosition,
+      newPosition: team.position,
+      landedTile
+    });
+
+    // Handle tile effect
+    if (landedTile.type === TileType.EVENT) {
+      this.triggerEvent(teamId, landedTile);
+    } else {
+      this.endTurn();
+    }
+
+    return { dice: [dice1, dice2], total, landedTile };
+  }
+
+  triggerEvent(teamId, tile) {
+    this.io.emit(SOCKET_EVENTS.EVENT_TRIGGER, {
+      teamId,
+      tile,
+      eventType: tile.event
+    });
+  }
+
+  updateScore(teamId, points, reason) {
+    const team = this.gameState.teams.find(t => t.id === teamId);
+    if (!team) return;
+
+    team.score = Math.max(0, team.score + points);
+    
+    this.io.emit(SOCKET_EVENTS.SCORE_UPDATE, {
+      teamId,
+      newScore: team.score,
+      pointsChanged: points,
+      reason
+    });
+
+    this.checkWinCondition();
+  }
+
+  endTurn() {
+    this.clearTurnTimer();
+    
+    const currentTeamIndex = this.gameState.teams.findIndex(
+      t => t.id === this.gameState.currentTurnTeamId
+    );
+    
+    const nextTeamIndex = (currentTeamIndex + 1) % this.gameState.teams.length;
+    this.gameState.currentTurnTeamId = this.gameState.teams[nextTeamIndex].id;
+    
+    if (nextTeamIndex === 0) {
+      this.gameState.round++;
+    }
+
+    this.startTurnTimer();
+    this.broadcastGameState();
+    
+    this.io.emit(SOCKET_EVENTS.TURN_END, {
+      nextTeamId: this.gameState.currentTurnTeamId,
+      round: this.gameState.round
+    });
+  }
+
+  startTurnTimer() {
+    this.gameState.turnTimer = GAME_CONFIG.TURN_TIME_LIMIT;
+    
+    this.turnTimer = setInterval(() => {
+      this.gameState.turnTimer -= 1000;
+      
+      this.io.emit(SOCKET_EVENTS.TIMER_UPDATE, {
+        timeLeft: this.gameState.turnTimer
+      });
+      
+      if (this.gameState.turnTimer <= 0) {
+        this.endTurn();
+      }
+    }, 1000);
+  }
+
+  clearTurnTimer() {
+    if (this.turnTimer) {
+      clearInterval(this.turnTimer);
+      this.turnTimer = null;
+    }
+  }
+
+  startGameTimer() {
+    this.gameTimer = setTimeout(() => {
+      this.endGame('timeout');
+    }, GAME_CONFIG.GAME_DURATION);
+  }
+
+  checkWinCondition() {
+    if (this.gameState.round >= this.gameState.maxRounds) {
+      this.endGame('rounds_completed');
+    }
+  }
+
+  endGame(reason) {
+    this.gameState.phase = GamePhase.ENDED;
+    this.clearTurnTimer();
+    
+    if (this.gameTimer) {
+      clearTimeout(this.gameTimer);
+      this.gameTimer = null;
+    }
+
+    // Find winner (highest score)
+    const winner = this.gameState.teams.reduce((prev, current) => 
+      prev.score > current.score ? prev : current
+    );
+    
+    this.gameState.winner = winner;
+
+    this.io.emit(SOCKET_EVENTS.GAME_END, {
+      reason,
+      winner,
+      finalScores: this.gameState.teams.map(t => ({
+        teamId: t.id,
+        score: t.score,
+        color: t.color,
+        emoji: t.emoji
+      }))
+    });
+
+    this.broadcastGameState();
+  }
+
+  broadcastGameState() {
+    if (this.io) {
+      this.io.emit(SOCKET_EVENTS.GAME_STATE_UPDATE, this.gameState);
+    }
+  }
+
+  getGameState() {
+    return this.gameState;
+  }
+
+  getBoard() {
+    return this.board;
+  }
+}
+
+module.exports = GameManager;
