@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>團隊建設遊戲 - 手機介面</title>
+    <link rel="stylesheet" href="styles/mobile.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Loading Screen -->
+        <div id="loadingScreen" class="screen active">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <h2>🎯 連接遊戲中...</h2>
+                <p>請稍候片刻</p>
+            </div>
+        </div>
+
+        <!-- Join Screen -->
+        <div id="joinScreen" class="screen">
+            <div class="container">
+                <div class="header">
+                    <h1>🎯 團隊建設遊戲</h1>
+                    <p>請輸入您的資訊加入遊戲</p>
+                </div>
+
+                <form id="joinForm" class="join-form">
+                    <div class="form-group">
+                        <label for="nickname">暱稱 *</label>
+                        <input type="text" id="nickname" name="nickname" required 
+                               placeholder="請輸入您的姓名" maxlength="20">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="department">部門 *</label>
+                        <select id="department" name="department" required>
+                            <option value="">請選擇部門</option>
+                            <option value="工程部">工程部</option>
+                            <option value="產品部">產品部</option>
+                            <option value="設計部">設計部</option>
+                            <option value="行銷部">行銷部</option>
+                            <option value="業務部">業務部</option>
+                            <option value="人資部">人資部</option>
+                            <option value="財務部">財務部</option>
+                            <option value="營運部">營運部</option>
+                            <option value="客服部">客服部</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        🚀 加入遊戲
+                    </button>
+                </form>
+
+                <div class="status-info">
+                    <div id="connectionStatus" class="status-item">
+                        <span class="status-dot disconnected"></span>
+                        <span>連接狀態: 連接中...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobbyScreen" class="screen">
+            <div class="container">
+                <div class="header">
+                    <h1>🏠 遊戲大廳</h1>
+                    <p>等待遊戲開始...</p>
+                </div>
+
+                <div class="player-info card">
+                    <h3>👤 您的資訊</h3>
+                    <div class="info-row">
+                        <span>暱稱:</span>
+                        <span id="playerNickname">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span>部門:</span>
+                        <span id="playerDepartment">--</span>
+                    </div>
+                    <div class="info-row">
+                        <span>隊伍:</span>
+                        <span id="playerTeam">等待分配...</span>
+                    </div>
+                </div>
+
+                <div class="game-status card">
+                    <h3>🎮 遊戲狀態</h3>
+                    <div class="info-row">
+                        <span>總玩家數:</span>
+                        <span id="totalPlayers">0</span>
+                    </div>
+                    <div class="info-row">
+                        <span>隊伍數量:</span>
+                        <span id="totalTeams">0</span>
+                    </div>
+                    <div class="info-row">
+                        <span>遊戲階段:</span>
+                        <span id="gamePhase">大廳等待</span>
+                    </div>
+                </div>
+
+                <div id="teamInfo" class="team-info card hidden">
+                    <h3>👥 隊伍資訊</h3>
+                    <div class="team-display">
+                        <div class="team-badge">
+                            <span id="teamEmoji" class="team-emoji">👥</span>
+                            <div id="teamColor" class="team-color-indicator"></div>
+                        </div>
+                        <div class="team-details">
+                            <div class="team-name" id="teamName">隊伍 X</div>
+                            <div class="team-members" id="teamMembers">成員: --</div>
+                        </div>
+                    </div>
+                    <div class="team-abilities">
+                        <div class="ability-grid" id="teamAbilities">
+                            <!-- Abilities will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <div class="container">
+                <div class="game-header">
+                    <div class="turn-info">
+                        <div id="turnStatus" class="turn-status">等待回合...</div>
+                        <div id="turnTimer" class="turn-timer">00:00</div>
+                    </div>
+                    <div class="team-score">
+                        <span id="currentScore" class="score-value">100</span>
+                        <span class="score-label">分</span>
+                    </div>
+                </div>
+
+                <div id="gameContent">
+                    <!-- Dice Rolling Interface -->
+                    <div id="diceInterface" class="game-interface card hidden">
+                        <h3>🎲 擲骰子</h3>
+                        <p>輪到您的隊伍了！點擊下方按鈕擲骰子</p>
+                        <button id="rollDiceBtn" class="btn btn-primary btn-large">
+                            🎲 擲骰子
+                        </button>
+                        <div id="diceResult" class="dice-result hidden">
+                            <div class="dice-display">
+                                <span id="dice1" class="dice">🎲</span>
+                                <span class="plus">+</span>
+                                <span id="dice2" class="dice">🎲</span>
+                                <span class="equals">=</span>
+                                <span id="diceTotal" class="dice-total">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mini Game Interface -->
+                    <div id="miniGameInterface" class="game-interface card hidden">
+                        <div id="miniGameContent">
+                            <!-- Mini game content will be dynamically loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Waiting Interface -->
+                    <div id="waitingInterface" class="game-interface card">
+                        <div class="waiting-content">
+                            <div class="waiting-spinner"></div>
+                            <h3>⏳ 等待其他隊伍</h3>
+                            <p id="waitingMessage">請等待其他隊伍完成回合...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Status Bar -->
+                <div class="team-status-bar">
+                    <div class="team-position">
+                        <span>位置:</span>
+                        <span id="teamPosition">0</span>
+                    </div>
+                    <div class="team-abilities-summary">
+                        <span>能力:</span>
+                        <span id="rerollCount" class="reroll-count">重擲: 3</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game End Screen -->
+        <div id="endScreen" class="screen">
+            <div class="container">
+                <div class="end-content">
+                    <div class="trophy">🏆</div>
+                    <h1 id="gameEndTitle">遊戲結束！</h1>
+                    <div class="winner-info">
+                        <div id="winnerDisplay" class="winner-display">
+                            <!-- Winner info will be populated here -->
+                        </div>
+                    </div>
+                    <div class="final-scores card">
+                        <h3>📊 最終積分</h3>
+                        <div id="finalScoresList">
+                            <!-- Final scores will be populated here -->
+                        </div>
+                    </div>
+                    <button id="newGameBtn" class="btn btn-secondary" style="display: none;">
+                        🔄 新遊戲
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Screen -->
+        <div id="errorScreen" class="screen">
+            <div class="container">
+                <div class="error-content">
+                    <div class="error-icon">❌</div>
+                    <h2>連接錯誤</h2>
+                    <p id="errorMessage">無法連接到遊戲伺服器</p>
+                    <button id="retryBtn" class="btn btn-primary">
+                        🔄 重新連接
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Socket.io client -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Mobile game scripts -->
+    <script src="js/mobile.js"></script>
+    <script src="components/MiniGames.js"></script>
+</body>
+</html>
