@@ -66,6 +66,19 @@ function setupSocketHandlers(io, gameManager) {
       }
     });
 
+    // Handle mini-game ready confirmation
+    socket.on('mini_game_ready', (data) => {
+      try {
+        const { teamId } = data;
+        const confirmed = gameManager.confirmMiniGameReady(teamId);
+        if (!confirmed) {
+          socket.emit(SOCKET_EVENTS.ERROR, { message: 'No mini-game waiting for this team' });
+        }
+      } catch (error) {
+        socket.emit(SOCKET_EVENTS.ERROR, { message: error.message });
+      }
+    });
+
     // Handle mini-game submissions
     socket.on(SOCKET_EVENTS.MINI_GAME_SUBMIT, (data) => {
       try {

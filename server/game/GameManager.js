@@ -285,6 +285,15 @@ class GameManager {
     }
   }
 
+  confirmMiniGameReady(teamId) {
+    const confirmed = this.miniGameProcessor.confirmClientReady(teamId);
+    if (confirmed) {
+      this.io.emit('mini_game_timer_start', { teamId });
+      console.log(`Mini-game timer started for team ${teamId}`);
+    }
+    return confirmed;
+  }
+
   processMiniGameSubmission(teamId, submission) {
     try {
       const result = this.miniGameProcessor.processResult(teamId, submission);

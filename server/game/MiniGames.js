@@ -9,11 +9,23 @@ class MiniGameProcessor {
         const gameData = this.generateMiniGameData(eventType, gameState);
         this.activeGames.set(teamId, {
             ...gameData,
-            startTime: Date.now(),
-            teamId
+            startTime: null, // Will be set when client confirms ready
+            teamId,
+            isWaitingForClient: true
         });
         
         return gameData;
+    }
+
+    confirmClientReady(teamId) {
+        const gameData = this.activeGames.get(teamId);
+        if (gameData && gameData.isWaitingForClient) {
+            gameData.startTime = Date.now();
+            gameData.isWaitingForClient = false;
+            console.log(`Mini-game timer started for team ${teamId}`);
+            return true;
+        }
+        return false;
     }
 
     generateMiniGameData(eventType, gameState) {
@@ -316,9 +328,17 @@ class MiniGameProcessor {
     }
 
     evaluateSubmission(gameData, submission) {
-        const { eventType, data, startTime } = gameData;
-        const timeTaken = Date.now() - startTime;
-        const isTimeout = timeTaken > gameData.timeLimit;
+        const { eventType, data, startTime, isWaitingForClient } = gameData;
+        
+        // Calculate timing - if timer hasn't started yet, no timeout possible
+        let timeTaken, isTimeout;
+        if (!startTime || isWaitingForClient) {
+            timeTaken = 0;
+            isTimeout = false;
+        } else {
+            timeTaken = Date.now() - startTime;
+            isTimeout = timeTaken > gameData.timeLimit;
+        }
 
         let score = 0;
         let success = false;

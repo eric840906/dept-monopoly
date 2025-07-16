@@ -107,6 +107,13 @@ class MobileGameApp {
       this.showMiniGame(data)
     })
 
+    this.socket.on('mini_game_timer_start', (data) => {
+      console.log('Mini game timer started:', data)
+      if (this.teamData && data.teamId === this.teamData.id && window.MiniGames) {
+        window.MiniGames.startTimer()
+      }
+    })
+
     this.socket.on('mini_game_result', (data) => {
       console.log('Mini game result:', data)
       // Only show result if it's for our team
@@ -559,7 +566,16 @@ class MobileGameApp {
 
     if (window.MiniGames) {
       const miniGameContent = document.getElementById('miniGameContent')
-      window.MiniGames.load(data, miniGameContent, this.socket, this.teamData.id)
+      
+      // Load the mini-game with a callback for when it's ready
+      window.MiniGames.load(data, miniGameContent, this.socket, this.teamData.id, () => {
+        // Mini-game UI is fully loaded and ready - notify server to start timer
+        console.log('Mini-game UI ready, notifying server to start timer')
+        this.socket.emit('mini_game_ready', { teamId: this.teamData.id })
+      })
+    } else {
+      // Fallback: if MiniGames not available, start timer immediately
+      this.socket.emit('mini_game_ready', { teamId: this.teamData.id })
     }
   }
 

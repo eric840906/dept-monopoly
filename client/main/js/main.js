@@ -78,6 +78,13 @@ class GameApp {
             }
         });
 
+        this.socket.on('mini_game_timer_start', (data) => {
+            console.log('Mini-game timer started:', data);
+            if (this.game && this.game.scene.getScene('GameScene')) {
+                this.game.scene.getScene('GameScene').handleMiniGameTimerStart(data);
+            }
+        });
+
         this.socket.on('mini_game_result', (data) => {
             console.log('Mini-game result:', data);
             if (this.game && this.game.scene.getScene('GameScene')) {

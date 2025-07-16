@@ -558,7 +558,7 @@ class GameScene extends Phaser.Scene {
         const bannerText = this.add.text(
             this.centerX, 
             this.centerY,
-            `🎮 小遊戲開始！\n${team.emoji} 隊伍 ${team.id.split('_')[1]}\n${this.getEventName(eventType)}\n時間限制: ${timeInSeconds} 秒`,
+            `🎮 小遊戲準備中...\n${team.emoji} 隊伍 ${team.id.split('_')[1]}\n${this.getEventName(eventType)}\n等待介面載入完成`,
             {
                 fontSize: '18px',
                 fontFamily: 'Arial',
@@ -580,13 +580,29 @@ class GameScene extends Phaser.Scene {
             repeat: -1
         });
 
-        // Store reference for cleanup
-        this.currentMiniGameBanner = { banner, bannerText };
+        // Store reference for cleanup and update
+        this.currentMiniGameBanner = { banner, bannerText, teamId, eventType, timeLimit };
+    }
 
-        // Auto-hide after time limit + 2 seconds
-        this.time.delayedCall(timeLimit + 2000, () => {
-            this.hideMiniGameBanner();
-        });
+    handleMiniGameTimerStart(data) {
+        const { teamId } = data;
+        console.log(`Mini-game timer starting for team ${teamId}`);
+        
+        // Update the banner to show timer has started
+        if (this.currentMiniGameBanner && this.currentMiniGameBanner.teamId === teamId) {
+            const { banner, bannerText, eventType, timeLimit } = this.currentMiniGameBanner;
+            const team = this.gameState?.teams.find(t => t.id === teamId);
+            const timeInSeconds = Math.ceil(timeLimit / 1000);
+            
+            if (team && bannerText) {
+                bannerText.setText(`🎮 小遊戲進行中！\n${team.emoji} 隊伍 ${team.id.split('_')[1]}\n${this.getEventName(eventType)}\n剩餘時間: ${timeInSeconds} 秒`);
+            }
+            
+            // Auto-hide after time limit + 2 seconds
+            this.time.delayedCall(timeLimit + 2000, () => {
+                this.hideMiniGameBanner();
+            });
+        }
     }
 
     showMiniGameResult(teamId, score, feedback, success) {
