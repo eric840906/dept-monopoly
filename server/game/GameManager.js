@@ -114,6 +114,12 @@ class GameManager {
   }
 
   skipToNextTeam() {
+    // Check if game has already ended
+    if (this.gameState.phase === GamePhase.ENDED) {
+      console.log('Game has ended, ignoring skipToNextTeam call');
+      return;
+    }
+    
     if (this.gameState.teams.length === 0) {
       // No teams left, end the game
       this.endGame('no_teams_remaining');
@@ -314,7 +320,10 @@ class GameManager {
       
       // End turn after mini-game
       setTimeout(() => {
-        this.endTurn();
+        // Check if game is still in progress before ending turn
+        if (this.gameState.phase === GamePhase.IN_PROGRESS) {
+          this.endTurn();
+        }
       }, 3000); // 3 second delay to show result
       
       return result;
@@ -341,6 +350,13 @@ class GameManager {
   }
 
   endTurn() {
+    // Check if game has already ended - if so, don't process turn
+    if (this.gameState.phase === GamePhase.ENDED) {
+      console.log('Game has ended, ignoring endTurn call');
+      this.clearTurnTimer();
+      return;
+    }
+    
     this.clearTurnTimer();
     
     // Check if there are any teams left
@@ -374,6 +390,12 @@ class GameManager {
     this.gameState.turnTimer = GAME_CONFIG.TURN_TIME_LIMIT;
     
     this.turnTimer = setInterval(() => {
+      // Check if game has ended - if so, clear timer and stop
+      if (this.gameState.phase === GamePhase.ENDED) {
+        this.clearTurnTimer();
+        return;
+      }
+      
       this.gameState.turnTimer -= 1000;
       
       this.io.emit(SOCKET_EVENTS.TIMER_UPDATE, {
