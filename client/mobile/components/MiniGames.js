@@ -144,22 +144,57 @@ window.MiniGames = {
         const dragItems = document.querySelectorAll('.drag-item');
         const dropZone = document.getElementById('dropZone');
         let droppedItems = [];
+        let draggedElement = null;
+        let dragStartPosition = null;
 
+        // Helper function to get clean item text
+        const getCleanItemText = (element) => {
+            if (element.dataset.item) return element.dataset.item;
+            return element.textContent.replace(/^(\d+\.)+\s*/, '').replace('×', '').trim();
+        };
+
+        // Helper function to find insertion position
+        const getInsertPosition = (e, container) => {
+            const afterElement = getDragAfterElement(container, e.clientY);
+            if (afterElement == null) {
+                return droppedItems.length;
+            } else {
+                return parseInt(afterElement.dataset.position);
+            }
+        };
+
+        // Helper function to determine where to insert based on Y position
+        const getDragAfterElement = (container, y) => {
+            const draggableElements = [...container.querySelectorAll('.dropped-item:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        };
+
+        // Setup drag handlers for source items
         dragItems.forEach(item => {
             item.addEventListener('dragstart', (e) => {
+                draggedElement = e.target;
+                dragStartPosition = 'source';
                 e.dataTransfer.setData('text/plain', e.target.dataset.item);
                 e.target.style.opacity = '0.5';
             });
 
             item.addEventListener('dragend', (e) => {
                 e.target.style.opacity = '1';
+                draggedElement = null;
+                dragStartPosition = null;
             });
 
-            // Touch support for mobile
-            item.addEventListener('touchstart', (e) => {
-                e.target.classList.add('dragging');
-            });
-
+            // Touch support for mobile - fallback to click
             item.addEventListener('click', () => {
                 if (droppedItems.length < correctOrder.length) {
                     const itemText = item.dataset.item;
@@ -173,25 +208,74 @@ window.MiniGames = {
             });
         });
 
+        // Setup drop zone handlers
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
+            
+            // Visual feedback for insertion position
+            const afterElement = getDragAfterElement(dropZone, e.clientY);
+            const draggables = dropZone.querySelectorAll('.dropped-item');
+            
+            // Remove existing indicators
+            draggables.forEach(item => item.classList.remove('drag-over'));
+            
+            // Add indicator
+            if (afterElement == null) {
+                // Insert at end
+                const lastItem = draggables[draggables.length - 1];
+                if (lastItem) lastItem.classList.add('drag-over');
+            } else {
+                afterElement.classList.add('drag-over');
+            }
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            // Remove visual feedback when leaving drop zone
+            const draggables = dropZone.querySelectorAll('.dropped-item');
+            draggables.forEach(item => item.classList.remove('drag-over'));
         });
 
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
+            
+            // Remove visual feedback
+            const draggables = dropZone.querySelectorAll('.dropped-item');
+            draggables.forEach(item => item.classList.remove('drag-over'));
+            
             const itemText = e.dataTransfer.getData('text/plain');
-            if (!droppedItems.includes(itemText) && droppedItems.length < correctOrder.length) {
-                droppedItems.push(itemText);
-                this.updateDropZone(droppedItems);
+            
+            if (dragStartPosition === 'source') {
+                // Dragging from source items
+                if (!droppedItems.includes(itemText) && droppedItems.length < correctOrder.length) {
+                    const insertPos = getInsertPosition(e, dropZone);
+                    droppedItems.splice(insertPos, 0, itemText);
+                    this.updateDropZone(droppedItems);
+                    
+                    // Hide the dragged item
+                    const draggedItem = document.querySelector(`[data-item="${itemText}"]`);
+                    if (draggedItem) {
+                        draggedItem.style.opacity = '0.5';
+                        draggedItem.style.pointerEvents = 'none';
+                    }
+                }
+            } else if (dragStartPosition === 'dropzone') {
+                // Reordering within drop zone
+                const oldIndex = droppedItems.indexOf(itemText);
+                const newIndex = getInsertPosition(e, dropZone);
                 
-                // Hide the dragged item
-                const draggedItem = document.querySelector(`[data-item="${itemText}"]`);
-                if (draggedItem) {
-                    draggedItem.style.opacity = '0.5';
-                    draggedItem.style.pointerEvents = 'none';
+                if (oldIndex !== -1 && newIndex !== oldIndex) {
+                    // Remove from old position
+                    droppedItems.splice(oldIndex, 1);
+                    // Insert at new position (adjust for removal)
+                    const adjustedNewIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
+                    droppedItems.splice(adjustedNewIndex, 0, itemText);
+                    this.updateDropZone(droppedItems);
                 }
             }
         });
+
+        // Store reference to droppedItems for other methods
+        this.droppedItems = droppedItems;
 
         document.getElementById('submitOrder').addEventListener('click', () => {
             const isCorrect = JSON.stringify(droppedItems) === JSON.stringify(correctOrder);
@@ -210,31 +294,48 @@ window.MiniGames = {
     updateDropZone(items) {
         const dropZone = document.getElementById('dropZone');
         dropZone.innerHTML = items.map((item, index) => `
-            <div class="dropped-item" data-position="${index}">
-                ${index + 1}. ${item}
+            <div class="dropped-item" data-position="${index}" draggable="true" data-item="${item}">
+                <span class="drag-handle">⋮⋮</span>
+                <span class="item-text">${index + 1}. ${item}</span>
                 <button class="remove-btn" onclick="window.MiniGames.removeItem(${index})">×</button>
             </div>
         `).join('');
+        
+        // Setup drag handlers for dropped items (for reordering)
+        const droppedItems = dropZone.querySelectorAll('.dropped-item');
+        droppedItems.forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                e.target.classList.add('dragging');
+                this.draggedElement = e.target;
+                this.dragStartPosition = 'dropzone';
+                e.dataTransfer.setData('text/plain', e.target.dataset.item);
+                e.target.style.opacity = '0.5';
+            });
+
+            item.addEventListener('dragend', (e) => {
+                e.target.classList.remove('dragging');
+                e.target.style.opacity = '1';
+                this.draggedElement = null;
+                this.dragStartPosition = null;
+            });
+        });
     },
 
     removeItem(index) {
-        // Re-enable the item in drag area
-        const dropZone = document.getElementById('dropZone');
-        const droppedItems = Array.from(dropZone.children);
-        if (droppedItems[index]) {
-            const itemText = droppedItems[index].textContent.replace(/^(\d+\.)+\s*/, '').replace('×', '').trim();
+        // Use stored droppedItems array
+        if (this.droppedItems && this.droppedItems.length > index) {
+            const itemText = this.droppedItems[index];
+            
+            // Re-enable the item in drag area
             const originalItem = document.querySelector(`[data-item="${itemText}"]`);
-            if (originalItem) {
+            if (originalItem && originalItem.classList.contains('drag-item')) {
                 originalItem.style.opacity = '1';
                 originalItem.style.pointerEvents = 'auto';
             }
             
-            // Update dropped items array
-            const currentItems = Array.from(droppedItems).map(item => 
-                item.textContent.replace(/^(\d+\.)+\s*/, '').replace('×', '').trim()
-            );
-            currentItems.splice(index, 1);
-            this.updateDropZone(currentItems);
+            // Remove from dropped items array
+            this.droppedItems.splice(index, 1);
+            this.updateDropZone(this.droppedItems);
         }
     },
 
