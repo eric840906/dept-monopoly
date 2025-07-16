@@ -143,7 +143,6 @@ class GameManager {
     this.gameState.currentTurnTeamId = this.gameState.teams[nextTeamIndex].id;
     
     // Reset turn timer
-    this.clearTurnTimer();
     this.startTurnTimer();
     
     console.log(`Skipped to next team: ${this.gameState.currentTurnTeamId}`);
@@ -387,6 +386,9 @@ class GameManager {
   }
 
   startTurnTimer() {
+    // Always clear any existing timer first to prevent multiple timers
+    this.clearTurnTimer();
+    
     this.gameState.turnTimer = GAME_CONFIG.TURN_TIME_LIMIT;
     
     this.turnTimer = setInterval(() => {
