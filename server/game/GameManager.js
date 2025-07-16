@@ -319,8 +319,9 @@ class GameManager {
       
       // End turn after mini-game
       setTimeout(() => {
-        // Check if game is still in progress before ending turn
-        if (this.gameState.phase === GamePhase.IN_PROGRESS) {
+        // Check if game is still in progress AND it's still this team's turn
+        if (this.gameState.phase === GamePhase.IN_PROGRESS && 
+            this.gameState.currentTurnTeamId === teamId) {
           this.endTurn();
         }
       }, 3000); // 3 second delay to show result
