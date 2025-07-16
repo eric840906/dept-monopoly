@@ -103,6 +103,16 @@ class MobileGameApp {
             this.showMiniGame(data);
         });
 
+        this.socket.on('mini_game_result', (data) => {
+            console.log('Mini game result:', data);
+            // Only show result if it's for our team
+            if (this.teamData && data.teamId === this.teamData.id) {
+                if (window.MiniGames) {
+                    window.MiniGames.showResult(data);
+                }
+            }
+        });
+
         this.socket.on('game_end', (data) => {
             console.log('Game ended:', data);
             this.showGameEnd(data);
@@ -508,7 +518,18 @@ class MobileGameApp {
     }
 
     showMiniGame(data) {
-        // This will be implemented with the MiniGames component
+        // Only show mini-game if it's for our team
+        if (!this.teamData || data.teamId !== this.teamData.id) {
+            console.log(`Mini-game is for team ${data.teamId}, not our team ${this.teamData?.id}`);
+            // Show waiting message instead
+            const waitingMessage = document.getElementById('waitingMessage');
+            if (waitingMessage) {
+                waitingMessage.textContent = '其他隊伍正在進行小遊戲...';
+            }
+            return;
+        }
+
+        console.log(`Showing mini-game for our team: ${data.teamId}`);
         this.showInterface('miniGameInterface');
         
         if (window.MiniGames) {

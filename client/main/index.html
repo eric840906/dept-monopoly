@@ -1,29 +1,30 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>團隊建設棋盤遊戲 - 主畫面</title>
+    <title>MTO 體驗營 - 主畫面</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-family: 'Arial', sans-serif;
             overflow: hidden;
         }
-        
+
         #gameContainer {
             width: 100vw;
             height: 100vh;
             display: flex;
             flex-direction: column;
         }
-        
+
         #gameHeader {
             height: 80px;
             background: rgba(0, 0, 0, 0.8);
@@ -35,38 +36,38 @@
             position: relative;
             z-index: 100;
         }
-        
+
         #gameTitle {
             font-size: 24px;
             font-weight: bold;
         }
-        
+
         #gameInfo {
             display: flex;
             gap: 30px;
             align-items: center;
         }
-        
+
         #turnInfo {
             text-align: center;
         }
-        
+
         #turnTimer {
             font-size: 32px;
             font-weight: bold;
             color: #ff6b6b;
         }
-        
+
         #currentTeam {
             font-size: 18px;
             margin-top: 5px;
         }
-        
+
         #hostControls {
             display: flex;
             gap: 10px;
         }
-        
+
         .host-btn {
             padding: 8px 16px;
             background: #4ecdc4;
@@ -77,21 +78,21 @@
             font-size: 14px;
             transition: background 0.3s;
         }
-        
+
         .host-btn:hover {
             background: #45b7d1;
         }
-        
+
         .host-btn:disabled {
             background: #666;
             cursor: not-allowed;
         }
-        
+
         #gameCanvas {
             flex: 1;
             position: relative;
         }
-        
+
         #scoreBoard {
             position: absolute;
             top: 10px;
@@ -103,13 +104,13 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             z-index: 50;
         }
-        
+
         #scoreBoard h3 {
             text-align: center;
             margin-bottom: 15px;
             color: #333;
         }
-        
+
         .team-score {
             display: flex;
             align-items: center;
@@ -117,42 +118,42 @@
             padding: 8px 0;
             border-bottom: 1px solid #eee;
         }
-        
+
         .team-score:last-child {
             border-bottom: none;
         }
-        
+
         .team-info {
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        
+
         .team-emoji {
             font-size: 20px;
         }
-        
+
         .team-color {
             width: 12px;
             height: 12px;
             border-radius: 50%;
         }
-        
+
         .team-name {
             font-weight: bold;
         }
-        
+
         .team-score-value {
             font-weight: bold;
             font-size: 18px;
         }
-        
+
         .current-turn {
             background: #fff3cd;
             border-radius: 5px;
             padding: 5px;
         }
-        
+
         #gameStatus {
             position: absolute;
             bottom: 20px;
@@ -165,24 +166,25 @@
             text-align: center;
             z-index: 50;
         }
-        
+
         .hidden {
             display: none !important;
         }
     </style>
 </head>
+
 <body>
     <div id="gameContainer">
         <div id="gameHeader">
-            <div id="gameTitle">🎯 團隊建設棋盤遊戲</div>
-            
+            <div id="gameTitle">🎯 MTO 體驗營</div>
+
             <div id="gameInfo">
                 <div id="turnInfo">
                     <div id="turnTimer">--</div>
                     <div id="currentTeam">等待開始...</div>
                 </div>
             </div>
-            
+
             <div id="hostControls">
                 <button class="host-btn" id="assignTeamsBtn">分配隊伍</button>
                 <button class="host-btn" id="startGameBtn" disabled>開始遊戲</button>
@@ -190,11 +192,11 @@
                 <button class="host-btn" id="endGameBtn" disabled>結束遊戲</button>
             </div>
         </div>
-        
+
         <div id="gameCanvas">
             <!-- Phaser game will be injected here -->
         </div>
-        
+
         <div id="scoreBoard">
             <h3>📊 隊伍積分</h3>
             <div id="teamScores">
@@ -206,7 +208,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="gameStatus">
             <div>🕹️ 玩家請用手機連接: <strong id="mobileUrl"></strong></div>
         </div>
@@ -223,4 +225,5 @@
     <script src="/ui/ScoreBoard.js"></script>
     <script src="/ui/HostControls.js"></script>
 </body>
+
 </html>

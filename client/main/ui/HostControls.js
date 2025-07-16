@@ -1,74 +1,74 @@
 // Host Controls UI Component for Main Screen
 
 class HostControls {
-    constructor(gameApp) {
-        this.gameApp = gameApp;
-        this.isHost = window.location.search.includes('host=true');
-        this.currentGameState = null;
-        
-        if (this.isHost) {
-            this.setupHostInterface();
-        }
+  constructor(gameApp) {
+    this.gameApp = gameApp
+    this.isHost = window.location.search.includes('host=true')
+    this.currentGameState = null
+
+    if (this.isHost) {
+      this.setupHostInterface()
+    }
+  }
+
+  setupHostInterface() {
+    // Add host indicator to title
+    const gameTitle = document.getElementById('gameTitle')
+    if (gameTitle) {
+      gameTitle.innerHTML = '🎯 MTO 體驗營 <span style="color: #f39c12;">[主持人模式]</span>'
     }
 
-    setupHostInterface() {
-        // Add host indicator to title
-        const gameTitle = document.getElementById('gameTitle');
-        if (gameTitle) {
-            gameTitle.innerHTML = '🎯 團隊建設棋盤遊戲 <span style="color: #f39c12;">[主持人模式]</span>';
-        }
+    // Setup host control handlers
+    this.setupEventListeners()
+    this.addAdvancedControls()
+  }
 
-        // Setup host control handlers
-        this.setupEventListeners();
-        this.addAdvancedControls();
-    }
+  setupEventListeners() {
+    // Basic controls
+    document.getElementById('assignTeamsBtn')?.addEventListener('click', () => {
+      this.assignTeams()
+    })
 
-    setupEventListeners() {
-        // Basic controls
-        document.getElementById('assignTeamsBtn')?.addEventListener('click', () => {
-            this.assignTeams();
-        });
+    document.getElementById('startGameBtn')?.addEventListener('click', () => {
+      this.startGame()
+    })
 
-        document.getElementById('startGameBtn')?.addEventListener('click', () => {
-            this.startGame();
-        });
+    document.getElementById('skipTurnBtn')?.addEventListener('click', () => {
+      this.skipTurn()
+    })
 
-        document.getElementById('skipTurnBtn')?.addEventListener('click', () => {
-            this.skipTurn();
-        });
+    document.getElementById('endGameBtn')?.addEventListener('click', () => {
+      this.endGame()
+    })
+  }
 
-        document.getElementById('endGameBtn')?.addEventListener('click', () => {
-            this.endGame();
-        });
-    }
+  addAdvancedControls() {
+    const hostControls = document.getElementById('hostControls')
+    if (!hostControls) return
 
-    addAdvancedControls() {
-        const hostControls = document.getElementById('hostControls');
-        if (!hostControls) return;
+    // Add advanced control button
+    const advancedBtn = document.createElement('button')
+    advancedBtn.className = 'host-btn'
+    advancedBtn.textContent = '⚙️ 進階控制'
+    advancedBtn.addEventListener('click', () => this.showAdvancedPanel())
+    hostControls.appendChild(advancedBtn)
 
-        // Add advanced control button
-        const advancedBtn = document.createElement('button');
-        advancedBtn.className = 'host-btn';
-        advancedBtn.textContent = '⚙️ 進階控制';
-        advancedBtn.addEventListener('click', () => this.showAdvancedPanel());
-        hostControls.appendChild(advancedBtn);
+    // Create advanced control panel
+    this.createAdvancedPanel()
+  }
 
-        // Create advanced control panel
-        this.createAdvancedPanel();
-    }
-
-    createAdvancedPanel() {
-        const panel = document.createElement('div');
-        panel.id = 'advancedPanel';
-        panel.className = 'advanced-panel hidden';
-        panel.innerHTML = `
+  createAdvancedPanel() {
+    const panel = document.createElement('div')
+    panel.id = 'advancedPanel'
+    panel.className = 'advanced-panel hidden'
+    panel.innerHTML = `
             <div class="panel-overlay">
                 <div class="panel-content">
                     <div class="panel-header">
                         <h3>⚙️ 進階主持人控制</h3>
                         <button class="close-btn" onclick="this.closest('.advanced-panel').classList.add('hidden')">×</button>
                     </div>
-                    
+
                     <div class="panel-section">
                         <h4>遊戲設定</h4>
                         <div class="control-group">
@@ -125,38 +125,40 @@ class HostControls {
                     </div>
                 </div>
             </div>
-        `;
+        `
 
-        document.body.appendChild(panel);
-        this.addPanelStyles();
+    document.body.appendChild(panel)
+    this.addPanelStyles()
+  }
+
+  showAdvancedPanel() {
+    const panel = document.getElementById('advancedPanel')
+    if (panel) {
+      panel.classList.remove('hidden')
+      this.updateAdvancedPanel()
     }
+  }
 
-    showAdvancedPanel() {
-        const panel = document.getElementById('advancedPanel');
-        if (panel) {
-            panel.classList.remove('hidden');
-            this.updateAdvancedPanel();
-        }
-    }
+  updateAdvancedPanel() {
+    if (!this.currentGameState) return
 
-    updateAdvancedPanel() {
-        if (!this.currentGameState) return;
+    // Update team management section
+    this.updateTeamManagement()
 
-        // Update team management section
-        this.updateTeamManagement();
-        
-        // Update team selector for score adjustment
-        this.updateTeamSelector();
-        
-        // Update game stats
-        this.updateGameStats();
-    }
+    // Update team selector for score adjustment
+    this.updateTeamSelector()
 
-    updateTeamManagement() {
-        const container = document.getElementById('teamManagement');
-        if (!container || !this.currentGameState.teams) return;
+    // Update game stats
+    this.updateGameStats()
+  }
 
-        container.innerHTML = this.currentGameState.teams.map(team => `
+  updateTeamManagement() {
+    const container = document.getElementById('teamManagement')
+    if (!container || !this.currentGameState.teams) return
+
+    container.innerHTML = this.currentGameState.teams
+      .map(
+        (team) => `
             <div class="team-control" data-team-id="${team.id}">
                 <div class="team-info">
                     <span class="team-emoji">${team.emoji}</span>
@@ -172,28 +174,27 @@ class HostControls {
                     </button>
                 </div>
             </div>
-        `).join('');
-    }
+        `
+      )
+      .join('')
+  }
 
-    updateTeamSelector() {
-        const selector = document.getElementById('targetTeam');
-        if (!selector || !this.currentGameState.teams) return;
+  updateTeamSelector() {
+    const selector = document.getElementById('targetTeam')
+    if (!selector || !this.currentGameState.teams) return
 
-        selector.innerHTML = '<option value="">選擇隊伍...</option>' +
-            this.currentGameState.teams.map(team => 
-                `<option value="${team.id}">${team.emoji} 隊伍 ${team.id.split('_')[1]}</option>`
-            ).join('');
-    }
+    selector.innerHTML = '<option value="">選擇隊伍...</option>' + this.currentGameState.teams.map((team) => `<option value="${team.id}">${team.emoji} 隊伍 ${team.id.split('_')[1]}</option>`).join('')
+  }
 
-    updateGameStats() {
-        const container = document.getElementById('gameStats');
-        if (!container) return;
+  updateGameStats() {
+    const container = document.getElementById('gameStats')
+    if (!container) return
 
-        const playerCount = Object.keys(this.currentGameState.players).length;
-        const teamCount = this.currentGameState.teams.length;
-        const avgTeamSize = teamCount > 0 ? Math.round(playerCount / teamCount) : 0;
-        
-        container.innerHTML = `
+    const playerCount = Object.keys(this.currentGameState.players).length
+    const teamCount = this.currentGameState.teams.length
+    const avgTeamSize = teamCount > 0 ? Math.round(playerCount / teamCount) : 0
+
+    container.innerHTML = `
             <div class="stat-item">
                 <span>總玩家數:</span>
                 <span>${playerCount}</span>
@@ -214,173 +215,173 @@ class HostControls {
                 <span>遊戲階段:</span>
                 <span>${this.getPhaseText(this.currentGameState.phase)}</span>
             </div>
-        `;
+        `
+  }
+
+  getPhaseText(phase) {
+    const phases = {
+      lobby: '大廳等待',
+      in_progress: '遊戲進行中',
+      ended: '遊戲結束',
+    }
+    return phases[phase] || phase
+  }
+
+  // Host Action Methods
+  assignTeams() {
+    if (this.gameApp.socket) {
+      this.gameApp.socket.emit('team_assign')
+    }
+  }
+
+  startGame() {
+    if (confirm('確定要開始遊戲嗎？開始後將無法再加入新玩家。')) {
+      if (this.gameApp.socket) {
+        this.gameApp.socket.emit('game_start')
+      }
+    }
+  }
+
+  skipTurn() {
+    if (confirm('確定要跳過當前回合嗎？')) {
+      if (this.gameApp.socket) {
+        this.gameApp.socket.emit('host_control', { action: 'skip_turn' })
+      }
+    }
+  }
+
+  endGame() {
+    if (confirm('確定要結束遊戲嗎？這將立即結算最終分數。')) {
+      if (this.gameApp.socket) {
+        this.gameApp.socket.emit('host_control', { action: 'end_game' })
+      }
+    }
+  }
+
+  // Advanced Control Methods
+  updateTurnTime() {
+    const newTime = document.getElementById('turnTimeLimit').value
+    if (this.gameApp.socket && newTime) {
+      this.gameApp.socket.emit('host_control', {
+        action: 'update_turn_time',
+        payload: { time: parseInt(newTime) * 1000 },
+      })
+    }
+  }
+
+  updateMaxRounds() {
+    const newMax = document.getElementById('maxRounds').value
+    if (this.gameApp.socket && newMax) {
+      this.gameApp.socket.emit('host_control', {
+        action: 'update_max_rounds',
+        payload: { rounds: parseInt(newMax) },
+      })
+    }
+  }
+
+  adjustScore() {
+    const teamId = document.getElementById('targetTeam').value
+    const points = document.getElementById('scoreAdjustment').value
+    const reason = document.getElementById('adjustmentReason').value
+
+    if (!teamId || !points) {
+      alert('請選擇隊伍並輸入積分變化')
+      return
     }
 
-    getPhaseText(phase) {
-        const phases = {
-            'lobby': '大廳等待',
-            'in_progress': '遊戲進行中',
-            'ended': '遊戲結束'
-        };
-        return phases[phase] || phase;
+    if (this.gameApp.socket) {
+      this.gameApp.socket.emit('host_control', {
+        action: 'adjust_score',
+        payload: {
+          teamId,
+          points: parseInt(points),
+          reason: reason || '主持人調整',
+        },
+      })
     }
 
-    // Host Action Methods
-    assignTeams() {
-        if (this.gameApp.socket) {
-            this.gameApp.socket.emit('team_assign');
-        }
+    // Clear inputs
+    document.getElementById('scoreAdjustment').value = ''
+    document.getElementById('adjustmentReason').value = ''
+  }
+
+  moveTeam(teamId, direction) {
+    if (this.gameApp.socket) {
+      this.gameApp.socket.emit('host_control', {
+        action: 'move_team',
+        payload: { teamId, direction },
+      })
     }
+  }
 
-    startGame() {
-        if (confirm('確定要開始遊戲嗎？開始後將無法再加入新玩家。')) {
-            if (this.gameApp.socket) {
-                this.gameApp.socket.emit('game_start');
-            }
-        }
+  toggleElimination(teamId) {
+    if (this.gameApp.socket) {
+      this.gameApp.socket.emit('host_control', {
+        action: 'toggle_elimination',
+        payload: { teamId },
+      })
     }
+  }
 
-    skipTurn() {
-        if (confirm('確定要跳過當前回合嗎？')) {
-            if (this.gameApp.socket) {
-                this.gameApp.socket.emit('host_control', { action: 'skip_turn' });
-            }
-        }
+  pauseGame() {
+    if (this.gameApp.socket) {
+      this.gameApp.socket.emit('host_control', { action: 'pause_game' })
     }
+  }
 
-    endGame() {
-        if (confirm('確定要結束遊戲嗎？這將立即結算最終分數。')) {
-            if (this.gameApp.socket) {
-                this.gameApp.socket.emit('host_control', { action: 'end_game' });
-            }
-        }
+  resumeGame() {
+    if (this.gameApp.socket) {
+      this.gameApp.socket.emit('host_control', { action: 'resume_game' })
     }
+  }
 
-    // Advanced Control Methods
-    updateTurnTime() {
-        const newTime = document.getElementById('turnTimeLimit').value;
-        if (this.gameApp.socket && newTime) {
-            this.gameApp.socket.emit('host_control', { 
-                action: 'update_turn_time', 
-                payload: { time: parseInt(newTime) * 1000 }
-            });
-        }
+  resetGame() {
+    if (confirm('確定要重置遊戲嗎？這將清除所有進度！')) {
+      if (this.gameApp.socket) {
+        this.gameApp.socket.emit('host_control', { action: 'reset_game' })
+      }
     }
+  }
 
-    updateMaxRounds() {
-        const newMax = document.getElementById('maxRounds').value;
-        if (this.gameApp.socket && newMax) {
-            this.gameApp.socket.emit('host_control', { 
-                action: 'update_max_rounds', 
-                payload: { rounds: parseInt(newMax) }
-            });
-        }
+  update(gameState) {
+    this.currentGameState = gameState
+
+    if (this.isHost) {
+      this.updateHostControls()
+
+      // Update advanced panel if it's open
+      const panel = document.getElementById('advancedPanel')
+      if (panel && !panel.classList.contains('hidden')) {
+        this.updateAdvancedPanel()
+      }
     }
+  }
 
-    adjustScore() {
-        const teamId = document.getElementById('targetTeam').value;
-        const points = document.getElementById('scoreAdjustment').value;
-        const reason = document.getElementById('adjustmentReason').value;
+  updateHostControls() {
+    if (!this.currentGameState) return
 
-        if (!teamId || !points) {
-            alert('請選擇隊伍並輸入積分變化');
-            return;
-        }
+    const assignTeamsBtn = document.getElementById('assignTeamsBtn')
+    const startGameBtn = document.getElementById('startGameBtn')
+    const skipTurnBtn = document.getElementById('skipTurnBtn')
+    const endGameBtn = document.getElementById('endGameBtn')
 
-        if (this.gameApp.socket) {
-            this.gameApp.socket.emit('host_control', {
-                action: 'adjust_score',
-                payload: {
-                    teamId,
-                    points: parseInt(points),
-                    reason: reason || '主持人調整'
-                }
-            });
-        }
+    const hasPlayers = Object.keys(this.currentGameState.players).length > 0
+    const hasTeams = this.currentGameState.teams.length > 0
+    const gameInProgress = this.currentGameState.phase === 'in_progress'
+    const gameEnded = this.currentGameState.phase === 'ended'
 
-        // Clear inputs
-        document.getElementById('scoreAdjustment').value = '';
-        document.getElementById('adjustmentReason').value = '';
-    }
+    if (assignTeamsBtn) assignTeamsBtn.disabled = !hasPlayers || gameInProgress || gameEnded
+    if (startGameBtn) startGameBtn.disabled = !hasTeams || gameInProgress || gameEnded
+    if (skipTurnBtn) skipTurnBtn.disabled = !gameInProgress
+    if (endGameBtn) endGameBtn.disabled = !gameInProgress
+  }
 
-    moveTeam(teamId, direction) {
-        if (this.gameApp.socket) {
-            this.gameApp.socket.emit('host_control', {
-                action: 'move_team',
-                payload: { teamId, direction }
-            });
-        }
-    }
+  addPanelStyles() {
+    if (document.getElementById('hostControlStyles')) return
 
-    toggleElimination(teamId) {
-        if (this.gameApp.socket) {
-            this.gameApp.socket.emit('host_control', {
-                action: 'toggle_elimination',
-                payload: { teamId }
-            });
-        }
-    }
-
-    pauseGame() {
-        if (this.gameApp.socket) {
-            this.gameApp.socket.emit('host_control', { action: 'pause_game' });
-        }
-    }
-
-    resumeGame() {
-        if (this.gameApp.socket) {
-            this.gameApp.socket.emit('host_control', { action: 'resume_game' });
-        }
-    }
-
-    resetGame() {
-        if (confirm('確定要重置遊戲嗎？這將清除所有進度！')) {
-            if (this.gameApp.socket) {
-                this.gameApp.socket.emit('host_control', { action: 'reset_game' });
-            }
-        }
-    }
-
-    update(gameState) {
-        this.currentGameState = gameState;
-        
-        if (this.isHost) {
-            this.updateHostControls();
-            
-            // Update advanced panel if it's open
-            const panel = document.getElementById('advancedPanel');
-            if (panel && !panel.classList.contains('hidden')) {
-                this.updateAdvancedPanel();
-            }
-        }
-    }
-
-    updateHostControls() {
-        if (!this.currentGameState) return;
-
-        const assignTeamsBtn = document.getElementById('assignTeamsBtn');
-        const startGameBtn = document.getElementById('startGameBtn');
-        const skipTurnBtn = document.getElementById('skipTurnBtn');
-        const endGameBtn = document.getElementById('endGameBtn');
-
-        const hasPlayers = Object.keys(this.currentGameState.players).length > 0;
-        const hasTeams = this.currentGameState.teams.length > 0;
-        const gameInProgress = this.currentGameState.phase === 'in_progress';
-        const gameEnded = this.currentGameState.phase === 'ended';
-
-        if (assignTeamsBtn) assignTeamsBtn.disabled = !hasPlayers || gameInProgress || gameEnded;
-        if (startGameBtn) startGameBtn.disabled = !hasTeams || gameInProgress || gameEnded;
-        if (skipTurnBtn) skipTurnBtn.disabled = !gameInProgress;
-        if (endGameBtn) endGameBtn.disabled = !gameInProgress;
-    }
-
-    addPanelStyles() {
-        if (document.getElementById('hostControlStyles')) return;
-
-        const styles = document.createElement('style');
-        styles.id = 'hostControlStyles';
-        styles.textContent = `
+    const styles = document.createElement('style')
+    styles.id = 'hostControlStyles'
+    styles.textContent = `
             .advanced-panel {
                 position: fixed;
                 top: 0;
@@ -588,14 +589,14 @@ class HostControls {
                 color: #2c3e50;
                 font-weight: bold;
             }
-        `;
-        document.head.appendChild(styles);
-    }
+        `
+    document.head.appendChild(styles)
+  }
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    if (window.gameApp) {
-        window.gameApp.hostControls = new HostControls(window.gameApp);
-    }
-});
+  if (window.gameApp) {
+    window.gameApp.hostControls = new HostControls(window.gameApp)
+  }
+})

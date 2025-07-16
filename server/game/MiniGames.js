@@ -295,7 +295,16 @@ class MiniGameProcessor {
     processResult(teamId, submission) {
         const gameData = this.activeGames.get(teamId);
         if (!gameData) {
-            throw new Error('No active mini-game for this team');
+            // Instead of throwing an error, return a graceful response
+            console.warn(`No active mini-game for team ${teamId}. Submission ignored.`);
+            return {
+                eventType: 'no_active_game',
+                score: 0,
+                success: false,
+                feedback: "沒有進行中的小遊戲，請等待您的回合",
+                timeTaken: 0,
+                isTimeout: false
+            };
         }
 
         const result = this.evaluateSubmission(gameData, submission);

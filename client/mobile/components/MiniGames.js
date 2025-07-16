@@ -560,32 +560,46 @@ window.MiniGames = {
     },
 
     submitResult(result) {
-        if (this.socket && this.teamId) {
+        // Only submit if we have valid connection and team
+        if (this.socket && this.teamId && this.currentGame) {
+            console.log(`Submitting mini-game result for team ${this.teamId}:`, result);
             this.socket.emit('mini_game_submit', {
                 teamId: this.teamId,
                 ...result
             });
+            
+            // Show result feedback
+            this.showResult(result);
+        } else {
+            console.warn('Cannot submit result: missing socket, teamId, or currentGame');
+            // Show error message instead
+            this.showResult({
+                score: 0,
+                feedback: "無法提交結果，請重新整理頁面"
+            });
         }
-
-        // Show result feedback
-        this.showResult(result);
     },
 
     showResult(result) {
+        const isError = result.eventType === 'no_active_game' || result.feedback?.includes('無法提交');
+        
         this.gameContainer.innerHTML = `
             <div class="mini-game-result">
-                <h3>📊 結果</h3>
+                <h3>📊 ${isError ? '提示' : '結果'}</h3>
                 <div class="result-display">
-                    <div class="score-change ${result.score > 0 ? 'positive' : 'negative'}">
-                        ${result.score > 0 ? '+' : ''}${result.score} 分
-                    </div>
+                    ${!isError ? `
+                        <div class="score-change ${result.score > 0 ? 'positive' : 'negative'}">
+                            ${result.score > 0 ? '+' : ''}${result.score} 分
+                        </div>
+                    ` : ''}
                     <div class="result-message">
-                        ${result.score > 0 ? '太棒了！' : 
-                          result.score === 0 ? '還不錯！' : '下次會更好！'}
+                        ${result.feedback || 
+                          (result.score > 0 ? '太棒了！' : 
+                           result.score === 0 ? '還不錯！' : '下次會更好！')}
                     </div>
                 </div>
                 <div class="waiting-next">
-                    ⏳ 等待下一回合...
+                    ${isError ? '🔄 請等待您的隊伍回合...' : '⏳ 等待下一回合...'}
                 </div>
             </div>
         `;
