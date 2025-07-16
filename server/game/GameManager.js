@@ -13,6 +13,7 @@ const {
   SOCKET_EVENTS,
   BOARD_LAYOUT 
 } = require('../../shared/constants');
+const MiniGameProcessor = require('./MiniGames');
 
 class GameManager {
   constructor() {
@@ -21,6 +22,7 @@ class GameManager {
     this.turnTimer = null;
     this.gameTimer = null;
     this.board = this.generateBoard();
+    this.miniGameProcessor = new MiniGameProcessor();
   }
 
   setIO(io) {
@@ -193,6 +195,49 @@ class GameManager {
       tile,
       eventType: tile.event
     });
+
+    // Start mini-game
+    if (tile.event) {
+      try {
+        const miniGameData = this.miniGameProcessor.startMiniGame(teamId, tile.event, this.gameState);
+        
+        this.io.emit(SOCKET_EVENTS.MINI_GAME_START, {
+          teamId,
+          ...miniGameData
+        });
+      } catch (error) {
+        console.error('Error starting mini-game:', error);
+        // Continue turn without mini-game
+        this.endTurn();
+      }
+    } else {
+      this.endTurn();
+    }
+  }
+
+  processMiniGameSubmission(teamId, submission) {
+    try {
+      const result = this.miniGameProcessor.processResult(teamId, submission);
+      
+      // Update team score
+      this.updateScore(teamId, result.score, result.feedback);
+      
+      // Broadcast mini-game result
+      this.io.emit(SOCKET_EVENTS.MINI_GAME_RESULT, {
+        teamId,
+        ...result
+      });
+      
+      // End turn after mini-game
+      setTimeout(() => {
+        this.endTurn();
+      }, 3000); // 3 second delay to show result
+      
+      return result;
+    } catch (error) {
+      console.error('Error processing mini-game submission:', error);
+      throw error;
+    }
   }
 
   updateScore(teamId, points, reason) {

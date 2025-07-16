@@ -58,13 +58,14 @@ function setupSocketHandlers(io, gameManager) {
     // Handle mini-game submissions
     socket.on(SOCKET_EVENTS.MINI_GAME_SUBMIT, (data) => {
       try {
-        const { teamId, answers, gameType } = data;
-        // Process mini-game result (to be implemented)
-        const points = Math.random() > 0.5 ? 10 : -10; // Placeholder logic
-        gameManager.updateScore(teamId, points, `Mini-game: ${gameType}`);
-        gameManager.endTurn();
+        const { teamId, ...submission } = data;
+        const result = gameManager.processMiniGameSubmission(teamId, submission);
+        console.log(`Mini-game result for team ${teamId}:`, result);
       } catch (error) {
+        console.error('Mini-game submission error:', error);
         socket.emit(SOCKET_EVENTS.ERROR, { message: error.message });
+        // End turn anyway to prevent game from getting stuck
+        gameManager.endTurn();
       }
     });
 

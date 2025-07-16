@@ -19,6 +19,19 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static files for main client
+app.use('/js', express.static(path.join(__dirname, '../client/main/js')));
+app.use('/scenes', express.static(path.join(__dirname, '../client/main/scenes')));
+app.use('/ui', express.static(path.join(__dirname, '../client/main/ui')));
+app.use('/sprites', express.static(path.join(__dirname, '../client/main/sprites')));
+
+// Serve static files for mobile client
+app.use('/mobile/js', express.static(path.join(__dirname, '../client/mobile/js')));
+app.use('/mobile/styles', express.static(path.join(__dirname, '../client/mobile/styles')));
+app.use('/mobile/components', express.static(path.join(__dirname, '../client/mobile/components')));
+
+// Serve public assets
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Serve main game screen
