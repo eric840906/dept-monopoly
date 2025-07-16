@@ -55,6 +55,17 @@ function setupSocketHandlers(io, gameManager) {
       }
     });
 
+    // Handle movement complete
+    socket.on('movement_complete', (data) => {
+      try {
+        const { teamId, position } = data;
+        gameManager.handleMovementComplete(teamId, position);
+        console.log(`Team ${teamId} movement complete at position ${position}`);
+      } catch (error) {
+        socket.emit(SOCKET_EVENTS.ERROR, { message: error.message });
+      }
+    });
+
     // Handle mini-game submissions
     socket.on(SOCKET_EVENTS.MINI_GAME_SUBMIT, (data) => {
       try {

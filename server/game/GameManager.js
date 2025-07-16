@@ -239,12 +239,8 @@ class GameManager {
       landedTile
     });
 
-    // Handle tile effect
-    if (landedTile.type === TileType.EVENT) {
-      this.triggerEvent(teamId, landedTile);
-    } else {
-      this.endTurn();
-    }
+    // Note: Event triggering will be handled by frontend after movement animation completes
+    // Events are triggered via movement_complete socket event
 
     return { dice: [dice1, dice2], total, landedTile };
   }
@@ -270,6 +266,20 @@ class GameManager {
         // Continue turn without mini-game
         this.endTurn();
       }
+    } else {
+      this.endTurn();
+    }
+  }
+
+  handleMovementComplete(teamId, position) {
+    const team = this.gameState.teams.find(t => t.id === teamId);
+    if (!team) return;
+
+    const landedTile = this.board[position];
+    
+    // Handle tile effect after movement animation is complete
+    if (landedTile.type === TileType.EVENT) {
+      this.triggerEvent(teamId, landedTile);
     } else {
       this.endTurn();
     }

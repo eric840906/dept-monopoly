@@ -327,13 +327,25 @@ class GameScene extends Phaser.Scene {
         // Show dice roll animation
         this.showDiceRoll(dice, total);
         
-        // Animate token movement
+        // Animate token movement and handle events after completion
         const token = this.teamTokens[teamId];
         if (token) {
-            this.animateTokenMovement(token, oldPosition, newPosition);
+            this.animateTokenMovement(token, oldPosition, newPosition, () => {
+                // Movement complete - notify server to handle tile effects
+                this.game.socket.emit('movement_complete', {
+                    teamId: teamId,
+                    position: newPosition
+                });
+            });
+        } else {
+            // No token to animate, directly notify server
+            this.game.socket.emit('movement_complete', {
+                teamId: teamId,
+                position: newPosition
+            });
         }
         
-        // Show tile effect
+        // Show tile effect animation (visual only, events handled after movement)
         if (landedTile.type === 'event') {
             this.showTileEffect(newPosition, landedTile);
         }
@@ -387,7 +399,7 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    animateTokenMovement(token, oldPosition, newPosition) {
+    animateTokenMovement(token, oldPosition, newPosition, onComplete = null) {
         // Create a path for the token to follow around the board
         const steps = [];
         const totalSteps = newPosition >= oldPosition ? 
@@ -415,6 +427,11 @@ class GameScene extends Phaser.Scene {
                         currentStep++;
                         if (currentStep < steps.length) {
                             moveToNextStep();
+                        } else {
+                            // Movement complete - call callback if provided
+                            if (onComplete) {
+                                onComplete();
+                            }
                         }
                     }
                 });
