@@ -393,10 +393,13 @@ class GameManager {
       this.gameTimer = null;
     }
 
-    // Find winner (highest score)
-    const winner = this.gameState.teams.reduce((prev, current) => 
-      prev.score > current.score ? prev : current
-    );
+    // Find winner (highest score) - handle empty teams array
+    let winner = null;
+    if (this.gameState.teams.length > 0) {
+      winner = this.gameState.teams.reduce((prev, current) => 
+        prev.score > current.score ? prev : current
+      );
+    }
     
     this.gameState.winner = winner;
 

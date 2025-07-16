@@ -282,13 +282,23 @@ class GameApp {
 
     showGameEndScreen(data) {
         const gameStatus = document.getElementById('gameStatus');
-        gameStatus.innerHTML = `
-            <div style="text-align: center;">
-                <h2>🏆 遊戲結束！</h2>
-                <p>獲勝隊伍: ${data.winner.emoji} 隊伍 ${data.winner.id.split('_')[1]}</p>
-                <p>最終分數: ${data.winner.score} 分</p>
-            </div>
-        `;
+        
+        if (data.winner) {
+            gameStatus.innerHTML = `
+                <div style="text-align: center;">
+                    <h2>🏆 遊戲結束！</h2>
+                    <p>獲勝隊伍: ${data.winner.emoji} 隊伍 ${data.winner.id.split('_')[1]}</p>
+                    <p>最終分數: ${data.winner.score} 分</p>
+                </div>
+            `;
+        } else {
+            gameStatus.innerHTML = `
+                <div style="text-align: center;">
+                    <h2>🏁 遊戲結束！</h2>
+                    <p>遊戲因為 ${data.reason === 'no_teams_remaining' ? '沒有隊伍' : '其他原因'} 而結束</p>
+                </div>
+            `;
+        }
     }
 }
 
