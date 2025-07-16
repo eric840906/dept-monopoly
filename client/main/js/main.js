@@ -64,6 +64,27 @@ class GameApp {
             }
         });
 
+        this.socket.on('event_trigger', (data) => {
+            console.log('Event triggered:', data);
+            if (this.game && this.game.scene.getScene('GameScene')) {
+                this.game.scene.getScene('GameScene').handleEventTrigger(data);
+            }
+        });
+
+        this.socket.on('mini_game_start', (data) => {
+            console.log('Mini-game started:', data);
+            if (this.game && this.game.scene.getScene('GameScene')) {
+                this.game.scene.getScene('GameScene').handleMiniGameStart(data);
+            }
+        });
+
+        this.socket.on('mini_game_result', (data) => {
+            console.log('Mini-game result:', data);
+            if (this.game && this.game.scene.getScene('GameScene')) {
+                this.game.scene.getScene('GameScene').handleMiniGameResult(data);
+            }
+        });
+
         this.socket.on('score_update', (data) => {
             console.log('Score updated:', data);
             this.updateScoreBoard();

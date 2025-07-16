@@ -339,6 +339,30 @@ class GameScene extends Phaser.Scene {
         }
     }
 
+    handleEventTrigger(data) {
+        const { teamId, tile, eventType } = data;
+        console.log(`Event triggered for team ${teamId}: ${eventType}`);
+        
+        // Show event notification on main screen
+        this.showEventNotification(teamId, tile, eventType);
+    }
+
+    handleMiniGameStart(data) {
+        const { teamId, eventType, timeLimit } = data;
+        console.log(`Mini-game started for team ${teamId}: ${eventType}`);
+        
+        // Show mini-game notification on main screen
+        this.showMiniGameNotification(teamId, eventType, timeLimit);
+    }
+
+    handleMiniGameResult(data) {
+        const { teamId, score, feedback, success } = data;
+        console.log(`Mini-game result for team ${teamId}: ${score} points`);
+        
+        // Show result notification on main screen
+        this.showMiniGameResult(teamId, score, feedback, success);
+    }
+
     showDiceRoll(dice, total) {
         const diceText = this.add.text(this.centerX, this.centerY - 50, 
             `🎲 ${dice[0]} + ${dice[1]} = ${total}`, {
@@ -440,5 +464,208 @@ class GameScene extends Phaser.Scene {
                 eventText.destroy();
             }
         });
+    }
+
+    showEventNotification(teamId, tile, eventType) {
+        const team = this.gameState?.teams.find(t => t.id === teamId);
+        if (!team) return;
+
+        // Create notification banner
+        const notification = this.add.rectangle(
+            this.centerX, 
+            100, 
+            600, 
+            80, 
+            0x3498db, 
+            0.9
+        );
+        notification.setStrokeStyle(3, 0x2980b9);
+
+        const notificationText = this.add.text(
+            this.centerX, 
+            100,
+            `⚡ ${team.emoji} 隊伍 ${team.id.split('_')[1]} 觸發事件！\n${this.getEventName(eventType)}`,
+            {
+                fontSize: '20px',
+                fontFamily: 'Arial',
+                color: '#ffffff',
+                align: 'center',
+                lineSpacing: 5
+            }
+        );
+        notificationText.setOrigin(0.5);
+
+        // Animate notification
+        notification.setAlpha(0);
+        notificationText.setAlpha(0);
+
+        this.tweens.add({
+            targets: [notification, notificationText],
+            alpha: 1,
+            duration: 500,
+            ease: 'Power2'
+        });
+
+        // Auto-hide after 3 seconds
+        this.time.delayedCall(3000, () => {
+            this.tweens.add({
+                targets: [notification, notificationText],
+                alpha: 0,
+                duration: 500,
+                ease: 'Power2',
+                onComplete: () => {
+                    notification.destroy();
+                    notificationText.destroy();
+                }
+            });
+        });
+    }
+
+    showMiniGameNotification(teamId, eventType, timeLimit) {
+        const team = this.gameState?.teams.find(t => t.id === teamId);
+        if (!team) return;
+
+        const timeInSeconds = Math.ceil(timeLimit / 1000);
+
+        // Create mini-game banner
+        const banner = this.add.rectangle(
+            this.centerX, 
+            this.centerY, 
+            500, 
+            120, 
+            0xe74c3c, 
+            0.95
+        );
+        banner.setStrokeStyle(4, 0xc0392b);
+
+        const bannerText = this.add.text(
+            this.centerX, 
+            this.centerY,
+            `🎮 小遊戲開始！\n${team.emoji} 隊伍 ${team.id.split('_')[1]}\n${this.getEventName(eventType)}\n時間限制: ${timeInSeconds} 秒`,
+            {
+                fontSize: '18px',
+                fontFamily: 'Arial',
+                color: '#ffffff',
+                align: 'center',
+                lineSpacing: 8
+            }
+        );
+        bannerText.setOrigin(0.5);
+
+        // Pulse animation
+        this.tweens.add({
+            targets: [banner, bannerText],
+            scaleX: 1.1,
+            scaleY: 1.1,
+            duration: 800,
+            ease: 'Sine.easeInOut',
+            yoyo: true,
+            repeat: -1
+        });
+
+        // Store reference for cleanup
+        this.currentMiniGameBanner = { banner, bannerText };
+
+        // Auto-hide after time limit + 2 seconds
+        this.time.delayedCall(timeLimit + 2000, () => {
+            this.hideMiniGameBanner();
+        });
+    }
+
+    showMiniGameResult(teamId, score, feedback, success) {
+        const team = this.gameState?.teams.find(t => t.id === teamId);
+        if (!team) return;
+
+        // Hide the mini-game banner if it exists
+        this.hideMiniGameBanner();
+
+        const color = success ? 0x2ecc71 : 0xe74c3c;
+        const scoreText = score > 0 ? `+${score}` : `${score}`;
+
+        // Create result banner
+        const resultBanner = this.add.rectangle(
+            this.centerX, 
+            this.centerY - 50, 
+            400, 
+            100, 
+            color, 
+            0.9
+        );
+        resultBanner.setStrokeStyle(3, success ? 0x27ae60 : 0xc0392b);
+
+        const resultText = this.add.text(
+            this.centerX, 
+            this.centerY - 50,
+            `${success ? '✅' : '❌'} ${team.emoji} 隊伍 ${team.id.split('_')[1]}\n${feedback}\n${scoreText} 分`,
+            {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#ffffff',
+                align: 'center',
+                lineSpacing: 5
+            }
+        );
+        resultText.setOrigin(0.5);
+
+        // Animate result
+        resultBanner.setScale(0);
+        resultText.setScale(0);
+
+        this.tweens.add({
+            targets: [resultBanner, resultText],
+            scaleX: 1,
+            scaleY: 1,
+            duration: 500,
+            ease: 'Back.easeOut'
+        });
+
+        // Auto-hide after 4 seconds
+        this.time.delayedCall(4000, () => {
+            this.tweens.add({
+                targets: [resultBanner, resultText],
+                alpha: 0,
+                scaleX: 0.8,
+                scaleY: 0.8,
+                duration: 500,
+                ease: 'Power2',
+                onComplete: () => {
+                    resultBanner.destroy();
+                    resultText.destroy();
+                }
+            });
+        });
+    }
+
+    hideMiniGameBanner() {
+        if (this.currentMiniGameBanner) {
+            const { banner, bannerText } = this.currentMiniGameBanner;
+            
+            this.tweens.add({
+                targets: [banner, bannerText],
+                alpha: 0,
+                scaleX: 0.8,
+                scaleY: 0.8,
+                duration: 500,
+                ease: 'Power2',
+                onComplete: () => {
+                    if (banner) banner.destroy();
+                    if (bannerText) bannerText.destroy();
+                }
+            });
+            
+            this.currentMiniGameBanner = null;
+        }
+    }
+
+    getEventName(eventType) {
+        const eventNames = {
+            'multiple_choice_quiz': '📝 選擇題挑戰',
+            'drag_drop_workflow': '🔄 流程排序',
+            'format_matching': '🔗 配對遊戲',
+            'team_info_pairing': '👥 團隊協作',
+            'random_stat_check': '🎲 隨機事件',
+            'random_event': '🎲 隨機事件'
+        };
+        return eventNames[eventType] || `🎯 ${eventType}`;
     }
 }
