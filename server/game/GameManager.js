@@ -31,29 +31,13 @@ class GameManager {
 
   generateBoard() {
     const board = [];
-    const safeCount = Math.floor(GAME_CONFIG.BOARD_SIZE * BOARD_LAYOUT.SAFE_TILE_PERCENTAGE);
-    const eventCount = GAME_CONFIG.BOARD_SIZE - safeCount - 1; // -1 for start tile
     
     // Start tile
     board.push(createTile(0, TileType.START));
     
-    // Generate remaining tiles
+    // Generate remaining tiles - all as event tiles
     for (let i = 1; i < GAME_CONFIG.BOARD_SIZE; i++) {
-      const remainingSafe = safeCount - board.filter(t => t.type === TileType.SAFE).length;
-      const remainingEvent = eventCount - board.filter(t => t.type === TileType.EVENT).length;
-      const remainingTotal = GAME_CONFIG.BOARD_SIZE - i;
-      
-      if (remainingSafe === 0) {
-        board.push(createTile(i, TileType.EVENT, this.generateRandomEvent()));
-      } else if (remainingEvent === 0) {
-        board.push(createTile(i, TileType.SAFE));
-      } else {
-        // Random choice weighted by remaining tiles
-        const safeChance = remainingSafe / remainingTotal;
-        const tileType = Math.random() < safeChance ? TileType.SAFE : TileType.EVENT;
-        const event = tileType === TileType.EVENT ? this.generateRandomEvent() : null;
-        board.push(createTile(i, tileType, event));
-      }
+      board.push(createTile(i, TileType.EVENT, this.generateRandomEvent()));
     }
     
     return board;
