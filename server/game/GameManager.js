@@ -145,10 +145,24 @@ class GameManager {
 
   assignTeams() {
     const players = Object.values(this.gameState.players);
-    const teamCount = Math.min(
-      GAME_CONFIG.MAX_TEAMS,
-      Math.max(GAME_CONFIG.MIN_TEAMS, Math.ceil(players.length / 10))
-    );
+    
+    if (players.length === 0) {
+      console.log('No players to assign to teams');
+      return [];
+    }
+    
+    // Calculate optimal team count based on player count
+    // Ensure each team has at least 1 player, but prefer 8-12 players per team
+    const idealPlayersPerTeam = 10;
+    let teamCount = Math.max(1, Math.ceil(players.length / idealPlayersPerTeam));
+    
+    // Apply min/max team constraints
+    teamCount = Math.min(GAME_CONFIG.MAX_TEAMS, Math.max(GAME_CONFIG.MIN_TEAMS, teamCount));
+    
+    // However, never create more teams than we have players
+    teamCount = Math.min(teamCount, players.length);
+
+    console.log(`Creating ${teamCount} teams for ${players.length} players`);
 
     // Clear existing teams
     this.gameState.teams = [];
@@ -171,6 +185,11 @@ class GameManager {
       
       player.teamId = team.id;
       team.members.push(player);
+    });
+
+    // Log team assignments
+    this.gameState.teams.forEach(team => {
+      console.log(`Team ${team.id}: ${team.members.length} members`);
     });
 
     this.broadcastGameState();

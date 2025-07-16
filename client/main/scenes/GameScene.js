@@ -169,6 +169,12 @@ class GameScene extends Phaser.Scene {
         this.teamTokens = {};
         
         this.gameState.teams.forEach((team, index) => {
+            // Only create token if team has members
+            if (!team.members || team.members.length === 0) {
+                console.log(`Skipping token creation for empty team: ${team.id}`);
+                return;
+            }
+            
             const position = team.position || 0;
             const tileData = this.boardTiles[position];
             
@@ -199,6 +205,8 @@ class GameScene extends Phaser.Scene {
                     emoji: emoji,
                     team: team
                 };
+                
+                console.log(`Created token for team: ${team.id} with ${team.members.length} members`);
             }
         });
     }
@@ -245,6 +253,12 @@ class GameScene extends Phaser.Scene {
     }
 
     createTeamToken(team, index) {
+        // Only create token if team has members
+        if (!team.members || team.members.length === 0) {
+            console.log(`Skipping token creation for empty team: ${team.id}`);
+            return;
+        }
+        
         const position = team.position || 0;
         const tileData = this.boardTiles[position];
         
@@ -277,7 +291,7 @@ class GameScene extends Phaser.Scene {
             team: team
         };
         
-        console.log(`Created token for team: ${team.id}`);
+        console.log(`Created token for team: ${team.id} with ${team.members.length} members`);
     }
 
     updateTeamTokenPosition(team, index) {
