@@ -7,6 +7,9 @@ window.MiniGames = {
     teamId: null,
 
     load(gameData, container, socket, teamId, onReadyCallback) {
+        // Stop any existing timer first
+        this.stopTimer();
+
         this.gameContainer = container;
         this.socket = socket;
         this.teamId = teamId;
@@ -644,17 +647,39 @@ window.MiniGames = {
         const timerEl = document.getElementById('miniGameTimer');
         if (!timerEl) return;
 
+        // Clear any existing timer first
+        this.stopTimer();
+
+        // Validate seconds parameter
+        if (typeof seconds !== 'number' || seconds <= 0) {
+            console.warn('Invalid timer seconds:', seconds);
+            return;
+        }
+
         let timeLeft = seconds;
         
-        const timer = setInterval(() => {
+        this.currentTimer = setInterval(() => {
             timeLeft--;
-            timerEl.textContent = timeLeft;
+            if (timerEl && timerEl.parentNode) {
+                timerEl.textContent = timeLeft;
+            } else {
+                // Element was removed, stop timer
+                this.stopTimer();
+                return;
+            }
             
             if (timeLeft <= 0) {
-                clearInterval(timer);
+                this.stopTimer();
                 this.timeUp();
             }
         }, 1000);
+    },
+
+    stopTimer() {
+        if (this.currentTimer) {
+            clearInterval(this.currentTimer);
+            this.currentTimer = null;
+        }
     },
 
     timeUp() {
@@ -667,6 +692,9 @@ window.MiniGames = {
     },
 
     submitResult(result) {
+        // Stop timer when submitting result
+        this.stopTimer();
+
         // Only submit if we have valid connection and team
         if (this.socket && this.teamId && this.currentGame) {
             console.log(`Submitting mini-game result for team ${this.teamId}:`, result);

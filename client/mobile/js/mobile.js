@@ -109,9 +109,8 @@ class MobileGameApp {
 
     this.socket.on('mini_game_timer_start', (data) => {
       console.log('Mini game timer started:', data)
-      if (this.teamData && data.teamId === this.teamData.id && window.MiniGames) {
-        window.MiniGames.startTimer()
-      }
+      // Timer is already started when mini-game loads, no need to restart it
+      // This event is primarily for the main screen to display the game interface
     })
 
     this.socket.on('mini_game_result', (data) => {

@@ -36,7 +36,7 @@ class GameScene extends Phaser.Scene {
         this.createTeamTokens();
         
         // Add board title
-        this.add.text(this.centerX, 50, '🎯 團隊建設棋盤', {
+        this.add.text(this.centerX, 50, '', {
             fontSize: '32px',
             fontFamily: 'Arial',
             color: '#ffffff',
@@ -153,7 +153,7 @@ class GameScene extends Phaser.Scene {
         
         // Add center logo/title
         const centerBg = this.add.circle(this.centerX, this.centerY, 100, 0x2c3e50, 0.8);
-        const centerText = this.add.text(this.centerX, this.centerY, '🎯\n團隊\n建設', {
+        const centerText = this.add.text(this.centerX, this.centerY, '🎯\nMTO\n體驗營', {
             fontSize: '24px',
             fontFamily: 'Arial',
             color: '#ffffff',
