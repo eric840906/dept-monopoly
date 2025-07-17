@@ -282,7 +282,12 @@ class GameManager {
   confirmMiniGameReady(teamId) {
     const confirmed = this.miniGameProcessor.confirmClientReady(teamId);
     if (confirmed) {
-      this.io.emit('mini_game_timer_start', { teamId });
+      // Get the game data to send to the main screen
+      const gameData = this.miniGameProcessor.activeGames.get(teamId);
+      this.io.emit('mini_game_timer_start', { 
+        teamId,
+        gameData: gameData || null
+      });
       console.log(`Mini-game timer started for team ${teamId}`);
     }
     return confirmed;

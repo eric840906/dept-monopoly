@@ -542,6 +542,9 @@ class GameScene extends Phaser.Scene {
         const team = this.gameState?.teams.find(t => t.id === teamId);
         if (!team) return;
 
+        // Clean up any existing banner first
+        this.hideMiniGameBanner();
+
         const timeInSeconds = Math.ceil(timeLimit / 1000);
 
         // Create mini-game banner
@@ -585,23 +588,485 @@ class GameScene extends Phaser.Scene {
     }
 
     handleMiniGameTimerStart(data) {
-        const { teamId } = data;
+        const { teamId, gameData } = data;
         console.log(`Mini-game timer starting for team ${teamId}`);
         
-        // Update the banner to show timer has started
-        if (this.currentMiniGameBanner && this.currentMiniGameBanner.teamId === teamId) {
-            const { banner, bannerText, eventType, timeLimit } = this.currentMiniGameBanner;
-            const team = this.gameState?.teams.find(t => t.id === teamId);
-            const timeInSeconds = Math.ceil(timeLimit / 1000);
+        // Hide the preparation banner first
+        this.hideMiniGameBanner();
+        
+        // Small delay to ensure banner cleanup, then display mini-game interface
+        this.time.delayedCall(100, () => {
+            if (gameData) {
+                this.displayMiniGameInterface(teamId, gameData);
+            }
+        });
+    }
+
+    displayMiniGameInterface(teamId, gameData) {
+        const team = this.gameState?.teams.find(t => t.id === teamId);
+        if (!team) return;
+
+        // Clear any existing mini-game display and banner
+        this.hideMiniGameDisplay();
+        this.hideMiniGameBanner();
+
+        // Create main container for mini-game
+        const container = this.add.container(this.centerX, this.centerY);
+        
+        // Add background
+        const background = this.add.rectangle(0, 0, 800, 600, 0x2c3e50, 0.95);
+        background.setStrokeStyle(4, 0x3498db);
+        container.add(background);
+
+        // Add team header
+        const teamHeader = this.add.text(0, -280, 
+            `${team.emoji} 隊伍 ${team.id.split('_')[1]} - ${this.getEventName(gameData.eventType)}`, 
+            {
+                fontSize: '24px',
+                fontFamily: 'Arial',
+                color: '#ffffff',
+                align: 'center'
+            }
+        );
+        teamHeader.setOrigin(0.5);
+        container.add(teamHeader);
+
+        // Add timer display
+        const timerText = this.add.text(0, -240, 
+            `⏱️ 時間: ${Math.ceil(gameData.timeLimit / 1000)} 秒`, 
+            {
+                fontSize: '18px',
+                fontFamily: 'Arial',
+                color: '#e74c3c',
+                align: 'center'
+            }
+        );
+        timerText.setOrigin(0.5);
+        container.add(timerText);
+
+        // Display specific mini-game content
+        this.renderMiniGameContent(container, gameData);
+
+        // Store reference for cleanup
+        this.currentMiniGameDisplay = { container, timerText, gameData };
+
+        // Start timer countdown
+        this.startMiniGameTimer(gameData.timeLimit);
+    }
+
+    renderMiniGameContent(container, gameData) {
+        switch (gameData.eventType) {
+            case 'multiple_choice_quiz':
+                this.renderMultipleChoiceQuiz(container, gameData);
+                break;
+            case 'drag_drop_workflow':
+                this.renderDragDropWorkflow(container, gameData);
+                break;
+            case 'format_matching':
+                this.renderFormatMatching(container, gameData);
+                break;
+            case 'team_info_pairing':
+                this.renderTeamPairing(container, gameData);
+                break;
+            case 'random_stat_check':
+            case 'random_event':
+                this.renderRandomEvent(container, gameData);
+                break;
+            default:
+                this.renderDefaultGame(container, gameData);
+        }
+    }
+
+    renderMultipleChoiceQuiz(container, gameData) {
+        // Use actual question data from server or fallback to sample
+        const question = gameData.data?.question || {
+            question: "公司最重要的價值觀是什麼？",
+            options: ["創新", "誠信", "團隊合作", "客戶至上"]
+        };
+
+        const questionText = this.add.text(0, -150, question.question, {
+            fontSize: '20px',
+            fontFamily: 'Arial',
+            color: '#ffffff',
+            align: 'center',
+            wordWrap: { width: 600 }
+        });
+        questionText.setOrigin(0.5);
+        container.add(questionText);
+
+        // Display options
+        question.options.forEach((option, index) => {
+            const optionText = this.add.text(0, -50 + index * 60, 
+                `${String.fromCharCode(65 + index)}. ${option}`, 
+                {
+                    fontSize: '18px',
+                    fontFamily: 'Arial',
+                    color: '#bdc3c7',
+                    align: 'center'
+                }
+            );
+            optionText.setOrigin(0.5);
+            container.add(optionText);
+
+            // Add option background
+            const optionBg = this.add.rectangle(0, -50 + index * 60, 400, 40, 0x34495e, 0.7);
+            optionBg.setStrokeStyle(2, 0x7f8c8d);
+            container.add(optionBg);
+            container.sendToBack(optionBg);
+        });
+
+        const instructionText = this.add.text(0, 200, 
+            '👆 隊伍正在選擇答案...', 
+            {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#f39c12',
+                align: 'center'
+            }
+        );
+        instructionText.setOrigin(0.5);
+        container.add(instructionText);
+    }
+
+    renderDragDropWorkflow(container, gameData) {
+        const title = this.add.text(0, -150, 
+            gameData.data?.title || '🔄 流程排序', 
+            {
+                fontSize: '20px',
+                fontFamily: 'Arial',
+                color: '#ffffff',
+                align: 'center'
+            }
+        );
+        title.setOrigin(0.5);
+        container.add(title);
+
+        const description = this.add.text(0, -110, 
+            gameData.data?.description || '請將以下項目按正確順序排列：', 
+            {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#bdc3c7',
+                align: 'center'
+            }
+        );
+        description.setOrigin(0.5);
+        container.add(description);
+
+        // Display shuffled items
+        const items = gameData.data?.shuffledItems || ['項目 A', '項目 B', '項目 C', '項目 D'];
+        items.forEach((item, index) => {
+            const itemBg = this.add.rectangle(-200 + (index % 2) * 400, -50 + Math.floor(index / 2) * 80, 
+                350, 60, 0x34495e, 0.8);
+            itemBg.setStrokeStyle(2, 0x7f8c8d);
+            container.add(itemBg);
+
+            const itemText = this.add.text(-200 + (index % 2) * 400, -50 + Math.floor(index / 2) * 80, 
+                item, 
+                {
+                    fontSize: '16px',
+                    fontFamily: 'Arial',
+                    color: '#ffffff',
+                    align: 'center',
+                    wordWrap: { width: 300 }
+                }
+            );
+            itemText.setOrigin(0.5);
+            container.add(itemText);
+        });
+
+        const instructionText = this.add.text(0, 150, 
+            '🔄 隊伍正在排列順序...', 
+            {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#f39c12',
+                align: 'center'
+            }
+        );
+        instructionText.setOrigin(0.5);
+        container.add(instructionText);
+    }
+
+    renderFormatMatching(container, gameData) {
+        const matchingData = gameData.data || {};
+        const title = this.add.text(0, -150, 
+            `🔗 ${matchingData.title || '配對遊戲'}`, {
+            fontSize: '20px',
+            fontFamily: 'Arial',
+            color: '#ffffff',
+            align: 'center'
+        });
+        title.setOrigin(0.5);
+        container.add(title);
+
+        const description = this.add.text(0, -110, '請將左側和右側的項目正確配對：', {
+            fontSize: '16px',
+            fontFamily: 'Arial',
+            color: '#bdc3c7',
+            align: 'center'
+        });
+        description.setOrigin(0.5);
+        container.add(description);
+
+        // Use actual pairs from server or fallback
+        const pairs = matchingData.pairs || [
+            { left: 'HTML', right: '網頁結構' },
+            { left: 'CSS', right: '樣式設計' },
+            { left: 'JavaScript', right: '互動功能' },
+            { left: 'Node.js', right: '後端服務' }
+        ];
+
+        const leftItems = pairs.map(pair => pair.left);
+        const rightItems = pairs.map(pair => pair.right);
+
+        // Left column
+        leftItems.forEach((item, index) => {
+            const itemBg = this.add.rectangle(-200, -50 + index * 60, 180, 40, 0x3498db, 0.8);
+            container.add(itemBg);
             
-            if (team && bannerText) {
-                bannerText.setText(`🎮 小遊戲進行中！\n${team.emoji} 隊伍 ${team.id.split('_')[1]}\n${this.getEventName(eventType)}\n剩餘時間: ${timeInSeconds} 秒`);
+            const itemText = this.add.text(-200, -50 + index * 60, item, {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#ffffff',
+                align: 'center'
+            });
+            itemText.setOrigin(0.5);
+            container.add(itemText);
+        });
+
+        // Right column (shuffled for display)
+        const shuffledRight = [...rightItems].sort(() => Math.random() - 0.5);
+        shuffledRight.forEach((item, index) => {
+            const itemBg = this.add.rectangle(200, -50 + index * 60, 180, 40, 0xe67e22, 0.8);
+            container.add(itemBg);
+            
+            const itemText = this.add.text(200, -50 + index * 60, item, {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#ffffff',
+                align: 'center'
+            });
+            itemText.setOrigin(0.5);
+            container.add(itemText);
+        });
+
+        const instructionText = this.add.text(0, 150, 
+            '🔗 隊伍正在進行配對...', 
+            {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#f39c12',
+                align: 'center'
+            }
+        );
+        instructionText.setOrigin(0.5);
+        container.add(instructionText);
+    }
+
+    renderTeamPairing(container, gameData) {
+        const teamData = gameData.data || {};
+        const title = this.add.text(0, -150, '👥 團隊協作', {
+            fontSize: '20px',
+            fontFamily: 'Arial',
+            color: '#ffffff',
+            align: 'center'
+        });
+        title.setOrigin(0.5);
+        container.add(title);
+
+        const taskTitle = this.add.text(0, -110, 
+            teamData.title || '任務：設計一個完美的工作日', {
+            fontSize: '18px',
+            fontFamily: 'Arial',
+            color: '#e74c3c',
+            align: 'center'
+        });
+        taskTitle.setOrigin(0.5);
+        container.add(taskTitle);
+
+        const description = this.add.text(0, -80, 
+            teamData.description || '請按優先順序排列以下活動：', {
+            fontSize: '16px',
+            fontFamily: 'Arial',
+            color: '#bdc3c7',
+            align: 'center',
+            wordWrap: { width: 600 }
+        });
+        description.setOrigin(0.5);
+        container.add(description);
+
+        const activities = teamData.items || [
+            '📅 團隊會議',
+            '💻 專案開發', 
+            '📞 客戶溝通',
+            '📚 學習成長',
+            '☕ 休息放鬆'
+        ];
+
+        activities.slice(0, 5).forEach((activity, index) => {
+            const itemBg = this.add.rectangle(0, -30 + index * 50, 400, 40, 0x34495e, 0.8);
+            itemBg.setStrokeStyle(2, 0x7f8c8d);
+            container.add(itemBg);
+
+            const itemText = this.add.text(0, -30 + index * 50, activity, {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#ffffff',
+                align: 'center'
+            });
+            itemText.setOrigin(0.5);
+            container.add(itemText);
+        });
+
+        const instructionText = this.add.text(0, 200, 
+            '👥 隊伍正在討論並排序...', 
+            {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#f39c12',
+                align: 'center'
+            }
+        );
+        instructionText.setOrigin(0.5);
+        container.add(instructionText);
+    }
+
+    renderRandomEvent(container, gameData) {
+        const title = this.add.text(0, -150, '🎲 隨機事件', {
+            fontSize: '20px',
+            fontFamily: 'Arial',
+            color: '#ffffff',
+            align: 'center'
+        });
+        title.setOrigin(0.5);
+        container.add(title);
+
+        const eventBg = this.add.rectangle(0, -50, 500, 200, 0x8e44ad, 0.8);
+        eventBg.setStrokeStyle(3, 0x9b59b6);
+        container.add(eventBg);
+
+        const eventTitle = this.add.text(0, -100, '技術挑戰', {
+            fontSize: '18px',
+            fontFamily: 'Arial',
+            color: '#ffffff',
+            align: 'center'
+        });
+        eventTitle.setOrigin(0.5);
+        container.add(eventTitle);
+
+        const eventDesc = this.add.text(0, -60, '需要解決一個緊急的技術問題', {
+            fontSize: '16px',
+            fontFamily: 'Arial',
+            color: '#ecf0f1',
+            align: 'center'
+        });
+        eventDesc.setOrigin(0.5);
+        container.add(eventDesc);
+
+        const statCheck = this.add.text(0, -20, '需要技術能力：4+', {
+            fontSize: '16px',
+            fontFamily: 'Arial',
+            color: '#f1c40f',
+            align: 'center'
+        });
+        statCheck.setOrigin(0.5);
+        container.add(statCheck);
+
+        const diceDisplay = this.add.text(0, 20, '🎲 ?', {
+            fontSize: '48px',
+            fontFamily: 'Arial',
+            color: '#ffffff',
+            align: 'center'
+        });
+        diceDisplay.setOrigin(0.5);
+        container.add(diceDisplay);
+
+        const instructionText = this.add.text(0, 150, 
+            '🎲 隊伍準備擲骰檢定...', 
+            {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#f39c12',
+                align: 'center'
+            }
+        );
+        instructionText.setOrigin(0.5);
+        container.add(instructionText);
+    }
+
+    renderDefaultGame(container, gameData) {
+        const title = this.add.text(0, -100, '🎯 特殊事件', {
+            fontSize: '20px',
+            fontFamily: 'Arial',
+            color: '#ffffff',
+            align: 'center'
+        });
+        title.setOrigin(0.5);
+        container.add(title);
+
+        const eventInfo = this.add.text(0, -50, `事件類型: ${gameData.eventType}`, {
+            fontSize: '16px',
+            fontFamily: 'Arial',
+            color: '#bdc3c7',
+            align: 'center'
+        });
+        eventInfo.setOrigin(0.5);
+        container.add(eventInfo);
+
+        const instructionText = this.add.text(0, 0, 
+            '⏳ 請等待主持人說明...', 
+            {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#f39c12',
+                align: 'center'
+            }
+        );
+        instructionText.setOrigin(0.5);
+        container.add(instructionText);
+    }
+
+    startMiniGameTimer(timeLimit) {
+        if (!this.currentMiniGameDisplay) return;
+
+        const { timerText } = this.currentMiniGameDisplay;
+        let timeLeft = Math.ceil(timeLimit / 1000);
+        
+        const timer = setInterval(() => {
+            timeLeft--;
+            if (timerText && timerText.active) {
+                timerText.setText(`⏱️ 時間: ${timeLeft} 秒`);
+                
+                // Change color when time is running out
+                if (timeLeft <= 10) {
+                    timerText.setColor('#e74c3c');
+                } else if (timeLeft <= 30) {
+                    timerText.setColor('#f39c12');
+                }
             }
             
-            // Auto-hide after time limit + 2 seconds
-            this.time.delayedCall(timeLimit + 2000, () => {
-                this.hideMiniGameBanner();
-            });
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                if (timerText && timerText.active) {
+                    timerText.setText('⏰ 時間到！');
+                }
+            }
+        }, 1000);
+
+        // Store timer reference for cleanup
+        this.miniGameTimer = timer;
+    }
+
+    hideMiniGameDisplay() {
+        if (this.currentMiniGameDisplay) {
+            this.currentMiniGameDisplay.container.destroy();
+            this.currentMiniGameDisplay = null;
+        }
+        
+        if (this.miniGameTimer) {
+            clearInterval(this.miniGameTimer);
+            this.miniGameTimer = null;
         }
     }
 
@@ -609,8 +1074,8 @@ class GameScene extends Phaser.Scene {
         const team = this.gameState?.teams.find(t => t.id === teamId);
         if (!team) return;
 
-        // Hide the mini-game banner if it exists
-        this.hideMiniGameBanner();
+        // Hide the mini-game display
+        this.hideMiniGameDisplay();
 
         const color = success ? 0x2ecc71 : 0xe74c3c;
         const scoreText = score > 0 ? `+${score}` : `${score}`;
@@ -672,6 +1137,9 @@ class GameScene extends Phaser.Scene {
     hideMiniGameBanner() {
         if (this.currentMiniGameBanner) {
             const { banner, bannerText } = this.currentMiniGameBanner;
+            
+            // Stop any existing tweens on these objects first
+            this.tweens.killTweensOf([banner, bannerText]);
             
             this.tweens.add({
                 targets: [banner, bannerText],
