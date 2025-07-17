@@ -280,15 +280,22 @@ class GameManager {
   }
 
   confirmMiniGameReady(teamId) {
+    console.log(`Confirming mini-game ready for team ${teamId}`);
     const confirmed = this.miniGameProcessor.confirmClientReady(teamId);
+    console.log(`Confirmation result: ${confirmed}`);
+    
     if (confirmed) {
       // Get the game data to send to the main screen
       const gameData = this.miniGameProcessor.activeGames.get(teamId);
+      console.log(`Game data for team ${teamId}:`, gameData ? 'present' : 'null');
+      
       this.io.emit('mini_game_timer_start', { 
         teamId,
         gameData: gameData || null
       });
-      console.log(`Mini-game timer started for team ${teamId}`);
+      console.log(`Mini-game timer started for team ${teamId}, emitted mini_game_timer_start event`);
+    } else {
+      console.log(`Failed to confirm mini-game ready for team ${teamId}`);
     }
     return confirmed;
   }

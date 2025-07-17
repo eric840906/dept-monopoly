@@ -6,11 +6,12 @@ window.MiniGames = {
     socket: null,
     teamId: null,
 
-    load(gameData, container, socket, teamId) {
+    load(gameData, container, socket, teamId, onReadyCallback) {
         this.gameContainer = container;
         this.socket = socket;
         this.teamId = teamId;
         this.currentGame = gameData;
+        this.onReadyCallback = onReadyCallback;
 
         // Clear container
         container.innerHTML = '';
@@ -34,6 +35,14 @@ window.MiniGames = {
                 break;
             default:
                 this.loadDefaultGame(gameData);
+        }
+
+        // Call the ready callback after loading is complete
+        if (this.onReadyCallback) {
+            // Small delay to ensure DOM is fully rendered
+            setTimeout(() => {
+                this.onReadyCallback();
+            }, 100);
         }
     },
 

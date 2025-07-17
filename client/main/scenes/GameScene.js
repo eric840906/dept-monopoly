@@ -589,7 +589,7 @@ class GameScene extends Phaser.Scene {
 
     handleMiniGameTimerStart(data) {
         const { teamId, gameData } = data;
-        console.log(`Mini-game timer starting for team ${teamId}`);
+        console.log(`Mini-game timer starting for team ${teamId}`, gameData);
         
         // Hide the preparation banner first
         this.hideMiniGameBanner();
@@ -597,9 +597,53 @@ class GameScene extends Phaser.Scene {
         // Small delay to ensure banner cleanup, then display mini-game interface
         this.time.delayedCall(100, () => {
             if (gameData) {
+                console.log('Displaying mini-game interface with data:', gameData);
                 this.displayMiniGameInterface(teamId, gameData);
+            } else {
+                console.warn('No gameData received, cannot display mini-game interface');
+                // Fallback: at least show that the timer started
+                this.showMiniGameFallback(teamId);
             }
         });
+    }
+
+    showMiniGameFallback(teamId) {
+        const team = this.gameState?.teams.find(t => t.id === teamId);
+        if (!team) return;
+
+        // Create a simple fallback display
+        const container = this.add.container(this.centerX, this.centerY);
+        
+        const background = this.add.rectangle(0, 0, 600, 300, 0x2c3e50, 0.95);
+        background.setStrokeStyle(4, 0x3498db);
+        container.add(background);
+
+        const headerText = this.add.text(0, -100, 
+            `${team.emoji} 隊伍 ${team.id.split('_')[1]} - 小遊戲進行中`, 
+            {
+                fontSize: '24px',
+                fontFamily: 'Arial',
+                color: '#ffffff',
+                align: 'center'
+            }
+        );
+        headerText.setOrigin(0.5);
+        container.add(headerText);
+
+        const statusText = this.add.text(0, -50, 
+            '🎮 遊戲界面載入中...', 
+            {
+                fontSize: '18px',
+                fontFamily: 'Arial',
+                color: '#f39c12',
+                align: 'center'
+            }
+        );
+        statusText.setOrigin(0.5);
+        container.add(statusText);
+
+        // Store for cleanup
+        this.currentMiniGameDisplay = { container };
     }
 
     displayMiniGameInterface(teamId, gameData) {
