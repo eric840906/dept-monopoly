@@ -6,7 +6,7 @@ const GAME_CONFIG = {
   MAX_TEAMS: 1,
   TURN_TIME_LIMIT: 90000, // 90 seconds in milliseconds
   GAME_DURATION: 1800000, // 30 minutes in milliseconds
-  BOARD_SIZE: 28,
+  BOARD_SIZE: 24,
 
   SCORING: {
     SUCCESS: 10,
