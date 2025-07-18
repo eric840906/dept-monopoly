@@ -136,23 +136,235 @@ window.MiniGames = {
         
         this.gameContainer.innerHTML = `
             <div class="mini-game drag-drop">
+                <style>
+                    .drag-drop {
+                        padding: 10px;
+                        height: 100vh;
+                        max-height: 100vh;
+                        display: flex;
+                        flex-direction: column;
+                        box-sizing: border-box;
+                    }
+                    .drag-drop h3 {
+                        margin: 0 0 8px 0;
+                        font-size: 18px;
+                        text-align: center;
+                    }
+                    .drag-drop p {
+                        margin: 0 0 12px 0;
+                        font-size: 14px;
+                        text-align: center;
+                        color: #666;
+                    }
+                    .drag-drop-container {
+                        display: flex;
+                        gap: 8px;
+                        flex: 1;
+                        min-height: 0;
+                    }
+                    .source-section, .target-section {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .section-header {
+                        font-size: 14px;
+                        font-weight: bold;
+                        padding: 8px;
+                        text-align: center;
+                        border-radius: 6px;
+                        margin-bottom: 8px;
+                    }
+                    .source-header {
+                        background: #e3f2fd;
+                        color: #1976d2;
+                        border: 2px solid #2196f3;
+                    }
+                    .target-header {
+                        background: #f3e5f5;
+                        color: #7b1fa2;
+                        border: 2px solid #9c27b0;
+                    }
+                    .drag-items {
+                        padding: 8px;
+                        background: #f8f9fa;
+                        border-radius: 8px;
+                        border: 2px dashed #dee2e6;
+                        min-height: 240px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 4px;
+                    }
+                    .drop-zone {
+                        padding: 8px;
+                        background: #fff;
+                        border-radius: 8px;
+                        border: 2px dashed #9c27b0;
+                        min-height: 240px;
+                        position: relative;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 4px;
+                    }
+                    .drop-zone-empty {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #999;
+                        font-style: italic;
+                        font-size: 13px;
+                        flex: 1;
+                    }
+                    .drag-item {
+                        background: #2196f3;
+                        color: white;
+                        padding: 10px 8px;
+                        border-radius: 6px;
+                        cursor: move;
+                        font-size: 13px;
+                        line-height: 1.3;
+                        transition: all 0.2s ease;
+                        word-wrap: break-word;
+                        user-select: none;
+                        text-align: center;
+                        flex-shrink: 0;
+                    }
+                    .drag-item:hover {
+                        background: #1976d2;
+                        transform: translateY(-1px);
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    }
+                    .drag-item[style*="opacity: 0.5"] {
+                        background: #ccc !important;
+                        cursor: not-allowed;
+                    }
+                    .dropped-item {
+                        background: #f3e5f5;
+                        color: #4a148c;
+                        border: 2px solid #9c27b0;
+                        padding: 8px;
+                        border-radius: 6px;
+                        font-size: 13px;
+                        line-height: 1.3;
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        cursor: move;
+                        transition: all 0.2s ease;
+                        word-wrap: break-word;
+                        overflow-wrap: break-word;
+                        flex-shrink: 0;
+                        min-height: 36px;
+                    }
+                    .dropped-item:hover {
+                        background: #e1bee7;
+                        border-color: #7b1fa2;
+                        transform: translateY(-1px);
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                    }
+                    .drag-handle {
+                        color: #7b1fa2;
+                        cursor: move;
+                        font-size: 12px;
+                        opacity: 0.7;
+                    }
+                    .item-text {
+                        flex: 1;
+                        min-width: 0;
+                        font-weight: 500;
+                    }
+                    .remove-btn {
+                        background: #9c27b0;
+                        border: none;
+                        color: white;
+                        width: 18px;
+                        height: 18px;
+                        border-radius: 50%;
+                        cursor: pointer;
+                        font-size: 11px;
+                        line-height: 1;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: all 0.2s ease;
+                        flex-shrink: 0;
+                    }
+                    .remove-btn:hover {
+                        background: #7b1fa2;
+                        transform: scale(1.1);
+                    }
+                    .progress-indicator {
+                        text-align: center;
+                        font-size: 12px;
+                        color: #666;
+                        margin: 8px 0;
+                        padding: 4px 8px;
+                        background: #f0f0f0;
+                        border-radius: 12px;
+                    }
+                    .timer-display {
+                        text-align: center;
+                        font-size: 16px;
+                        font-weight: bold;
+                        margin: 10px 0;
+                        color: #d32f2f;
+                    }
+                    .btn {
+                        padding: 12px;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        margin-top: 8px;
+                    }
+                    .btn-primary {
+                        background: #4caf50;
+                        color: white;
+                    }
+                    .btn-primary:hover {
+                        background: #45a049;
+                    }
+                    .btn-primary:disabled {
+                        background: #ccc;
+                        cursor: not-allowed;
+                    }
+                </style>
                 <h3>🔄 ${workflow.title}</h3>
                 <p>${gameData.data.description || '請將以下項目按正確順序排列：'}</p>
-                <div class="drop-zone" id="dropZone">
-                    <!-- Drop items here -->
+                <div class="progress-indicator">
+                    已排序：<span id="orderCount">0</span> / ${workflow.shuffled.length}
                 </div>
-                <div class="drag-items">
-                    ${workflow.shuffled.map((item, index) => `
-                        <div class="drag-item" draggable="true" data-item="${item}" data-index="${index}">
-                            ${item}
+                <div class="drag-drop-container">
+                    <div class="source-section">
+                        <div class="section-header source-header">
+                            📦 可選項目
                         </div>
-                    `).join('')}
+                        <div class="drag-items" id="dragItems">
+                            ${workflow.shuffled.map((item, index) => `
+                                <div class="drag-item" draggable="true" data-item="${item}" data-index="${index}">
+                                    ${item}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="target-section">
+                        <div class="section-header target-header">
+                            🎯 排序結果
+                        </div>
+                        <div class="drop-zone" id="dropZone">
+                            <div class="drop-zone-empty">
+                                拖拽項目到此處進行排序
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="timer-display">
-                    <span id="miniGameTimer">45</span> 秒
+                    ⏰ <span id="miniGameTimer">45</span> 秒
                 </div>
-                <button id="submitOrder" class="btn btn-primary">
-                    提交順序
+                <button id="submitOrder" class="btn btn-primary" disabled>
+                    📤 提交順序
                 </button>
             </div>
         `;
@@ -164,7 +376,7 @@ window.MiniGames = {
     setupDragDropHandlers(correctOrder) {
         const dragItems = document.querySelectorAll('.drag-item');
         const dropZone = document.getElementById('dropZone');
-        let droppedItems = [];
+        this.droppedItems = []; // Make it accessible to removeItem
         let draggedElement = null;
         let dragStartPosition = null;
 
@@ -178,7 +390,7 @@ window.MiniGames = {
         const getInsertPosition = (e, container) => {
             const afterElement = getDragAfterElement(container, e.clientY);
             if (afterElement == null) {
-                return droppedItems.length;
+                return this.droppedItems.length;
             } else {
                 return parseInt(afterElement.dataset.position);
             }
@@ -217,11 +429,11 @@ window.MiniGames = {
 
             // Touch support for mobile - fallback to click
             item.addEventListener('click', () => {
-                if (droppedItems.length < correctOrder.length) {
+                if (this.droppedItems.length < correctOrder.length) {
                     const itemText = item.dataset.item;
-                    if (!droppedItems.includes(itemText)) {
-                        droppedItems.push(itemText);
-                        this.updateDropZone(droppedItems);
+                    if (!this.droppedItems.includes(itemText)) {
+                        this.droppedItems.push(itemText);
+                        this.updateDropZone(this.droppedItems);
                         item.style.opacity = '0.5';
                         item.style.pointerEvents = 'none';
                     }
@@ -267,10 +479,10 @@ window.MiniGames = {
             
             if (dragStartPosition === 'source') {
                 // Dragging from source items
-                if (!droppedItems.includes(itemText) && droppedItems.length < correctOrder.length) {
+                if (!this.droppedItems.includes(itemText) && this.droppedItems.length < correctOrder.length) {
                     const insertPos = getInsertPosition(e, dropZone);
-                    droppedItems.splice(insertPos, 0, itemText);
-                    this.updateDropZone(droppedItems);
+                    this.droppedItems.splice(insertPos, 0, itemText);
+                    this.updateDropZone(this.droppedItems);
                     
                     // Hide the dragged item
                     const draggedItem = document.querySelector(`[data-item="${itemText}"]`);
@@ -281,31 +493,60 @@ window.MiniGames = {
                 }
             } else if (dragStartPosition === 'dropzone') {
                 // Reordering within drop zone
-                const oldIndex = droppedItems.indexOf(itemText);
+                const oldIndex = this.droppedItems.indexOf(itemText);
                 const newIndex = getInsertPosition(e, dropZone);
                 
                 if (oldIndex !== -1 && newIndex !== oldIndex) {
                     // Remove from old position
-                    droppedItems.splice(oldIndex, 1);
+                    this.droppedItems.splice(oldIndex, 1);
                     // Insert at new position (adjust for removal)
                     const adjustedNewIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
-                    droppedItems.splice(adjustedNewIndex, 0, itemText);
-                    this.updateDropZone(droppedItems);
+                    this.droppedItems.splice(adjustedNewIndex, 0, itemText);
+                    this.updateDropZone(this.droppedItems);
                 }
             }
         });
 
-        // Store reference to droppedItems for other methods
-        this.droppedItems = droppedItems;
+        // Progress tracking and submit button management
+        const updateProgress = () => {
+            const orderCount = document.getElementById('orderCount');
+            const submitBtn = document.getElementById('submitOrder');
+            if (orderCount) orderCount.textContent = this.droppedItems.length;
+            
+            if (submitBtn) {
+                if (this.droppedItems.length === correctOrder.length) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '📤 提交順序';
+                } else {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = `需要排序 ${correctOrder.length - this.droppedItems.length} 個項目`;
+                }
+            }
+        };
+
+        // Initial progress update
+        updateProgress();
+
+        // Override the updateDropZone to include progress updates
+        const originalUpdateDropZone = this.updateDropZone.bind(this);
+        this.updateDropZone = (items) => {
+            originalUpdateDropZone(items);
+            updateProgress();
+        };
 
         document.getElementById('submitOrder').addEventListener('click', () => {
-            const isCorrect = JSON.stringify(droppedItems) === JSON.stringify(correctOrder);
-            const partialCorrect = droppedItems.filter((item, index) => item === correctOrder[index]).length;
+            if (this.droppedItems.length !== correctOrder.length) {
+                alert(`請完成所有 ${correctOrder.length} 個項目的排序！`);
+                return;
+            }
+
+            const isCorrect = JSON.stringify(this.droppedItems) === JSON.stringify(correctOrder);
+            const partialCorrect = this.droppedItems.filter((item, index) => item === correctOrder[index]).length;
             const score = isCorrect ? 10 : (partialCorrect >= correctOrder.length / 2 ? 5 : -10);
             
             this.submitResult({
                 gameType: 'drag_drop',
-                answer: droppedItems,
+                answer: this.droppedItems,
                 correct: isCorrect,
                 score: score
             });
@@ -314,13 +555,22 @@ window.MiniGames = {
 
     updateDropZone(items) {
         const dropZone = document.getElementById('dropZone');
-        dropZone.innerHTML = items.map((item, index) => `
-            <div class="dropped-item" data-position="${index}" draggable="true" data-item="${item}">
-                <span class="drag-handle">⋮⋮</span>
-                <span class="item-text">${index + 1}. ${item}</span>
-                <button class="remove-btn" onclick="window.MiniGames.removeItem(${index})">×</button>
-            </div>
-        `).join('');
+        
+        if (items.length === 0) {
+            dropZone.innerHTML = `
+                <div class="drop-zone-empty">
+                    拖拽項目到此處進行排序
+                </div>
+            `;
+        } else {
+            dropZone.innerHTML = items.map((item, index) => `
+                <div class="dropped-item" data-position="${index}" draggable="true" data-item="${item}">
+                    <span class="drag-handle">⋮⋮</span>
+                    <span class="item-text">${index + 1}. ${item}</span>
+                    <button class="remove-btn" data-remove-index="${index}">×</button>
+                </div>
+            `).join('');
+        }
         
         // Setup drag handlers for dropped items (for reordering)
         const droppedItems = dropZone.querySelectorAll('.dropped-item');
@@ -340,6 +590,16 @@ window.MiniGames = {
                 this.dragStartPosition = null;
             });
         });
+
+        // Setup remove button handlers
+        const removeButtons = dropZone.querySelectorAll('.remove-btn');
+        removeButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent drag events
+                const index = parseInt(button.dataset.removeIndex);
+                this.removeItem(index);
+            });
+        });
     },
 
     removeItem(index) {
@@ -347,11 +607,14 @@ window.MiniGames = {
         if (this.droppedItems && this.droppedItems.length > index) {
             const itemText = this.droppedItems[index];
             
-            // Re-enable the item in drag area
-            const originalItem = document.querySelector(`[data-item="${itemText}"]`);
-            if (originalItem && originalItem.classList.contains('drag-item')) {
-                originalItem.style.opacity = '1';
-                originalItem.style.pointerEvents = 'auto';
+            // Re-enable the item in the original drag items area (not the drop zone)
+            const dragItemsContainer = document.querySelector('.drag-items');
+            if (dragItemsContainer) {
+                const originalItem = dragItemsContainer.querySelector(`[data-item="${itemText}"]`);
+                if (originalItem && originalItem.classList.contains('drag-item')) {
+                    originalItem.style.opacity = '1';
+                    originalItem.style.pointerEvents = 'auto';
+                }
             }
             
             // Remove from dropped items array
