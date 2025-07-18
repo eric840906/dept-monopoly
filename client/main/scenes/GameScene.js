@@ -45,31 +45,41 @@ class GameScene extends Phaser.Scene {
     }
 
     createTileTextures() {
-        // Create textures for different tile types
+        // Create textures for different tile types (rectangular for Monopoly style)
         const graphics = this.add.graphics();
+        const tileWidth = 70;
+        const tileHeight = 50;
         
         // Safe tile (green)
         graphics.fillStyle(0x2ecc71);
-        graphics.fillRect(0, 0, 60, 60);
-        graphics.generateTexture('safe-tile', 60, 60);
+        graphics.fillRect(0, 0, tileWidth, tileHeight);
+        graphics.lineStyle(2, 0x27ae60);
+        graphics.strokeRect(0, 0, tileWidth, tileHeight);
+        graphics.generateTexture('safe-tile', tileWidth, tileHeight);
         
         // Event tile (orange)
         graphics.clear();
         graphics.fillStyle(0xe67e22);
-        graphics.fillRect(0, 0, 60, 60);
-        graphics.generateTexture('event-tile', 60, 60);
+        graphics.fillRect(0, 0, tileWidth, tileHeight);
+        graphics.lineStyle(2, 0xd35400);
+        graphics.strokeRect(0, 0, tileWidth, tileHeight);
+        graphics.generateTexture('event-tile', tileWidth, tileHeight);
         
         // Chance tile (purple)
         graphics.clear();
         graphics.fillStyle(0x9b59b6);
-        graphics.fillRect(0, 0, 60, 60);
-        graphics.generateTexture('chance-tile', 60, 60);
+        graphics.fillRect(0, 0, tileWidth, tileHeight);
+        graphics.lineStyle(2, 0x8e44ad);
+        graphics.strokeRect(0, 0, tileWidth, tileHeight);
+        graphics.generateTexture('chance-tile', tileWidth, tileHeight);
         
         // Start tile (blue)
         graphics.clear();
         graphics.fillStyle(0x3498db);
-        graphics.fillRect(0, 0, 60, 60);
-        graphics.generateTexture('start-tile', 60, 60);
+        graphics.fillRect(0, 0, tileWidth, tileHeight);
+        graphics.lineStyle(2, 0x2980b9);
+        graphics.strokeRect(0, 0, tileWidth, tileHeight);
+        graphics.generateTexture('start-tile', tileWidth, tileHeight);
         
         graphics.destroy();
     }
@@ -100,12 +110,16 @@ class GameScene extends Phaser.Scene {
         
         this.boardTiles = [];
         const tileCount = this.board.length;
-        const angleStep = (2 * Math.PI) / tileCount;
         
+        // Calculate board dimensions for square layout
+        const boardWidth = 600;
+        const boardHeight = 600;
+        const tileSize = 60;
+        const tilesPerSide = Math.ceil(tileCount / 4);
+        
+        // Calculate positions for square Monopoly-style layout
         this.board.forEach((tile, index) => {
-            const angle = index * angleStep - Math.PI / 2; // Start from top
-            const x = this.centerX + Math.cos(angle) * this.boardRadius;
-            const y = this.centerY + Math.sin(angle) * this.boardRadius;
+            const { x, y } = this.calculateSquareTilePosition(index, tileCount, boardWidth, boardHeight, tileSize);
             
             // Choose texture based on tile type
             let texture;
@@ -128,16 +142,19 @@ class GameScene extends Phaser.Scene {
             
             // Create tile sprite
             const tileSprite = this.add.image(x, y, texture);
-            tileSprite.setDisplaySize(50, 50);
+            tileSprite.setDisplaySize(70, 50);
             
-            // Add tile number
-            const tileNumber = this.add.text(x, y, index.toString(), {
-                fontSize: '12px',
-                fontFamily: 'Arial',
-                color: '#ffffff',
-                align: 'center'
-            });
-            tileNumber.setOrigin(0.5);
+            // Add tile number (skip for START tile)
+            let tileNumber = null;
+            if (index !== 0) {
+                tileNumber = this.add.text(x, y, index.toString(), {
+                    fontSize: '12px',
+                    fontFamily: 'Arial',
+                    color: '#ffffff',
+                    align: 'center'
+                });
+                tileNumber.setOrigin(0.5);
+            }
             
             // Add tile name below (for important tiles)
             if (tile.type === 'start') {
@@ -169,7 +186,8 @@ class GameScene extends Phaser.Scene {
         });
         
         // Add center logo/title
-        const centerBg = this.add.circle(this.centerX, this.centerY, 100, 0x2c3e50, 0.8);
+        const centerBg = this.add.rectangle(this.centerX, this.centerY, 400, 400, 0x2c3e50, 0.8);
+        centerBg.setStrokeStyle(3, 0x34495e);
         const centerText = this.add.text(this.centerX, this.centerY, '🎯\nMTO\n體驗營', {
             fontSize: '24px',
             fontFamily: 'Arial',
@@ -178,6 +196,41 @@ class GameScene extends Phaser.Scene {
             lineSpacing: 5
         });
         centerText.setOrigin(0.5);
+    }
+
+    calculateSquareTilePosition(index, totalTiles, boardWidth, boardHeight, tileSize) {
+        const sideLength = 600;
+        const tilesPerSide = Math.floor(totalTiles / 4);
+        const tileSpacing = sideLength / tilesPerSide;
+        
+        let x, y;
+        
+        // Bottom side (tiles 0-6 for 28-tile board)
+        if (index < tilesPerSide) {
+            const sideIndex = index;
+            x = this.centerX - sideLength/2 + (sideIndex * tileSpacing) + tileSpacing/2;
+            y = this.centerY + sideLength/2;
+        }
+        // Right side (tiles 7-13 for 28-tile board)  
+        else if (index < tilesPerSide * 2) {
+            const sideIndex = index - tilesPerSide;
+            x = this.centerX + sideLength/2;
+            y = this.centerY + sideLength/2 - (sideIndex * tileSpacing) - tileSpacing/2;
+        }
+        // Top side (tiles 14-20 for 28-tile board)
+        else if (index < tilesPerSide * 3) {
+            const sideIndex = index - tilesPerSide * 2;
+            x = this.centerX + sideLength/2 - (sideIndex * tileSpacing) - tileSpacing/2;
+            y = this.centerY - sideLength/2;
+        }
+        // Left side (tiles 21-27 for 28-tile board)
+        else {
+            const sideIndex = index - tilesPerSide * 3;
+            x = this.centerX - sideLength/2;
+            y = this.centerY - sideLength/2 + (sideIndex * tileSpacing) + tileSpacing/2;
+        }
+        
+        return { x, y };
     }
 
     createTeamTokens() {
@@ -428,7 +481,7 @@ class GameScene extends Phaser.Scene {
     }
 
     animateTokenMovement(token, oldPosition, newPosition, onComplete = null) {
-        // Create a path for the token to follow around the board
+        // Create a path for the token to follow around the square board
         const steps = [];
         const totalSteps = newPosition >= oldPosition ? 
             (newPosition - oldPosition) : 
@@ -440,7 +493,7 @@ class GameScene extends Phaser.Scene {
             steps.push({ x: tileData.x, y: tileData.y });
         }
         
-        // Animate along the path
+        // Animate along the path with smoother movement for square layout
         let currentStep = 0;
         const moveToNextStep = () => {
             if (currentStep < steps.length) {
@@ -449,7 +502,7 @@ class GameScene extends Phaser.Scene {
                     targets: [token.token, token.emoji],
                     x: step.x,
                     y: step.y,
-                    duration: 300,
+                    duration: 400, // Slightly slower for better visibility
                     ease: 'Power2',
                     onComplete: () => {
                         currentStep++;
