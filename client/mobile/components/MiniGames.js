@@ -369,20 +369,166 @@ window.MiniGames = {
             { left: "Node.js", right: "後端服務" }
         ];
 
+        // Shuffle both left and right items for better UX
+        const shuffledLeft = [...pairs].sort(() => Math.random() - 0.5);
+        const shuffledRight = [...pairs].sort(() => Math.random() - 0.5);
+
         this.gameContainer.innerHTML = `
             <div class="mini-game format-matching">
+                <style>
+                    .format-matching {
+                        text-align: center;
+                        padding: 10px;
+                    }
+                    .matching-container {
+                        display: flex;
+                        gap: 10px;
+                        margin: 15px 0;
+                        min-height: 300px;
+                    }
+                    .left-column, .right-column {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 8px;
+                    }
+                    .left-column {
+                        border-right: 2px dashed #ccc;
+                        padding-right: 8px;
+                    }
+                    .right-column {
+                        padding-left: 8px;
+                    }
+                    .match-item {
+                        background: #f8f9fa;
+                        border: 2px solid #dee2e6;
+                        border-radius: 8px;
+                        padding: 10px 8px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        font-size: 14px;
+                        line-height: 1.2;
+                        word-wrap: break-word;
+                        position: relative;
+                        min-height: 40px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .match-item.left {
+                        background: #e3f2fd;
+                        border-color: #2196f3;
+                    }
+                    .match-item.right {
+                        background: #f3e5f5;
+                        border-color: #9c27b0;
+                    }
+                    .match-item.selected {
+                        background: #fff3e0 !important;
+                        border-color: #ff9800 !important;
+                        border-width: 3px;
+                        transform: scale(1.05);
+                        box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
+                    }
+                    .match-item.selected::before {
+                        content: "👆";
+                        position: absolute;
+                        top: -25px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        font-size: 18px;
+                        animation: bounce 1s infinite;
+                    }
+                    .match-item.matched {
+                        background: #e8f5e8 !important;
+                        border-color: #4caf50 !important;
+                        color: #2e7d32;
+                        opacity: 0.8;
+                        cursor: not-allowed;
+                    }
+                    .match-item.matched::after {
+                        content: "✓";
+                        position: absolute;
+                        top: -8px;
+                        right: -8px;
+                        background: #4caf50;
+                        color: white;
+                        border-radius: 50%;
+                        width: 20px;
+                        height: 20px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                    }
+                    .matching-progress {
+                        background: #fff;
+                        border-radius: 20px;
+                        padding: 8px 16px;
+                        margin: 10px 0;
+                        font-weight: bold;
+                        color: #333;
+                        border: 2px solid #ddd;
+                    }
+                    .game-instructions {
+                        background: #fff9c4;
+                        border: 1px solid #f57f17;
+                        border-radius: 8px;
+                        padding: 10px;
+                        margin: 10px 0;
+                        font-size: 13px;
+                        color: #e65100;
+                    }
+                    .game-controls {
+                        display: flex;
+                        gap: 10px;
+                        margin-top: 15px;
+                    }
+                    .btn {
+                        flex: 1;
+                        padding: 12px;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    }
+                    .btn-primary {
+                        background: #2196f3;
+                        color: white;
+                    }
+                    .btn-primary:disabled {
+                        background: #ccc;
+                        cursor: not-allowed;
+                    }
+                    .btn-secondary {
+                        background: #ff9800;
+                        color: white;
+                    }
+                    @keyframes bounce {
+                        0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
+                        40% { transform: translateY(-10px) translateX(-50%); }
+                        60% { transform: translateY(-5px) translateX(-50%); }
+                    }
+                </style>
                 <h3>🔗 ${gameData.data?.title || '配對遊戲'}</h3>
-                <p>請將左側和右側的項目正確配對：</p>
+                <div class="game-instructions">
+                    💡 先點選左側藍色項目，再點選右側紫色項目進行配對
+                </div>
+                <div class="matching-progress">
+                    已配對：<span id="matchCount">0</span> / ${pairs.length}
+                </div>
                 <div class="matching-container">
                     <div class="left-column">
-                        ${pairs.map((pair, index) => `
+                        ${shuffledLeft.map((pair, index) => `
                             <div class="match-item left" data-value="${pair.left}" data-index="${index}">
                                 ${pair.left}
                             </div>
                         `).join('')}
                     </div>
                     <div class="right-column">
-                        ${pairs.sort(() => Math.random() - 0.5).map((pair, index) => `
+                        ${shuffledRight.map((pair, index) => `
                             <div class="match-item right" data-value="${pair.right}" data-left="${pair.left}">
                                 ${pair.right}
                             </div>
@@ -390,11 +536,16 @@ window.MiniGames = {
                     </div>
                 </div>
                 <div class="timer-display">
-                    <span id="miniGameTimer">45</span> 秒
+                    ⏰ <span id="miniGameTimer">45</span> 秒
                 </div>
-                <button id="submitMatches" class="btn btn-primary">
-                    提交配對
-                </button>
+                <div class="game-controls">
+                    <button id="clearMatches" class="btn btn-secondary">
+                        🔄 重置配對
+                    </button>
+                    <button id="submitMatches" class="btn btn-primary" disabled>
+                        📤 提交配對
+                    </button>
+                </div>
             </div>
         `;
 
@@ -406,8 +557,32 @@ window.MiniGames = {
         let selectedLeft = null;
         let matches = [];
 
+        const updateMatchCount = () => {
+            document.getElementById('matchCount').textContent = matches.length;
+            const submitBtn = document.getElementById('submitMatches');
+            if (matches.length === correctPairs.length) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '提交配對';
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.textContent = `需要配對 ${correctPairs.length - matches.length} 組`;
+            }
+        };
+
+        const clearAllMatches = () => {
+            matches = [];
+            selectedLeft = null;
+            document.querySelectorAll('.match-item').forEach(item => {
+                item.classList.remove('selected', 'matched');
+            });
+            updateMatchCount();
+        };
+
         document.querySelectorAll('.match-item').forEach(item => {
             item.addEventListener('click', () => {
+                // Don't allow interaction with already matched items
+                if (item.classList.contains('matched')) return;
+
                 if (item.classList.contains('left')) {
                     // Select left item
                     document.querySelectorAll('.left').forEach(l => l.classList.remove('selected'));
@@ -426,11 +601,21 @@ window.MiniGames = {
                     selectedLeft.classList.remove('selected');
                     
                     selectedLeft = null;
+                    updateMatchCount();
                 }
             });
         });
 
+        // Clear matches button
+        document.getElementById('clearMatches').addEventListener('click', clearAllMatches);
+
+        // Submit button
         document.getElementById('submitMatches').addEventListener('click', () => {
+            if (matches.length !== correctPairs.length) {
+                alert(`請完成所有 ${correctPairs.length} 組配對後再提交！`);
+                return;
+            }
+
             let correctCount = 0;
             matches.forEach(match => {
                 const correctPair = correctPairs.find(p => p.left === match.left);
@@ -450,6 +635,9 @@ window.MiniGames = {
                 score: score
             });
         });
+
+        // Initial state
+        updateMatchCount();
     },
 
     loadTeamPairing(gameData) {
