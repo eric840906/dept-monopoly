@@ -50,20 +50,29 @@ window.MiniGames = {
     },
 
     loadMultipleChoice(gameData) {
-        const questions = [
-            {
+        // Use actual question data from server or fallback
+        let question = gameData.data?.question;
+        
+        // If question is just a string, wrap it in proper structure
+        if (typeof question === 'string') {
+            question = {
+                question: question,
+                options: ["創新", "誠信", "團隊合作", "客戶至上"],
+                correct: 1
+            };
+        } else if (!question || typeof question !== 'object') {
+            // Fallback if no question data
+            question = {
                 question: "公司最重要的價值觀是什麼？",
                 options: ["創新", "誠信", "團隊合作", "客戶至上"],
                 correct: 1
-            },
-            {
-                question: "在專案管理中，最關鍵的是？",
-                options: ["時間管理", "溝通協調", "資源分配", "風險控制"],
-                correct: 1
-            }
-        ];
-
-        const question = questions[Math.floor(Math.random() * questions.length)];
+            };
+        }
+        
+        // Ensure options is always an array
+        if (!Array.isArray(question.options)) {
+            question.options = ["創新", "誠信", "團隊合作", "客戶至上"];
+        }
         
         this.gameContainer.innerHTML = `
             <div class="mini-game multiple-choice">
@@ -352,7 +361,8 @@ window.MiniGames = {
     },
 
     loadFormatMatching(gameData) {
-        const pairs = [
+        // Use actual pairs from server or fallback
+        const pairs = gameData.data?.pairs || [
             { left: "HTML", right: "網頁結構" },
             { left: "CSS", right: "樣式設計" },
             { left: "JavaScript", right: "互動功能" },
@@ -361,7 +371,7 @@ window.MiniGames = {
 
         this.gameContainer.innerHTML = `
             <div class="mini-game format-matching">
-                <h3>🔗 配對遊戲</h3>
+                <h3>🔗 ${gameData.data?.title || '配對遊戲'}</h3>
                 <p>請將左側和右側的項目正確配對：</p>
                 <div class="matching-container">
                     <div class="left-column">
@@ -443,19 +453,25 @@ window.MiniGames = {
     },
 
     loadTeamPairing(gameData) {
+        // Use actual team pairing data from server or fallback
+        const taskData = gameData.data || {};
+        const taskTitle = taskData.title || "設計一個完美的工作日";
+        const taskDescription = taskData.description || "請按優先順序排列以下活動（隊伍共同決定）：";
+        const activities = taskData.items || [
+            "團隊會議", "專案開發", "客戶溝通", "學習成長", "休息放鬆"
+        ];
+
         this.gameContainer.innerHTML = `
             <div class="mini-game team-pairing">
                 <h3>👥 團隊協作</h3>
                 <p>請與隊友討論並共同完成以下任務：</p>
                 <div class="collaboration-task">
-                    <h4>任務：設計一個完美的工作日</h4>
-                    <p>請按優先順序排列以下活動（隊伍共同決定）：</p>
+                    <h4>任務：${taskTitle}</h4>
+                    <p>${taskDescription}</p>
                     <div class="priority-list" id="priorityList">
-                        <div class="priority-item" data-item="團隊會議">📅 團隊會議</div>
-                        <div class="priority-item" data-item="專案開發">💻 專案開發</div>
-                        <div class="priority-item" data-item="客戶溝通">📞 客戶溝通</div>
-                        <div class="priority-item" data-item="學習成長">📚 學習成長</div>
-                        <div class="priority-item" data-item="休息放鬆">☕ 休息放鬆</div>
+                        ${activities.map(activity => `
+                            <div class="priority-item" data-item="${activity}">📅 ${activity}</div>
+                        `).join('')}
                     </div>
                 </div>
                 <div class="timer-display">
@@ -512,28 +528,13 @@ window.MiniGames = {
     },
 
     loadRandomEvent(gameData) {
-        const events = [
-            {
-                title: "技術挑戰",
-                description: "需要解決一個緊急的技術問題",
-                ability: "tech",
-                threshold: 4
-            },
-            {
-                title: "創意發想",
-                description: "需要提出創新的解決方案",
-                ability: "creative",
-                threshold: 4
-            },
-            {
-                title: "溝通協調",
-                description: "需要處理跨部門溝通問題",
-                ability: "comms",
-                threshold: 4
-            }
-        ];
-
-        const event = events[Math.floor(Math.random() * events.length)];
+        // Use actual event data from server or fallback
+        const event = gameData.data?.event || {
+            title: "技術挑戰",
+            description: "需要解決一個緊急的技術問題",
+            ability: "tech",
+            threshold: 4
+        };
         
         this.gameContainer.innerHTML = `
             <div class="mini-game random-event">

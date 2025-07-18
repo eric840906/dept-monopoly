@@ -363,6 +363,9 @@ class GameScene extends Phaser.Scene {
         const { teamId, eventType, timeLimit } = data;
         console.log(`Mini-game started for team ${teamId}: ${eventType}`);
         
+        // Store the complete game data for later use
+        this.pendingMiniGameData = data;
+        
         // Show mini-game notification on main screen
         this.showMiniGameNotification(teamId, eventType, timeLimit);
     }
@@ -594,17 +597,23 @@ class GameScene extends Phaser.Scene {
         // Hide the preparation banner first
         this.hideMiniGameBanner();
         
+        // Use the stored game data from mini_game_start if gameData is missing
+        const actualGameData = gameData || this.pendingMiniGameData;
+        
         // Small delay to ensure banner cleanup, then display mini-game interface
         this.time.delayedCall(100, () => {
-            if (gameData) {
-                console.log('Displaying mini-game interface with data:', gameData);
-                this.displayMiniGameInterface(teamId, gameData);
+            if (actualGameData) {
+                console.log('Displaying mini-game interface with data:', actualGameData);
+                this.displayMiniGameInterface(teamId, actualGameData);
             } else {
-                console.warn('No gameData received, cannot display mini-game interface');
+                console.warn('No gameData received from either source, cannot display mini-game interface');
                 // Fallback: at least show that the timer started
                 this.showMiniGameFallback(teamId);
             }
         });
+        
+        // Clear the pending data after use
+        this.pendingMiniGameData = null;
     }
 
     showMiniGameFallback(teamId) {
@@ -723,10 +732,26 @@ class GameScene extends Phaser.Scene {
 
     renderMultipleChoiceQuiz(container, gameData) {
         // Use actual question data from server or fallback to sample
-        const question = gameData.data?.question || {
-            question: "公司最重要的價值觀是什麼？",
-            options: ["創新", "誠信", "團隊合作", "客戶至上"]
-        };
+        let question = gameData.data?.question;
+        
+        // If question is just a string, wrap it in proper structure
+        if (typeof question === 'string') {
+            question = {
+                question: question,
+                options: ["創新", "誠信", "團隊合作", "客戶至上"]
+            };
+        } else if (!question || typeof question !== 'object') {
+            // Fallback if no question data
+            question = {
+                question: "公司最重要的價值觀是什麼？",
+                options: ["創新", "誠信", "團隊合作", "客戶至上"]
+            };
+        }
+        
+        // Ensure options is always an array
+        if (!Array.isArray(question.options)) {
+            question.options = ["創新", "誠信", "團隊合作", "客戶至上"];
+        }
 
         const questionText = this.add.text(0, -150, question.question, {
             fontSize: '20px',
