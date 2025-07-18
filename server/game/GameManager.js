@@ -199,13 +199,19 @@ class GameManager {
     this.gameState.isGameStarted = true;
     this.gameState.currentTurnTeamId = this.gameState.teams[0].id;
     
+    // Set initial captain for the first team
+    const firstTeam = this.gameState.teams[0];
+    const captain = this.rotateCaptain(firstTeam.id);
+    
     this.startTurnTimer();
     this.startGameTimer();
     
     this.broadcastGameState();
     this.io.emit(SOCKET_EVENTS.GAME_START, {
       gameState: this.gameState,
-      board: this.board
+      board: this.board,
+      captainId: captain?.id || null,
+      captainName: captain?.nickname || 'Unknown'
     });
   }
 
@@ -249,10 +255,16 @@ class GameManager {
     // Start mini-game
     if (tile.event) {
       try {
+        // Use current captain (don't rotate again - already rotated at start of turn)
+        const team = this.gameState.teams.find(t => t.id === teamId);
+        const captain = team?.members.find(m => m.id === team.currentCaptainId);
+        
         const miniGameData = this.miniGameProcessor.startMiniGame(teamId, tile.event, this.gameState);
         
         this.io.emit(SOCKET_EVENTS.MINI_GAME_START, {
           teamId,
+          captainId: captain?.id || null,
+          captainName: captain?.nickname || 'Unknown',
           ...miniGameData
         });
       } catch (error) {
@@ -263,6 +275,24 @@ class GameManager {
     } else {
       this.endTurn();
     }
+  }
+
+  rotateCaptain(teamId) {
+    const team = this.gameState.teams.find(t => t.id === teamId);
+    if (!team || team.members.length === 0) {
+      console.warn(`Cannot rotate captain for team ${teamId}: team not found or no members`);
+      return null;
+    }
+
+    // Get current captain based on rotation index
+    const captain = team.members[team.captainRotationIndex % team.members.length];
+    team.currentCaptainId = captain.id;
+    
+    // Increment rotation index for next time
+    team.captainRotationIndex = (team.captainRotationIndex + 1) % team.members.length;
+    
+    console.log(`Team ${teamId} captain rotated to: ${captain.nickname} (${captain.id})`);
+    return captain;
   }
 
   handleMovementComplete(teamId, position) {
@@ -298,6 +328,24 @@ class GameManager {
       console.log(`Failed to confirm mini-game ready for team ${teamId}`);
     }
     return confirmed;
+  }
+
+  validateCaptainSubmission(teamId, playerId) {
+    const team = this.gameState.teams.find(t => t.id === teamId);
+    if (!team) {
+      console.warn(`Team ${teamId} not found for captain validation`);
+      return false;
+    }
+    
+    if (!team.currentCaptainId) {
+      console.warn(`No captain set for team ${teamId}`);
+      return false;
+    }
+    
+    const isValidCaptain = team.currentCaptainId === playerId;
+    console.log(`Captain validation for team ${teamId}: player ${playerId} is ${isValidCaptain ? 'VALID' : 'INVALID'} captain (expected: ${team.currentCaptainId})`);
+    
+    return isValidCaptain;
   }
 
   processMiniGameSubmission(teamId, submission) {
@@ -373,11 +421,17 @@ class GameManager {
       this.gameState.round++;
     }
 
+    // Rotate captain for the new turn team
+    const nextTeam = this.gameState.teams[nextTeamIndex];
+    const captain = this.rotateCaptain(nextTeam.id);
+    
     this.startTurnTimer();
     this.broadcastGameState();
     
     this.io.emit(SOCKET_EVENTS.TURN_END, {
       nextTeamId: this.gameState.currentTurnTeamId,
+      captainId: captain?.id || null,
+      captainName: captain?.nickname || 'Unknown',
       round: this.gameState.round
     });
   }

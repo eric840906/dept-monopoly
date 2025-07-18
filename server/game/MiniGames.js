@@ -11,7 +11,8 @@ class MiniGameProcessor {
             ...gameData,
             startTime: null, // Will be set when client confirms ready
             teamId,
-            isWaitingForClient: true
+            isWaitingForClient: true,
+            readyPlayers: new Set() // Track which players have confirmed ready
         });
         
         return gameData;
@@ -19,11 +20,14 @@ class MiniGameProcessor {
 
     confirmClientReady(teamId) {
         const gameData = this.activeGames.get(teamId);
-        if (gameData && gameData.isWaitingForClient) {
-            gameData.startTime = Date.now();
-            gameData.isWaitingForClient = false;
-            console.log(`Mini-game timer started for team ${teamId}`);
-            return true;
+        if (gameData) {
+            // Always allow confirmation, just track it
+            if (gameData.isWaitingForClient) {
+                gameData.startTime = Date.now();
+                gameData.isWaitingForClient = false;
+                console.log(`Mini-game timer started for team ${teamId}`);
+            }
+            return true; // Always return true if the game exists
         }
         return false;
     }

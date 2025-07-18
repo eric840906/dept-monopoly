@@ -72,7 +72,7 @@ class MobileGameApp {
     })
 
     this.socket.on('game_start', (data) => {
-      console.log('Game started!')
+      console.log('Game started!', data)
       this.showScreen('gameScreen')
       this.updateGameInterface()
     })
@@ -81,6 +81,11 @@ class MobileGameApp {
     this.socket.on('turn_start', (data) => {
       console.log('Turn started:', data)
       this.handleTurnStart(data)
+    })
+
+    this.socket.on('turn_end', (data) => {
+      console.log('Turn ended:', data)
+      this.handleTurnEnd(data)
     })
 
     this.socket.on('dice_roll', (data) => {
@@ -348,13 +353,21 @@ class MobileGameApp {
     if (!this.gameState || !this.teamData) return
 
     const isMyTurn = this.gameState.currentTurnTeamId === this.teamData.id
+    const isCaptain = this.teamData.currentCaptainId === this.playerData.id
 
     // Update turn status
     const turnStatusEl = document.getElementById('turnStatus')
     if (turnStatusEl) {
       if (isMyTurn) {
-        turnStatusEl.textContent = '🎯 您的回合！'
-        turnStatusEl.style.color = '#2ecc71'
+        if (isCaptain) {
+          turnStatusEl.textContent = '🎯 您的回合！(隊長)'
+          turnStatusEl.style.color = '#2ecc71'
+        } else {
+          const currentCaptain = this.teamData.members.find(m => m.id === this.teamData.currentCaptainId)
+          const captainName = currentCaptain ? currentCaptain.nickname : '隊友'
+          turnStatusEl.textContent = `🎯 您隊的回合！(隊長: ${captainName})`
+          turnStatusEl.style.color = '#f39c12'
+        }
       } else {
         const currentTeam = this.gameState.teams.find((t) => t.id === this.gameState.currentTurnTeamId)
         if (currentTeam) {
@@ -364,13 +377,11 @@ class MobileGameApp {
       }
     }
 
-    // Show/hide interfaces
-    const diceInterface = document.getElementById('diceInterface')
-    const waitingInterface = document.getElementById('waitingInterface')
-    const miniGameInterface = document.getElementById('miniGameInterface')
-
-    if (isMyTurn) {
+    // Show/hide interfaces based on turn and captain status
+    if (isMyTurn && isCaptain) {
       this.showInterface('diceInterface')
+    } else if (isMyTurn && !isCaptain) {
+      this.showAdvisorDiceInterface()
     } else {
       this.showInterface('waitingInterface')
     }
@@ -413,6 +424,42 @@ class MobileGameApp {
     })
   }
 
+  showAdvisorDiceInterface() {
+    // Hide all interfaces first
+    this.showInterface('waitingInterface')
+    
+    // Update waiting message to show advisor role for dice rolling
+    const waitingMessage = document.getElementById('waitingMessage')
+    if (waitingMessage && this.teamData) {
+      const currentCaptain = this.teamData.members.find(m => m.id === this.teamData.currentCaptainId)
+      const captainName = currentCaptain ? currentCaptain.nickname : '隊友'
+      
+      waitingMessage.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <h3 style="color: #f39c12; margin-bottom: 15px;">👥 團隊討論階段</h3>
+          <div style="background: rgba(52, 152, 219, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 2px solid rgba(52, 152, 219, 0.3);">
+            <div style="font-size: 16px; color: #3498db; margin-bottom: 8px;">
+              🎯 <strong>本輪隊長：${captainName}</strong>
+            </div>
+            <div style="font-size: 14px; color: #7f8c8d;">
+              負責擲骰子決定移動步數
+            </div>
+          </div>
+          <div style="background: rgba(241, 196, 15, 0.1); padding: 12px; border-radius: 6px; border: 1px solid rgba(241, 196, 15, 0.3);">
+            <div style="font-size: 14px; color: #f39c12; margin-bottom: 8px;">
+              💡 <strong>討論建議：</strong>
+            </div>
+            <div style="font-size: 13px; color: #7f8c8d; line-height: 1.4;">
+              • 與隊長討論策略<br>
+              • 分析當前棋盤情況<br>
+              • 協助做出最佳決策
+            </div>
+          </div>
+        </div>
+      `
+    }
+  }
+
   rollDice() {
     if (!this.teamData || this.gameState.currentTurnTeamId !== this.teamData.id) {
       return
@@ -422,7 +469,20 @@ class MobileGameApp {
     rollBtn.disabled = true
     rollBtn.textContent = '擲骰中...'
 
-    this.socket.emit('dice_roll', { teamId: this.teamData.id })
+    this.socket.emit('dice_roll', { 
+      teamId: this.teamData.id, 
+      playerId: this.playerData.id 
+    })
+  }
+
+  handleTurnStart(data) {
+    console.log('Turn started for:', data)
+    this.updateGameInterface()
+  }
+
+  handleTurnEnd(data) {
+    console.log('Turn ended, next team:', data.nextTeamId)
+    this.updateGameInterface()
   }
 
   handleDiceRoll(data) {
@@ -561,20 +621,99 @@ class MobileGameApp {
     }
 
     console.log(`Showing mini-game for our team: ${data.teamId}`)
+    
+    // Check if current player is the captain
+    const isCaptain = data.captainId === this.playerData.id;
+    console.log(`Player ${this.playerData.id} is ${isCaptain ? 'CAPTAIN' : 'ADVISOR'} for this mini-game`);
+    
     this.showInterface('miniGameInterface')
 
     if (window.MiniGames) {
       const miniGameContent = document.getElementById('miniGameContent')
       
-      // Load the mini-game with a callback for when it's ready
-      window.MiniGames.load(data, miniGameContent, this.socket, this.teamData.id, () => {
-        // Mini-game UI is fully loaded and ready - notify server to start timer
-        console.log('Mini-game UI ready, notifying server to start timer')
-        this.socket.emit('mini_game_ready', { teamId: this.teamData.id })
-      })
+      if (isCaptain) {
+        // Captain gets interactive mini-game interface
+        window.MiniGames.load(data, miniGameContent, this.socket, this.teamData.id, this.playerData.id, () => {
+          console.log('Captain mini-game UI ready, notifying server to start timer')
+          this.socket.emit('mini_game_ready', { teamId: this.teamData.id })
+        })
+      } else {
+        // Non-captain gets advisor interface
+        this.showAdvisorInterface(data, miniGameContent);
+        // Advisors don't need to notify server - only captain does
+      }
     } else {
       // Fallback: if MiniGames not available, start timer immediately
       this.socket.emit('mini_game_ready', { teamId: this.teamData.id })
+    }
+  }
+
+  showAdvisorInterface(data, container) {
+    const captainName = data.captainName || '隊友';
+    
+    container.innerHTML = `
+      <div class="advisor-interface">
+        <style>
+          .advisor-interface {
+            padding: 20px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            color: white;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+          }
+          .captain-info {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.2);
+          }
+          .captain-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd700;
+          }
+          .advisor-tips {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+          }
+          .timer-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff6b6b;
+          }
+        </style>
+        
+        <h3>👥 團隊討論時間</h3>
+        
+        <div class="captain-info">
+          <div class="captain-name">🎯 本輪隊長：${captainName}</div>
+          <p style="margin: 8px 0 0 0; font-size: 14px;">負責提交最終答案</p>
+        </div>
+        
+        <div class="advisor-tips">
+          <p>💡 <strong>討論建議：</strong></p>
+          <p>• 與隊友分享你的想法</p>
+          <p>• 協助隊長分析選項</p>
+          <p>• 確保團隊達成共識</p>
+        </div>
+        
+        <div class="timer-display">
+          ⏰ <span id="miniGameTimer">${data.timeLimit / 1000}</span> 秒
+        </div>
+      </div>
+    `;
+
+    // Start timer for advisor interface
+    if (window.MiniGames && window.MiniGames.startTimer) {
+      window.MiniGames.startTimer(data.timeLimit / 1000);
     }
   }
 

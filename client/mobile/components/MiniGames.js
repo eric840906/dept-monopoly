@@ -6,13 +6,14 @@ window.MiniGames = {
     socket: null,
     teamId: null,
 
-    load(gameData, container, socket, teamId, onReadyCallback) {
+    load(gameData, container, socket, teamId, playerId, onReadyCallback) {
         // Stop any existing timer first
         this.stopTimer();
 
         this.gameContainer = container;
         this.socket = socket;
         this.teamId = teamId;
+        this.playerId = playerId;
         this.currentGame = gameData;
         this.onReadyCallback = onReadyCallback;
 
@@ -1152,6 +1153,7 @@ window.MiniGames = {
             console.log(`Submitting mini-game result for team ${this.teamId}:`, result);
             this.socket.emit('mini_game_submit', {
                 teamId: this.teamId,
+                playerId: this.playerId,
                 ...result
             });
             

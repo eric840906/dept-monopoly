@@ -360,14 +360,14 @@ class GameScene extends Phaser.Scene {
     }
 
     handleMiniGameStart(data) {
-        const { teamId, eventType, timeLimit } = data;
-        console.log(`Mini-game started for team ${teamId}: ${eventType}`);
+        const { teamId, eventType, timeLimit, captainName } = data;
+        console.log(`Mini-game started for team ${teamId}: ${eventType}, captain: ${captainName}`);
         
         // Store the complete game data for later use
         this.pendingMiniGameData = data;
         
-        // Show mini-game notification on main screen
-        this.showMiniGameNotification(teamId, eventType, timeLimit);
+        // Show mini-game notification on main screen with captain info
+        this.showMiniGameNotification(teamId, eventType, timeLimit, captainName);
     }
 
     handleMiniGameResult(data) {
@@ -541,7 +541,7 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    showMiniGameNotification(teamId, eventType, timeLimit) {
+    showMiniGameNotification(teamId, eventType, timeLimit, captainName) {
         const team = this.gameState?.teams.find(t => t.id === teamId);
         if (!team) return;
 
@@ -554,23 +554,25 @@ class GameScene extends Phaser.Scene {
         const banner = this.add.rectangle(
             this.centerX, 
             this.centerY, 
-            500, 
-            120, 
+            550, 
+            140, 
             0xe74c3c, 
             0.95
         );
         banner.setStrokeStyle(4, 0xc0392b);
 
+        const captainDisplay = captainName ? `🎯 隊長：${captainName}` : '等待隊長指定';
+        
         const bannerText = this.add.text(
             this.centerX, 
             this.centerY,
-            `🎮 小遊戲準備中...\n${team.emoji} 隊伍 ${team.id.split('_')[1]}\n${this.getEventName(eventType)}\n等待介面載入完成`,
+            `🎮 小遊戲準備中...\n${team.emoji} 隊伍 ${team.id.split('_')[1]}\n${this.getEventName(eventType)}\n${captainDisplay}\n等待介面載入完成`,
             {
-                fontSize: '18px',
+                fontSize: '16px',
                 fontFamily: 'Arial',
                 color: '#ffffff',
                 align: 'center',
-                lineSpacing: 8
+                lineSpacing: 6
             }
         );
         bannerText.setOrigin(0.5);

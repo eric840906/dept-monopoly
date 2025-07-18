@@ -47,9 +47,20 @@ function setupSocketHandlers(io, gameManager) {
     // Handle dice roll
     socket.on(SOCKET_EVENTS.DICE_ROLL, (data) => {
       try {
-        const { teamId } = data;
+        const { teamId, playerId } = data;
+        
+        // Validate that the player is the current captain
+        const isValidCaptain = gameManager.validateCaptainSubmission(teamId, playerId);
+        if (!isValidCaptain) {
+          console.warn(`Non-captain player ${playerId} attempted to roll dice for team ${teamId}`);
+          socket.emit(SOCKET_EVENTS.ERROR, { 
+            message: "只有隊長可以擲骰子，請與隊長討論後由隊長操作" 
+          });
+          return;
+        }
+        
         const result = gameManager.rollDice(teamId);
-        console.log(`Team ${teamId} rolled: ${result.dice.join(', ')} (total: ${result.total})`);
+        console.log(`Team ${teamId} captain ${playerId} rolled: ${result.dice.join(', ')} (total: ${result.total})`);
       } catch (error) {
         socket.emit(SOCKET_EVENTS.ERROR, { message: error.message });
       }
@@ -82,9 +93,20 @@ function setupSocketHandlers(io, gameManager) {
     // Handle mini-game submissions
     socket.on(SOCKET_EVENTS.MINI_GAME_SUBMIT, (data) => {
       try {
-        const { teamId, ...submission } = data;
+        const { teamId, playerId, ...submission } = data;
+        
+        // Validate that the submitting player is the current captain
+        const isValidCaptain = gameManager.validateCaptainSubmission(teamId, playerId);
+        if (!isValidCaptain) {
+          console.warn(`Non-captain player ${playerId} attempted to submit for team ${teamId}`);
+          socket.emit(SOCKET_EVENTS.ERROR, { 
+            message: "只有隊長可以提交答案，請與隊長討論後由隊長提交" 
+          });
+          return;
+        }
+        
         const result = gameManager.processMiniGameSubmission(teamId, submission);
-        console.log(`Mini-game result for team ${teamId}:`, result);
+        console.log(`Mini-game result for team ${teamId} (captain: ${playerId}):`, result);
       } catch (error) {
         console.error('Mini-game submission error:', error);
         socket.emit(SOCKET_EVENTS.ERROR, { message: error.message });
