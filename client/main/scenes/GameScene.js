@@ -59,6 +59,12 @@ class GameScene extends Phaser.Scene {
         graphics.fillRect(0, 0, 60, 60);
         graphics.generateTexture('event-tile', 60, 60);
         
+        // Chance tile (purple)
+        graphics.clear();
+        graphics.fillStyle(0x9b59b6);
+        graphics.fillRect(0, 0, 60, 60);
+        graphics.generateTexture('chance-tile', 60, 60);
+        
         // Start tile (blue)
         graphics.clear();
         graphics.fillStyle(0x3498db);
@@ -113,6 +119,9 @@ class GameScene extends Phaser.Scene {
                 case 'event':
                     texture = 'event-tile';
                     break;
+                case 'chance':
+                    texture = 'chance-tile';
+                    break;
                 default:
                     texture = 'safe-tile';
             }
@@ -133,6 +142,14 @@ class GameScene extends Phaser.Scene {
             // Add tile name below (for important tiles)
             if (tile.type === 'start') {
                 const tileName = this.add.text(x, y + 35, '起點', {
+                    fontSize: '10px',
+                    fontFamily: 'Arial',
+                    color: '#ffffff',
+                    align: 'center'
+                });
+                tileName.setOrigin(0.5);
+            } else if (tile.type === 'chance') {
+                const tileName = this.add.text(x, y + 35, '機會', {
                     fontSize: '10px',
                     fontFamily: 'Arial',
                     color: '#ffffff',
@@ -376,6 +393,14 @@ class GameScene extends Phaser.Scene {
         
         // Show result notification on main screen
         this.showMiniGameResult(teamId, score, feedback, success);
+    }
+
+    handleChanceCard(data) {
+        const { teamId, chanceCard, newScore, newPosition } = data;
+        console.log(`Chance card drawn by team ${teamId}:`, chanceCard);
+        
+        // Show chance card on main screen
+        this.showChanceCard(teamId, chanceCard, newScore, newPosition);
     }
 
     showDiceRoll(dice, total) {
@@ -1200,6 +1225,96 @@ class GameScene extends Phaser.Scene {
                 onComplete: () => {
                     resultBanner.destroy();
                     resultText.destroy();
+                }
+            });
+        });
+    }
+
+    showChanceCard(teamId, chanceCard, newScore, newPosition) {
+        const team = this.gameState?.teams.find(t => t.id === teamId);
+        if (!team) return;
+
+        // Determine color based on card type
+        let bgColor, borderColor;
+        switch (chanceCard.type) {
+            case 'disaster':
+                bgColor = 0x8e44ad;
+                borderColor = 0x732d91;
+                break;
+            case 'bad':
+                bgColor = 0xe74c3c;
+                borderColor = 0xc0392b;
+                break;
+            case 'neutral':
+                bgColor = 0x7f8c8d;
+                borderColor = 0x5d6d6e;
+                break;
+            case 'good':
+                bgColor = 0x27ae60;
+                borderColor = 0x1e8449;
+                break;
+            case 'excellent':
+                bgColor = 0xf1c40f;
+                borderColor = 0xd4ac0d;
+                break;
+            default:
+                bgColor = 0x34495e;
+                borderColor = 0x2c3e50;
+        }
+
+        // Create chance card display
+        const cardBanner = this.add.rectangle(
+            this.centerX, 
+            this.centerY, 
+            600, 
+            200, 
+            bgColor, 
+            0.95
+        );
+        cardBanner.setStrokeStyle(4, borderColor);
+
+        const scoreText = chanceCard.scoreChange > 0 ? `+${chanceCard.scoreChange}` : `${chanceCard.scoreChange}`;
+        const positionText = chanceCard.effect === 'reset_to_start' ? '\n📍 回到起點！' : '';
+
+        const cardText = this.add.text(
+            this.centerX, 
+            this.centerY,
+            `🃏 ${team.emoji} 隊伍 ${team.id.split('_')[1]} 抽到機會卡！\n\n${chanceCard.title}\n${chanceCard.description}\n\n💰 分數變化: ${scoreText}${positionText}`,
+            {
+                fontSize: '16px',
+                fontFamily: 'Arial',
+                color: '#ffffff',
+                align: 'center',
+                lineSpacing: 8,
+                wordWrap: { width: 550 }
+            }
+        );
+        cardText.setOrigin(0.5);
+
+        // Dramatic entrance animation
+        cardBanner.setScale(0);
+        cardText.setScale(0);
+
+        this.tweens.add({
+            targets: [cardBanner, cardText],
+            scaleX: 1,
+            scaleY: 1,
+            duration: 800,
+            ease: 'Back.easeOut'
+        });
+
+        // Auto-hide after 4 seconds
+        this.time.delayedCall(4000, () => {
+            this.tweens.add({
+                targets: [cardBanner, cardText],
+                alpha: 0,
+                scaleX: 0.8,
+                scaleY: 0.8,
+                duration: 500,
+                ease: 'Power2',
+                onComplete: () => {
+                    cardBanner.destroy();
+                    cardText.destroy();
                 }
             });
         });

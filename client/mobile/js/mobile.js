@@ -128,6 +128,14 @@ class MobileGameApp {
       }
     })
 
+    this.socket.on('chance_card_drawn', (data) => {
+      console.log('Chance card drawn:', data)
+      // Only show if it's for our team
+      if (this.teamData && data.teamId === this.teamData.id) {
+        this.showChanceCardResult(data)
+      }
+    })
+
     this.socket.on('game_end', (data) => {
       console.log('Game ended:', data)
       this.showGameEnd(data)
@@ -715,6 +723,148 @@ class MobileGameApp {
     if (window.MiniGames && window.MiniGames.startTimer) {
       window.MiniGames.startTimer(data.timeLimit / 1000);
     }
+  }
+
+  showChanceCardResult(data) {
+    const { chanceCard, newScore, newPosition } = data;
+    
+    // Determine card color based on type
+    let cardColor, bgGradient;
+    switch (chanceCard.type) {
+      case 'disaster':
+        cardColor = '#8e44ad';
+        bgGradient = 'linear-gradient(135deg, #8e44ad 0%, #732d91 100%)';
+        break;
+      case 'bad':
+        cardColor = '#e74c3c';
+        bgGradient = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
+        break;
+      case 'neutral':
+        cardColor = '#7f8c8d';
+        bgGradient = 'linear-gradient(135deg, #7f8c8d 0%, #5d6d6e 100%)';
+        break;
+      case 'good':
+        cardColor = '#27ae60';
+        bgGradient = 'linear-gradient(135deg, #27ae60 0%, #1e8449 100%)';
+        break;
+      case 'excellent':
+        cardColor = '#f1c40f';
+        bgGradient = 'linear-gradient(135deg, #f1c40f 0%, #d4ac0d 100%)';
+        break;
+      default:
+        cardColor = '#34495e';
+        bgGradient = 'linear-gradient(135deg, #34495e 0%, #2c3e50 100%)';
+    }
+
+    const scoreText = chanceCard.scoreChange > 0 ? `+${chanceCard.scoreChange}` : `${chanceCard.scoreChange}`;
+    const positionText = chanceCard.effect === 'reset_to_start' ? '📍 回到起點！' : '';
+
+    // Show chance card in a modal-like overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      animation: fadeIn 0.3s ease-out;
+    `;
+
+    overlay.innerHTML = `
+      <style>
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes cardSlideIn {
+          from { 
+            transform: scale(0.8) translateY(50px); 
+            opacity: 0; 
+          }
+          to { 
+            transform: scale(1) translateY(0); 
+            opacity: 1; 
+          }
+        }
+        .chance-card {
+          background: ${bgGradient};
+          padding: 25px;
+          border-radius: 15px;
+          max-width: 350px;
+          width: 90%;
+          color: white;
+          text-align: center;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+          animation: cardSlideIn 0.5s ease-out;
+          border: 3px solid rgba(255,255,255,0.2);
+        }
+        .chance-title {
+          font-size: 18px;
+          font-weight: bold;
+          margin-bottom: 15px;
+          color: #fff;
+        }
+        .chance-description {
+          font-size: 14px;
+          line-height: 1.5;
+          margin-bottom: 20px;
+          color: rgba(255,255,255,0.9);
+        }
+        .chance-effects {
+          background: rgba(0,0,0,0.2);
+          padding: 15px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+        }
+        .score-change {
+          font-size: 20px;
+          font-weight: bold;
+          color: ${chanceCard.scoreChange >= 0 ? '#2ecc71' : '#e74c3c'};
+        }
+        .close-btn {
+          background: rgba(255,255,255,0.2);
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 25px;
+          font-size: 16px;
+          cursor: pointer;
+          transition: background 0.3s;
+        }
+        .close-btn:hover {
+          background: rgba(255,255,255,0.3);
+        }
+      </style>
+      
+      <div class="chance-card">
+        <div class="chance-title">🃏 ${chanceCard.title}</div>
+        <div class="chance-description">${chanceCard.description}</div>
+        <div class="chance-effects">
+          <div class="score-change">💰 ${scoreText} 分</div>
+          ${positionText ? `<div style="margin-top: 8px; color: #ff6b6b;">${positionText}</div>` : ''}
+          <div style="margin-top: 10px; font-size: 14px; color: rgba(255,255,255,0.8);">
+            新分數: ${newScore}
+          </div>
+        </div>
+        <button class="close-btn" onclick="this.parentElement.parentElement.remove()">
+          確認
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Auto-close after 5 seconds
+    setTimeout(() => {
+      if (overlay.parentElement) {
+        overlay.remove();
+      }
+    }, 5000);
   }
 
   showGameEnd(data) {

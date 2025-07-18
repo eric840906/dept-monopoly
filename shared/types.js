@@ -26,7 +26,8 @@ const MiniGameType = {
 const TileType = {
   EVENT: 'event',
   SAFE: 'safe',
-  START: 'start'
+  START: 'start',
+  CHANCE: 'chance'
 };
 
 // Factory functions for creating data structures
@@ -85,6 +86,7 @@ function createTile(index, type, event = null) {
     event,
     name: type === TileType.START ? '起點' : 
           type === TileType.SAFE ? `安全格 ${index}` : 
+          type === TileType.CHANCE ? `機會格 ${index}` :
           `事件格 ${index}`
   };
 }

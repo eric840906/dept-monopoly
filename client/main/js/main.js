@@ -92,6 +92,13 @@ class GameApp {
             }
         });
 
+        this.socket.on('chance_card_drawn', (data) => {
+            console.log('Chance card drawn:', data);
+            if (this.game && this.game.scene.getScene('GameScene')) {
+                this.game.scene.getScene('GameScene').handleChanceCard(data);
+            }
+        });
+
         this.socket.on('score_update', (data) => {
             console.log('Score updated:', data);
             this.updateScoreBoard();

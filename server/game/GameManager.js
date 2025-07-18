@@ -35,9 +35,15 @@ class GameManager {
     // Start tile
     board.push(createTile(0, TileType.START));
     
-    // Generate remaining tiles - all as event tiles
+    // Generate remaining tiles
     for (let i = 1; i < GAME_CONFIG.BOARD_SIZE; i++) {
-      board.push(createTile(i, TileType.EVENT, this.generateRandomEvent()));
+      if (i % 6 === 0) {
+        // Every 6th tile is a chance tile
+        board.push(createTile(i, TileType.CHANCE));
+      } else {
+        // All other tiles are event tiles
+        board.push(createTile(i, TileType.EVENT, this.generateRandomEvent()));
+      }
     }
     
     return board;
@@ -52,6 +58,120 @@ class GameManager {
       'random_stat_check'
     ];
     return events[Math.floor(Math.random() * events.length)];
+  }
+
+  generateChanceCard() {
+    const chanceCards = [
+      // Very Bad Events
+      {
+        title: "🚨 專案重大失敗",
+        description: "你們的核心專案出現致命錯誤，客戶取消合約，公司損失慘重。",
+        effect: "reset_to_start",
+        scoreChange: -99, // Set to 1 (100 base - 99)
+        type: "disaster"
+      },
+      {
+        title: "💔 團隊解散危機",
+        description: "團隊內部嚴重衝突，多名核心成員提出離職，專案陷入停滯。",
+        effect: "reset_to_start",
+        scoreChange: -90,
+        type: "disaster"
+      },
+      
+      // Bad Events
+      {
+        title: "🐛 系統當機事件",
+        description: "伺服器當機導致服務中斷，需要緊急修復並賠償客戶損失。",
+        effect: "score_only",
+        scoreChange: -30,
+        type: "bad"
+      },
+      {
+        title: "📉 季度業績不佳",
+        description: "本季度營收未達標，需要重新檢討策略和資源分配。",
+        effect: "score_only",
+        scoreChange: -25,
+        type: "bad"
+      },
+      {
+        title: "⚠️ 安全漏洞發現",
+        description: "系統發現安全漏洞，需要立即修補並加強防護措施。",
+        effect: "score_only",
+        scoreChange: -20,
+        type: "bad"
+      },
+      {
+        title: "😰 關鍵員工離職",
+        description: "重要的技術主管離職，團隊需要時間重新組織和培訓。",
+        effect: "score_only",
+        scoreChange: -15,
+        type: "bad"
+      },
+      
+      // Neutral Events
+      {
+        title: "🔄 例行系統維護",
+        description: "進行定期系統維護，暫時影響部分服務但確保長期穩定。",
+        effect: "score_only",
+        scoreChange: -5,
+        type: "neutral"
+      },
+      {
+        title: "📋 合規檢查",
+        description: "配合監管單位進行例行檢查，流程順利但消耗一些資源。",
+        effect: "score_only",
+        scoreChange: 0,
+        type: "neutral"
+      },
+      
+      // Good Events
+      {
+        title: "💡 創新突破",
+        description: "團隊研發出創新解決方案，獲得業界認可和媒體報導。",
+        effect: "score_only",
+        scoreChange: 20,
+        type: "good"
+      },
+      {
+        title: "🤝 新合作夥伴",
+        description: "成功與知名企業建立戰略合作關係，開拓新的市場機會。",
+        effect: "score_only",
+        scoreChange: 25,
+        type: "good"
+      },
+      {
+        title: "🏆 獲得產業獎項",
+        description: "產品獲得重要產業獎項，大幅提升公司品牌形象和市場地位。",
+        effect: "score_only",
+        scoreChange: 30,
+        type: "good"
+      },
+      {
+        title: "📈 市場佔有率提升",
+        description: "成功搶佔競爭對手市場份額，營收大幅成長。",
+        effect: "score_only",
+        scoreChange: 35,
+        type: "good"
+      },
+      
+      // Very Good Events
+      {
+        title: "🚀 IPO成功上市",
+        description: "公司成功公開上市，估值暴漲，團隊獲得豐厚股票收益！",
+        effect: "score_only",
+        scoreChange: 50,
+        type: "excellent"
+      },
+      {
+        title: "💰 獲得大型投資",
+        description: "頂級創投注資，公司估值翻倍，進入獨角獸行列！",
+        effect: "score_only",
+        scoreChange: 45,
+        type: "excellent"
+      }
+    ];
+
+    return chanceCards[Math.floor(Math.random() * chanceCards.length)];
   }
 
   addPlayer(playerId, nickname, department) {
@@ -277,6 +397,53 @@ class GameManager {
     }
   }
 
+  triggerChanceCard(teamId, tile) {
+    const team = this.gameState.teams.find(t => t.id === teamId);
+    if (!team) return;
+
+    const chanceCard = this.generateChanceCard();
+    
+    console.log(`Team ${teamId} drew chance card: ${chanceCard.title}`);
+
+    // Apply the effect
+    if (chanceCard.effect === "reset_to_start") {
+      // Reset team position to start
+      team.position = 0;
+      // Apply score change (will likely set score very low)
+      team.score = Math.max(1, team.score + chanceCard.scoreChange);
+    } else if (chanceCard.effect === "score_only") {
+      // Only change score
+      team.score = Math.max(0, team.score + chanceCard.scoreChange);
+    }
+
+    // Broadcast the chance card result
+    this.io.emit('chance_card_drawn', {
+      teamId,
+      chanceCard,
+      newScore: team.score,
+      newPosition: team.position
+    });
+
+    // Update score with explanation
+    this.io.emit(SOCKET_EVENTS.SCORE_UPDATE, {
+      teamId,
+      newScore: team.score,
+      pointsChanged: chanceCard.scoreChange,
+      reason: chanceCard.title
+    });
+
+    // Broadcast updated game state
+    this.broadcastGameState();
+
+    // End turn after chance card effect
+    setTimeout(() => {
+      if (this.gameState.phase === GamePhase.IN_PROGRESS && 
+          this.gameState.currentTurnTeamId === teamId) {
+        this.endTurn();
+      }
+    }, 4000); // 4 second delay to show the chance card effect
+  }
+
   rotateCaptain(teamId) {
     const team = this.gameState.teams.find(t => t.id === teamId);
     if (!team || team.members.length === 0) {
@@ -304,6 +471,8 @@ class GameManager {
     // Handle tile effect after movement animation is complete
     if (landedTile.type === TileType.EVENT) {
       this.triggerEvent(teamId, landedTile);
+    } else if (landedTile.type === TileType.CHANCE) {
+      this.triggerChanceCard(teamId, landedTile);
     } else {
       this.endTurn();
     }
