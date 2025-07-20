@@ -60,7 +60,8 @@ function createTeam(id, color, emoji) {
     },
     score: 100,
     position: 0,
-    isEliminated: false
+    isEliminated: false,
+    runsCompleted: 0 // Track number of runs completed by this team
   };
 }
 

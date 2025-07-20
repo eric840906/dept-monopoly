@@ -241,7 +241,8 @@ class GameApp {
         } else if (this.gameState.phase === 'in_progress') {
             const currentTeam = this.gameState.teams.find(t => t.id === this.gameState.currentTurnTeamId);
             if (currentTeam) {
-                currentTeamElement.textContent = `${currentTeam.emoji} 隊伍 ${currentTeam.id.split('_')[1]} 的回合`;
+                const runsCompleted = currentTeam.runsCompleted || 0;
+                currentTeamElement.textContent = `${currentTeam.emoji} 隊伍 ${currentTeam.id.split('_')[1]} 的回合 (${runsCompleted}/5)`;
             }
         } else if (this.gameState.phase === 'ended') {
             currentTeamElement.textContent = '遊戲結束';

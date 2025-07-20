@@ -79,6 +79,7 @@ class ScoreBoard {
             const isCurrentTurn = team.id === this.currentGameState.currentTurnTeamId;
             const memberCount = team.members.length;
             const isWinning = index === 0 && sortedTeams.length > 1 && team.score > sortedTeams[1].score;
+            const runsCompleted = team.runsCompleted || 0;
             
             return `
                 <div class="team-score ${isCurrentTurn ? 'current-turn' : ''} ${isWinning ? 'winning' : ''}">
@@ -97,6 +98,9 @@ class ScoreBoard {
                     <div class="team-position">
                         位置: ${team.position || 0}
                     </div>
+                    <div class="team-runs">
+                        完成: ${runsCompleted}/5
+                    </div>
                 </div>
             `;
         }).join('');
@@ -105,13 +109,19 @@ class ScoreBoard {
         if (this.currentGameState.phase === 'in_progress') {
             const progressInfo = document.createElement('div');
             progressInfo.className = 'progress-info';
+            
+            // Calculate total runs completed vs max runs
+            const totalRunsCompleted = this.currentGameState.teams.reduce((sum, team) => sum + (team.runsCompleted || 0), 0);
+            const maxTotalRuns = this.currentGameState.teams.length * 5; // 5 runs per team
+            const progressPercentage = maxTotalRuns > 0 ? (totalRunsCompleted / maxTotalRuns) * 100 : 0;
+            
             progressInfo.innerHTML = `
                 <div class="progress-item">
-                    <span>回合:</span>
-                    <span>${this.currentGameState.round}/${this.currentGameState.maxRounds}</span>
+                    <span>遊戲進度:</span>
+                    <span>${totalRunsCompleted}/${maxTotalRuns} 回合</span>
                 </div>
                 <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${(this.currentGameState.round / this.currentGameState.maxRounds) * 100}%"></div>
+                    <div class="progress-fill" style="width: ${progressPercentage}%"></div>
                 </div>
             `;
             this.teamScoresContainer.appendChild(progressInfo);
@@ -223,6 +233,13 @@ class ScoreBoard {
                 font-size: 11px;
                 color: #666;
                 text-align: right;
+            }
+
+            .team-runs {
+                font-size: 11px;
+                color: #666;
+                text-align: right;
+                margin-top: 2px;
             }
 
             .winning {

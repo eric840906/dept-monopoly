@@ -324,6 +324,7 @@ class GameManager {
     const captain = this.rotateCaptain(firstTeam.id);
     
     this.startTurnTimer();
+    // Note: Game timer is kept as backup but primary ending is based on runs
     this.startGameTimer();
     
     this.broadcastGameState();
@@ -331,7 +332,8 @@ class GameManager {
       gameState: this.gameState,
       board: this.board,
       captainId: captain?.id || null,
-      captainName: captain?.nickname || 'Unknown'
+      captainName: captain?.nickname || 'Unknown',
+      maxRunsPerTeam: GAME_CONFIG.MAX_RUNS_PER_TEAM
     });
   }
 
@@ -583,11 +585,29 @@ class GameManager {
       t => t.id === this.gameState.currentTurnTeamId
     );
     
+    // Increment run count for current team
+    if (currentTeamIndex !== -1) {
+      const currentTeam = this.gameState.teams[currentTeamIndex];
+      currentTeam.runsCompleted++;
+      console.log(`Team ${currentTeam.id} completed run ${currentTeam.runsCompleted}/${GAME_CONFIG.MAX_RUNS_PER_TEAM}`);
+    }
+    
     const nextTeamIndex = (currentTeamIndex + 1) % this.gameState.teams.length;
     this.gameState.currentTurnTeamId = this.gameState.teams[nextTeamIndex].id;
     
     if (nextTeamIndex === 0) {
       this.gameState.round++;
+    }
+
+    // Check if all teams have completed their maximum runs
+    const allTeamsFinished = this.gameState.teams.every(team => 
+      team.runsCompleted >= GAME_CONFIG.MAX_RUNS_PER_TEAM
+    );
+    
+    if (allTeamsFinished) {
+      console.log('All teams have completed their maximum runs, ending game');
+      this.endGame('runs_completed');
+      return;
     }
 
     // Rotate captain for the new turn team
@@ -644,8 +664,13 @@ class GameManager {
   }
 
   checkWinCondition() {
-    if (this.gameState.round >= this.gameState.maxRounds) {
-      this.endGame('rounds_completed');
+    // Check if all teams have completed their maximum runs
+    const allTeamsFinished = this.gameState.teams.every(team => 
+      team.runsCompleted >= GAME_CONFIG.MAX_RUNS_PER_TEAM
+    );
+    
+    if (allTeamsFinished) {
+      this.endGame('runs_completed');
     }
   }
 
