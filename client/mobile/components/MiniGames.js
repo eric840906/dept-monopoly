@@ -52,7 +52,7 @@ window.MiniGames = {
 
     loadMultipleChoice(gameData) {
         // Use actual question data from server or fallback
-        let question = gameData.data?.question;
+        let question = gameData.data;
         
         // If question is just a string, wrap it in proper structure
         if (typeof question === 'string') {
@@ -77,12 +77,182 @@ window.MiniGames = {
         
         this.gameContainer.innerHTML = `
             <div class="mini-game multiple-choice">
+                <style>
+                    .multiple-choice {
+                        padding: 15px;
+                        max-height: 100vh;
+                        overflow-y: auto;
+                        box-sizing: border-box;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .multiple-choice h3 {
+                        margin: 0 0 15px 0;
+                        text-align: center;
+                        color: #333;
+                        font-size: 18px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 12px;
+                        border-radius: 8px;
+                        margin-bottom: 20px;
+                    }
+                    .question-text {
+                        background: #f8f9fa;
+                        border-radius: 12px;
+                        padding: 20px;
+                        margin-bottom: 20px;
+                        font-size: 16px;
+                        line-height: 1.5;
+                        text-align: center;
+                        color: #495057;
+                        border: 2px solid #e9ecef;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }
+                    .options-container {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 12px;
+                        margin-bottom: 20px;
+                        flex: 1;
+                    }
+                    .option-btn {
+                        background: #ffffff;
+                        border: 2px solid #dee2e6;
+                        border-radius: 12px;
+                        padding: 16px 20px;
+                        font-size: 15px;
+                        line-height: 1.4;
+                        text-align: left;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        position: relative;
+                        min-height: 60px;
+                        display: flex;
+                        align-items: center;
+                        word-wrap: break-word;
+                        user-select: none;
+                    }
+                    .option-btn:hover {
+                        border-color: #007bff;
+                        background: #f8f9ff;
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 8px rgba(0,123,255,0.15);
+                    }
+                    .option-btn.selected {
+                        background: #e3f2fd;
+                        border-color: #2196f3;
+                        border-width: 3px;
+                        color: #1976d2;
+                        font-weight: bold;
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 12px rgba(33,150,243,0.2);
+                    }
+                    .option-btn.selected::before {
+                        content: "✓";
+                        position: absolute;
+                        right: 15px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        background: #2196f3;
+                        color: white;
+                        border-radius: 50%;
+                        width: 24px;
+                        height: 24px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 14px;
+                        font-weight: bold;
+                    }
+                    .option-btn.selected::after {
+                        content: "";
+                        position: absolute;
+                        left: -2px;
+                        top: -2px;
+                        right: -2px;
+                        bottom: -2px;
+                        border: 2px solid #2196f3;
+                        border-radius: 12px;
+                        animation: pulse 1.5s infinite;
+                    }
+                    @keyframes pulse {
+                        0% { opacity: 1; transform: scale(1); }
+                        50% { opacity: 0.7; transform: scale(1.02); }
+                        100% { opacity: 1; transform: scale(1); }
+                    }
+                    .timer-display {
+                        text-align: center;
+                        font-size: 18px;
+                        font-weight: bold;
+                        margin: 15px 0;
+                        color: #d32f2f;
+                        background: #fff3e0;
+                        padding: 12px;
+                        border-radius: 10px;
+                        border: 3px solid #ff9800;
+                        position: relative;
+                    }
+                    .timer-display::before {
+                        content: "⏰";
+                        margin-right: 8px;
+                        font-size: 20px;
+                    }
+                    .btn {
+                        width: 100%;
+                        padding: 16px;
+                        border: none;
+                        border-radius: 12px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        margin-top: 10px;
+                        position: relative;
+                        overflow: hidden;
+                    }
+                    .btn-primary {
+                        background: #28a745;
+                        color: white;
+                        box-shadow: 0 2px 4px rgba(40,167,69,0.2);
+                    }
+                    .btn-primary:hover:not(:disabled) {
+                        background: #218838;
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 8px rgba(40,167,69,0.3);
+                    }
+                    .btn-primary:disabled {
+                        background: #6c757d;
+                        cursor: not-allowed;
+                        transform: none;
+                        box-shadow: none;
+                        opacity: 0.7;
+                    }
+                    .btn-primary:active:not(:disabled) {
+                        transform: translateY(0);
+                        box-shadow: 0 2px 4px rgba(40,167,69,0.2);
+                    }
+                    .instructions {
+                        background: #e8f5e8;
+                        border: 1px solid #c3e6cb;
+                        border-radius: 8px;
+                        padding: 12px;
+                        margin-bottom: 15px;
+                        font-size: 14px;
+                        text-align: center;
+                        color: #155724;
+                    }
+                </style>
                 <h3>📝 選擇題挑戰</h3>
+                <div class="instructions">
+                    💡 仔細閱讀題目，選擇最合適的答案
+                </div>
                 <div class="question-text">${question.question}</div>
                 <div class="options-container">
                     ${question.options.map((option, index) => `
                         <button class="option-btn" data-index="${index}">
-                            ${String.fromCharCode(65 + index)}. ${option}
+                            <span style="margin-right: 12px; font-weight: bold; color: #666;">${String.fromCharCode(65 + index)}.</span>
+                            <span>${option}</span>
                         </button>
                     `).join('')}
                 </div>
@@ -90,7 +260,7 @@ window.MiniGames = {
                     <span id="miniGameTimer">30</span> 秒
                 </div>
                 <button id="submitAnswer" class="btn btn-primary" disabled>
-                    提交答案
+                    請選擇一個答案
                 </button>
             </div>
         `;
@@ -101,9 +271,27 @@ window.MiniGames = {
 
     setupMultipleChoiceHandlers(correctIndex) {
         let selectedAnswer = null;
+        let hasSubmitted = false;
+        
+        const updateSubmitButton = () => {
+            const submitBtn = document.getElementById('submitAnswer');
+            if (selectedAnswer !== null && !hasSubmitted) {
+                submitBtn.disabled = false;
+                const selectedOption = String.fromCharCode(65 + selectedAnswer);
+                submitBtn.textContent = `提交答案 (選擇 ${selectedOption})`;
+            } else if (hasSubmitted) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '已提交答案';
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '請選擇一個答案';
+            }
+        };
         
         document.querySelectorAll('.option-btn').forEach((btn, index) => {
             btn.addEventListener('click', () => {
+                if (hasSubmitted) return; // Prevent changes after submission
+                
                 // Remove previous selection
                 document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
                 
@@ -111,20 +299,66 @@ window.MiniGames = {
                 btn.classList.add('selected');
                 selectedAnswer = index;
                 
-                // Enable submit button
-                document.getElementById('submitAnswer').disabled = false;
+                // Provide immediate feedback
+                btn.style.animation = 'none';
+                setTimeout(() => {
+                    btn.style.animation = '';
+                }, 10);
+                
+                updateSubmitButton();
+            });
+            
+            // Add touch feedback for mobile
+            btn.addEventListener('touchstart', () => {
+                if (!hasSubmitted) {
+                    btn.style.transform = 'translateY(-1px) scale(0.98)';
+                }
+            });
+            
+            btn.addEventListener('touchend', () => {
+                if (!hasSubmitted) {
+                    setTimeout(() => {
+                        btn.style.transform = '';
+                    }, 100);
+                }
             });
         });
 
         document.getElementById('submitAnswer').addEventListener('click', () => {
+            if (selectedAnswer === null || hasSubmitted) return;
+            
+            hasSubmitted = true;
             const isCorrect = selectedAnswer === correctIndex;
-            this.submitResult({
-                gameType: 'multiple_choice',
-                answer: selectedAnswer,
-                correct: isCorrect,
-                score: isCorrect ? 10 : -10
+            
+            // Disable all options after submission
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.style.pointerEvents = 'none';
+                btn.style.opacity = '0.7';
             });
+            
+            // Highlight the selected option
+            const selectedBtn = document.querySelector(`[data-index="${selectedAnswer}"]`);
+            if (selectedBtn) {
+                selectedBtn.style.opacity = '1';
+                selectedBtn.style.background = isCorrect ? '#d4edda' : '#f8d7da';
+                selectedBtn.style.borderColor = isCorrect ? '#28a745' : '#dc3545';
+            }
+            
+            updateSubmitButton();
+            
+            // Small delay before submitting to show feedback
+            setTimeout(() => {
+                this.submitResult({
+                    gameType: 'multiple_choice',
+                    answer: selectedAnswer,
+                    correct: isCorrect,
+                    score: isCorrect ? 10 : -10
+                });
+            }, 500);
         });
+        
+        // Initial button state
+        updateSubmitButton();
     },
 
     loadDragDrop(gameData) {
@@ -915,22 +1149,184 @@ window.MiniGames = {
 
         this.gameContainer.innerHTML = `
             <div class="mini-game team-pairing">
+                <style>
+                    .team-pairing {
+                        padding: 15px;
+                        max-height: 100vh;
+                        overflow-y: auto;
+                        box-sizing: border-box;
+                    }
+                    .team-pairing h3 {
+                        margin: 0 0 10px 0;
+                        text-align: center;
+                        color: #333;
+                        font-size: 18px;
+                    }
+                    .team-pairing p {
+                        margin: 0 0 15px 0;
+                        text-align: center;
+                        color: #666;
+                        font-size: 14px;
+                    }
+                    .collaboration-task {
+                        background: #f8f9fa;
+                        border-radius: 12px;
+                        padding: 15px;
+                        margin-bottom: 15px;
+                        border: 2px solid #e9ecef;
+                    }
+                    .collaboration-task h4 {
+                        margin: 0 0 8px 0;
+                        color: #495057;
+                        font-size: 16px;
+                        text-align: center;
+                    }
+                    .collaboration-task p {
+                        margin: 0 0 15px 0;
+                        color: #6c757d;
+                        font-size: 13px;
+                        text-align: center;
+                    }
+                    .priority-list {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 10px;
+                        max-height: 50vh;
+                        overflow-y: auto;
+                        padding: 10px;
+                        border: 1px solid #e9ecef;
+                        border-radius: 8px;
+                        background: #ffffff;
+                    }
+                    .priority-item {
+                        background: #ffffff;
+                        border: 2px solid #dee2e6;
+                        border-radius: 12px;
+                        padding: 16px 20px;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        font-size: 15px;
+                        font-weight: 500;
+                        line-height: 1.4;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        min-height: 60px;
+                        word-wrap: break-word;
+                        user-select: none;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }
+                    .priority-item:hover {
+                        border-color: #007bff;
+                        background: #f8f9ff;
+                        transform: translateY(-1px);
+                        box-shadow: 0 2px 4px rgba(0,123,255,0.1);
+                    }
+                    .priority-item.selected {
+                        background: #e3f2fd;
+                        border-color: #2196f3;
+                        border-width: 3px;
+                        color: #1976d2;
+                        font-weight: bold;
+                    }
+                    .priority-item.selected::before {
+                        content: "✓";
+                        position: absolute;
+                        left: -8px;
+                        top: -8px;
+                        background: #2196f3;
+                        color: white;
+                        border-radius: 50%;
+                        width: 20px;
+                        height: 20px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                        font-weight: bold;
+                    }
+                    .order-number {
+                        background: #ff9800;
+                        color: white;
+                        border-radius: 50%;
+                        width: 24px;
+                        height: 24px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                        font-weight: bold;
+                        margin-left: 8px;
+                        flex-shrink: 0;
+                    }
+                    .timer-display {
+                        text-align: center;
+                        font-size: 16px;
+                        font-weight: bold;
+                        margin: 15px 0;
+                        color: #d32f2f;
+                        background: #fff3e0;
+                        padding: 8px;
+                        border-radius: 8px;
+                        border: 2px solid #ffcc02;
+                    }
+                    .btn {
+                        width: 100%;
+                        padding: 12px;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        margin-top: 10px;
+                    }
+                    .btn-primary {
+                        background: #28a745;
+                        color: white;
+                    }
+                    .btn-primary:hover {
+                        background: #218838;
+                        transform: translateY(-1px);
+                    }
+                    .btn-primary:disabled {
+                        background: #6c757d;
+                        cursor: not-allowed;
+                        transform: none;
+                    }
+                    .instructions {
+                        background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 6px;
+                        padding: 10px;
+                        margin-bottom: 15px;
+                        font-size: 13px;
+                        text-align: center;
+                        color: #856404;
+                    }
+                </style>
                 <h3>👥 團隊協作</h3>
                 <p>請與隊友討論並共同完成以下任務：</p>
+                <div class="instructions">
+                    💡 點擊項目來選擇優先順序，數字表示優先級排序
+                </div>
                 <div class="collaboration-task">
                     <h4>任務：${taskTitle}</h4>
                     <p>${taskDescription}</p>
                     <div class="priority-list" id="priorityList">
                         ${activities.map(activity => `
-                            <div class="priority-item" data-item="${activity}">📅 ${activity}</div>
+                            <div class="priority-item" data-item="${activity}">
+                                <span>📅 ${activity}</span>
+                            </div>
                         `).join('')}
                     </div>
                 </div>
                 <div class="timer-display">
-                    <span id="miniGameTimer">60</span> 秒
+                    ⏰ <span id="miniGameTimer">60</span> 秒
                 </div>
-                <button id="submitPriority" class="btn btn-primary">
-                    提交排序
+                <button id="submitPriority" class="btn btn-primary" disabled>
+                    請至少選擇 3 個項目
                 </button>
             </div>
         `;
@@ -943,6 +1339,33 @@ window.MiniGames = {
         const priorityList = document.getElementById('priorityList');
         let currentOrder = [];
 
+        const updateSubmitButton = () => {
+            const submitBtn = document.getElementById('submitPriority');
+            if (currentOrder.length >= 3) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = `提交排序 (已選擇 ${currentOrder.length} 項)`;
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.textContent = `請至少選擇 3 個項目 (目前 ${currentOrder.length} 項)`;
+            }
+        };
+
+        const updateOrderNumbers = () => {
+            // Remove all existing order numbers
+            document.querySelectorAll('.order-number').forEach(el => el.remove());
+            
+            // Add order numbers to selected items in correct order
+            currentOrder.forEach((itemName, index) => {
+                const item = document.querySelector(`[data-item="${itemName}"]`);
+                if (item) {
+                    const orderNumber = document.createElement('span');
+                    orderNumber.className = 'order-number';
+                    orderNumber.textContent = index + 1;
+                    item.appendChild(orderNumber);
+                }
+            });
+        };
+
         // Make items clickable to reorder
         document.querySelectorAll('.priority-item').forEach((item, index) => {
             item.addEventListener('click', () => {
@@ -952,21 +1375,24 @@ window.MiniGames = {
                     // Remove from order
                     currentOrder = currentOrder.filter(i => i !== itemName);
                     item.classList.remove('selected');
-                    item.querySelector('.order-number')?.remove();
+                    updateOrderNumbers();
                 } else {
                     // Add to order
                     currentOrder.push(itemName);
                     item.classList.add('selected');
-                    
-                    const orderNumber = document.createElement('span');
-                    orderNumber.className = 'order-number';
-                    orderNumber.textContent = currentOrder.length;
-                    item.appendChild(orderNumber);
+                    updateOrderNumbers();
                 }
+                
+                updateSubmitButton();
             });
         });
 
         document.getElementById('submitPriority').addEventListener('click', () => {
+            if (currentOrder.length < 3) {
+                alert('請至少選擇 3 個項目後再提交！');
+                return;
+            }
+            
             // For team pairing, success is based on participation
             const score = currentOrder.length >= 3 ? 10 : 5;
             
@@ -977,6 +1403,9 @@ window.MiniGames = {
                 score: score
             });
         });
+
+        // Initial button state
+        updateSubmitButton();
     },
 
     loadRandomEvent(gameData) {

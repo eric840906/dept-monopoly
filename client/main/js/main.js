@@ -237,9 +237,14 @@ class GameApp {
     if (!this.gameState) return
 
     const currentTeamElement = document.getElementById('currentTeam')
+    const gameStatus = document.getElementById('gameStatus')
 
     if (this.gameState.phase === 'lobby') {
       currentTeamElement.textContent = '大廳等待中...'
+      // Clear game end results when back in lobby
+      if (gameStatus) {
+        gameStatus.innerHTML = ''
+      }
     } else if (this.gameState.phase === 'in_progress') {
       const currentTeam = this.gameState.teams.find((t) => t.id === this.gameState.currentTurnTeamId)
       if (currentTeam) {
@@ -250,6 +255,10 @@ class GameApp {
         } else {
           currentTeamElement.textContent = `${currentTeam.emoji} ${teamDisplay} 的回合 (${runsCompleted}/5)`
         }
+      }
+      // Clear game end results when game is in progress
+      if (gameStatus) {
+        gameStatus.innerHTML = ''
       }
     } else if (this.gameState.phase === 'ended') {
       currentTeamElement.textContent = '遊戲結束'
