@@ -23,12 +23,26 @@ function setupSocketHandlers(io, gameManager) {
       }
     });
 
-    // Handle team assignment (host only)
-    socket.on(SOCKET_EVENTS.TEAM_ASSIGN, () => {
+
+    // Handle team joining
+    socket.on(SOCKET_EVENTS.TEAM_JOIN, (data) => {
       try {
-        const teams = gameManager.assignTeams();
-        io.emit(SOCKET_EVENTS.TEAMS_UPDATED, teams);
-        console.log('Teams assigned');
+        const { teamId } = data;
+        const team = gameManager.joinTeam(socket.id, teamId);
+        io.emit(SOCKET_EVENTS.TEAMS_UPDATED, gameManager.getGameState().teams);
+        socket.emit('team_joined', { team });
+        console.log(`Player ${socket.id} joined team ${team.name}`);
+      } catch (error) {
+        socket.emit(SOCKET_EVENTS.ERROR, { message: error.message });
+      }
+    });
+
+    // Handle team leaving
+    socket.on(SOCKET_EVENTS.TEAM_LEAVE, () => {
+      try {
+        gameManager.leaveTeam(socket.id);
+        io.emit(SOCKET_EVENTS.TEAMS_UPDATED, gameManager.getGameState().teams);
+        console.log(`Player ${socket.id} left their team`);
       } catch (error) {
         socket.emit(SOCKET_EVENTS.ERROR, { message: error.message });
       }

@@ -3,7 +3,7 @@
 const GAME_CONFIG = {
   MAX_PLAYERS: 80,
   MIN_TEAMS: 1,
-  MAX_TEAMS: 1,
+  MAX_TEAMS: 6,
   TURN_TIME_LIMIT: 90000, // 90 seconds in milliseconds
   GAME_DURATION: 1800000, // 30 minutes in milliseconds (kept for backwards compatibility)
   BOARD_SIZE: 24,
@@ -38,6 +38,58 @@ const TEAM_COLORS = [
 
 const TEAM_EMOJIS = ['🚀', '⚡', '🎯', '🌟', '🔥', '💎', '🎪', '🏆']
 
+// Pre-configured teams that are created when server starts
+const PREDEFINED_TEAMS = [
+  {
+    id: 'team_alpha',
+    name: '阿爾法隊',
+    color: '#FF6B6B', // Red
+    emoji: '🚀',
+    image: '/images/teams/team_alpha.png',
+    maxPlayers: null // No limit
+  },
+  {
+    id: 'team_beta', 
+    name: '貝塔隊',
+    color: '#4ECDC4', // Teal
+    emoji: '⚡',
+    image: '/images/teams/team_beta.png',
+    maxPlayers: null
+  },
+  {
+    id: 'team_gamma',
+    name: '伽瑪隊', 
+    color: '#45B7D1', // Blue
+    emoji: '🎯',
+    image: '/images/teams/team_gamma.png',
+    maxPlayers: null
+  },
+  {
+    id: 'team_delta',
+    name: '德爾塔隊',
+    color: '#96CEB4', // Green  
+    emoji: '🌟',
+    image: '/images/teams/team_delta.png',
+    maxPlayers: null
+  },
+  {
+    id: 'team_epsilon',
+    name: '艾普西隆隊',
+    color: '#FFEAA7', // Yellow
+    emoji: '🔥',
+    image: '/images/teams/team_epsilon.png',
+    maxPlayers: null
+  },
+  {
+    id: 'team_zeta',
+    name: '澤塔隊',
+    color: '#DDA0DD', // Plum
+    emoji: '💎',
+    image: '/images/teams/team_zeta.png',
+    maxPlayers: null
+  }
+]
+
 const SOCKET_EVENTS = {
   // Connection events
   CONNECTION: 'connection',
@@ -53,7 +105,8 @@ const SOCKET_EVENTS = {
   GAME_STATE_UPDATE: 'game_state_update',
 
   // Team events
-  TEAM_ASSIGN: 'team_assign',
+  TEAM_JOIN: 'team_join',
+  TEAM_LEAVE: 'team_leave',
   TEAMS_UPDATED: 'teams_updated',
 
   // Turn events
@@ -87,6 +140,7 @@ module.exports = {
   GAME_CONFIG,
   TEAM_COLORS,
   TEAM_EMOJIS,
+  PREDEFINED_TEAMS,
   SOCKET_EVENTS,
   BOARD_LAYOUT,
 }

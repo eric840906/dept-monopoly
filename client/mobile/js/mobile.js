@@ -7,11 +7,16 @@ class MobileGameApp {
     this.playerData = null
     this.gameState = null
     this.teamData = null
+    this.targetTeamId = null
 
     this.init()
   }
 
   init() {
+    // Check for team joining URL parameter
+    const urlParams = new URLSearchParams(window.location.search)
+    this.targetTeamId = urlParams.get('team') // Changed from 'teamId' to 'team'
+    
     this.setupSocket()
     this.setupEventListeners()
     this.showScreen('loadingScreen')
@@ -56,7 +61,21 @@ class MobileGameApp {
       console.log('Join successful:', data)
       this.playerData = data.player
       this.updatePlayerInfo()
+      
+      // If we have a target team, try to join it
+      if (this.targetTeamId) {
+        console.log(`Attempting to join team: ${this.targetTeamId}`)
+        this.socket.emit('team_join', { teamId: this.targetTeamId })
+        this.showTeamJoiningIndicator()
+      }
+      
       this.showScreen('lobbyScreen')
+    })
+
+    this.socket.on('team_joined', (data) => {
+      console.log('Team joined successfully:', data)
+      this.teamData = data.team
+      this.showTeamJoinSuccess()
     })
 
     // Game state events
@@ -144,6 +163,15 @@ class MobileGameApp {
     // Error handling
     this.socket.on('error', (error) => {
       console.error('Socket error:', error)
+      // If team joining failed, show the error and clear target team
+      if (this.targetTeamId && error.message.includes('Team')) {
+        // Remove joining indicator
+        const joiningIndicator = document.getElementById('teamJoiningIndicator')
+        if (joiningIndicator) {
+          joiningIndicator.remove()
+        }
+        this.targetTeamId = null
+      }
       this.showError(error.message)
     })
   }
@@ -288,7 +316,10 @@ class MobileGameApp {
       // Update lobby team display
       const playerTeamEl = document.getElementById('playerTeam')
       if (playerTeamEl) {
-        playerTeamEl.textContent = `${team.emoji} 隊伍 ${team.id.split('_')[1]}`
+        const teamIcon = team.image ? 
+          `<img src="${team.image}" alt="${team.name}" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;">` :
+          team.emoji;
+        playerTeamEl.innerHTML = `${teamIcon} ${team.name || '隊伍 ' + team.id.split('_')[1]}`;
       }
 
       // Show team info card
@@ -296,9 +327,13 @@ class MobileGameApp {
       if (teamInfoCard) {
         teamInfoCard.classList.remove('hidden')
 
-        document.getElementById('teamEmoji').textContent = team.emoji
+        if (team.image) {
+          document.getElementById('teamEmoji').innerHTML = `<img src="${team.image}" alt="${team.name}" style="width: 32px; height: 32px;">`
+        } else {
+          document.getElementById('teamEmoji').textContent = team.emoji
+        }
         document.getElementById('teamColor').style.backgroundColor = team.color
-        document.getElementById('teamName').textContent = `隊伍 ${team.id.split('_')[1]}`
+        document.getElementById('teamName').textContent = team.name || `隊伍 ${team.id.split('_')[1]}`
         document.getElementById('teamMembers').textContent = `成員: ${team.members.map((m) => m.nickname).join(', ')}`
 
         // Update abilities
@@ -927,6 +962,79 @@ class MobileGameApp {
       errorMessage.textContent = message
     }
     this.showScreen('errorScreen')
+  }
+
+  showTeamJoiningIndicator() {
+    // Show joining indicator
+    const joiningMsg = document.createElement('div')
+    joiningMsg.id = 'teamJoiningIndicator'
+    joiningMsg.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #3498db;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 25px;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 1000;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      animation: slideDown 0.5s ease-out;
+    `
+    joiningMsg.innerHTML = `⏳ 正在加入隊伍...`
+    
+    // Add animation if not exists
+    if (!document.querySelector('#teamJoinAnimation')) {
+      const style = document.createElement('style')
+      style.id = 'teamJoinAnimation'
+      style.textContent = `
+        @keyframes slideDown {
+          from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+          to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+      `
+      document.head.appendChild(style)
+    }
+    
+    document.body.appendChild(joiningMsg)
+  }
+
+  showTeamJoinSuccess() {
+    // Remove joining indicator
+    const joiningIndicator = document.getElementById('teamJoiningIndicator')
+    if (joiningIndicator) {
+      joiningIndicator.remove()
+    }
+    
+    // Show success message
+    const successMsg = document.createElement('div')
+    successMsg.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2ecc71;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 25px;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 1000;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      animation: slideDown 0.5s ease-out;
+    `
+    successMsg.innerHTML = `✅ 成功加入 ${this.teamData.name}！`
+    
+    document.body.appendChild(successMsg)
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+      if (successMsg.parentElement) {
+        successMsg.remove()
+      }
+    }, 3000)
   }
 
   retry() {

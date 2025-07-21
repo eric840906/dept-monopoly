@@ -10,6 +10,7 @@ const {
   GAME_CONFIG, 
   TEAM_COLORS, 
   TEAM_EMOJIS, 
+  PREDEFINED_TEAMS,
   SOCKET_EVENTS,
   BOARD_LAYOUT 
 } = require('../../shared/constants');
@@ -23,10 +24,30 @@ class GameManager {
     this.gameTimer = null;
     this.board = this.generateBoard();
     this.miniGameProcessor = new MiniGameProcessor();
+    
+    // Auto-create predefined teams
+    this.initializePredefinedTeams();
   }
 
   setIO(io) {
     this.io = io;
+  }
+
+  initializePredefinedTeams() {
+    console.log('Initializing predefined teams...');
+    
+    PREDEFINED_TEAMS.forEach(teamConfig => {
+      const team = createTeam(teamConfig.id, teamConfig.color, teamConfig.emoji);
+      team.name = teamConfig.name;
+      team.maxPlayers = teamConfig.maxPlayers;
+      team.image = teamConfig.image;
+      team.joinUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/mobile?team=${teamConfig.id}`;
+      
+      this.gameState.teams.push(team);
+      console.log(`Created team: ${teamConfig.name} (${teamConfig.id}) - URL: ${team.joinUrl}`);
+    });
+    
+    console.log(`Initialized ${PREDEFINED_TEAMS.length} predefined teams`);
   }
 
   generateBoard() {
@@ -252,67 +273,76 @@ class GameManager {
     console.log(`Skipped to next team: ${this.gameState.currentTurnTeamId}`);
   }
 
-  assignTeams() {
-    const players = Object.values(this.gameState.players);
+
+  joinTeam(playerId, teamId) {
+    const player = this.gameState.players[playerId];
+    const team = this.gameState.teams.find(t => t.id === teamId);
     
-    if (players.length === 0) {
-      console.log('No players to assign to teams');
-      return [];
+    if (!player) {
+      throw new Error('Player not found');
     }
     
-    // Calculate optimal team count based on player count
-    // Ensure each team has at least 1 player, but prefer 8-12 players per team
-    const idealPlayersPerTeam = 10;
-    let teamCount = Math.max(1, Math.ceil(players.length / idealPlayersPerTeam));
-    
-    // Apply min/max team constraints
-    teamCount = Math.min(GAME_CONFIG.MAX_TEAMS, Math.max(GAME_CONFIG.MIN_TEAMS, teamCount));
-    
-    // However, never create more teams than we have players
-    teamCount = Math.min(teamCount, players.length);
-
-    console.log(`Creating ${teamCount} teams for ${players.length} players`);
-
-    // Clear existing teams
-    this.gameState.teams = [];
-
-    // Create teams
-    for (let i = 0; i < teamCount; i++) {
-      const team = createTeam(
-        `team_${i}`,
-        TEAM_COLORS[i % TEAM_COLORS.length],
-        TEAM_EMOJIS[i % TEAM_EMOJIS.length]
-      );
-      this.gameState.teams.push(team);
+    if (!team) {
+      throw new Error('Team not found');
     }
-
-    // Shuffle players and assign to teams
-    const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
-    shuffledPlayers.forEach((player, index) => {
-      const teamIndex = index % teamCount;
-      const team = this.gameState.teams[teamIndex];
-      
-      player.teamId = team.id;
-      team.members.push(player);
-    });
-
-    // Log team assignments
-    this.gameState.teams.forEach(team => {
-      console.log(`Team ${team.id}: ${team.members.length} members`);
-    });
-
+    
+    if (team.maxPlayers && team.members.length >= team.maxPlayers) {
+      throw new Error('Team is full');
+    }
+    
+    // Remove player from current team if any
+    if (player.teamId) {
+      this.leaveTeam(playerId);
+    }
+    
+    // Add player to new team
+    player.teamId = teamId;
+    team.members.push(player);
+    
+    console.log(`Player ${player.nickname} joined team ${team.name}`);
     this.broadcastGameState();
-    return this.gameState.teams;
+    
+    return team;
+  }
+
+  leaveTeam(playerId) {
+    const player = this.gameState.players[playerId];
+    
+    if (!player || !player.teamId) {
+      return;
+    }
+    
+    const team = this.gameState.teams.find(t => t.id === player.teamId);
+    if (team) {
+      team.members = team.members.filter(member => member.id !== playerId);
+      console.log(`Player ${player.nickname} left team ${team.name}`);
+    }
+    
+    player.teamId = null;
+    this.broadcastGameState();
+  }
+
+
+  getTeamByJoinCode(teamId) {
+    return this.gameState.teams.find(t => t.id === teamId);
   }
 
   startGame() {
+    // Check if we have teams and at least one team with members
     if (this.gameState.teams.length === 0) {
-      this.assignTeams();
+      throw new Error('Cannot start game - no teams created. Please create teams first.');
     }
 
-    // Safety check: ensure we have teams after assignment
-    if (this.gameState.teams.length === 0) {
-      throw new Error('Cannot start game - no teams available');
+    const teamsWithMembers = this.gameState.teams.filter(team => team.members.length > 0);
+    if (teamsWithMembers.length === 0) {
+      throw new Error('Cannot start game - no teams have members. Players need to join teams first.');
+    }
+
+    // Remove teams with no members from the game
+    const emptyTeams = this.gameState.teams.filter(team => team.members.length === 0);
+    if (emptyTeams.length > 0) {
+      console.log(`Removing ${emptyTeams.length} empty teams from game:`, emptyTeams.map(t => t.name));
+      this.gameState.teams = teamsWithMembers;
     }
 
     this.gameState.phase = GamePhase.IN_PROGRESS;

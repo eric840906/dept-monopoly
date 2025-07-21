@@ -26,7 +26,7 @@ class HostControls {
   setupEventListeners() {
     // Basic controls
     document.getElementById('assignTeamsBtn')?.addEventListener('click', () => {
-      this.assignTeams()
+      this.showTeamCreationModal()
     })
 
     document.getElementById('startGameBtn')?.addEventListener('click', () => {
@@ -162,7 +162,7 @@ class HostControls {
             <div class="team-control" data-team-id="${team.id}">
                 <div class="team-info">
                     <span class="team-emoji">${team.emoji}</span>
-                    <span class="team-name">隊伍 ${team.id.split('_')[1]}</span>
+                    <span class="team-name">${team.name || '隊伍 ' + team.id.split('_')[1]}</span>
                     <span class="member-count">(${team.members.length} 人)</span>
                 </div>
                 <div class="team-actions">
@@ -183,7 +183,7 @@ class HostControls {
     const selector = document.getElementById('targetTeam')
     if (!selector || !this.currentGameState.teams) return
 
-    selector.innerHTML = '<option value="">選擇隊伍...</option>' + this.currentGameState.teams.map((team) => `<option value="${team.id}">${team.emoji} 隊伍 ${team.id.split('_')[1]}</option>`).join('')
+    selector.innerHTML = '<option value="">選擇隊伍...</option>' + this.currentGameState.teams.map((team) => `<option value="${team.id}">${team.emoji} ${team.name || '隊伍 ' + team.id.split('_')[1]}</option>`).join('')
   }
 
   updateGameStats() {
@@ -228,10 +228,153 @@ class HostControls {
   }
 
   // Host Action Methods
-  assignTeams() {
-    if (this.gameApp.socket) {
-      this.gameApp.socket.emit('team_assign')
+  showTeamCreationModal() {
+    const modal = this.createTeamListModal()
+    document.body.appendChild(modal)
+  }
+
+  createTeamListModal() {
+    const modal = document.createElement('div')
+    modal.className = 'team-creation-modal'
+    modal.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>🏆 隊伍 QR 碼</h3>
+            <button class="close-btn" onclick="this.closest('.team-creation-modal').remove()">×</button>
+          </div>
+          <div class="modal-body">
+            <div class="teams-info">
+              <p style="text-align: center; color: #666; margin-bottom: 20px;">
+                📱 玩家掃描 QR 碼即可加入對應隊伍
+              </p>
+            </div>
+            
+            <div class="existing-teams">
+              <h4>可用隊伍 & 加入連結</h4>
+              <div id="teamsList">
+                <!-- Teams will be populated here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+    
+    this.addTeamModalStyles()
+    
+    // Populate teams
+    setTimeout(() => this.updateTeamsList(), 100)
+    
+    return modal
+  }
+
+
+  updateTeamsList() {
+    const container = document.getElementById('teamsList')
+    if (!container || !this.currentGameState?.teams) return
+    
+    if (this.currentGameState.teams.length === 0) {
+      container.innerHTML = '<p style="color: #666; text-align: center;">隊伍加載中...</p>'
+      return
     }
+    
+    container.innerHTML = this.currentGameState.teams.map(team => `
+      <div class="team-item">
+        <div class="team-info">
+          <div class="team-name">
+            ${team.image ? 
+              `<img src="${team.image}" alt="${team.name}" style="width: 24px; height: 24px; margin-right: 8px; vertical-align: middle;">` :
+              `<span style="color: ${team.color};">${team.emoji}</span>`
+            }
+            <strong>${team.name}</strong>
+            <span class="member-count">(${team.members.length} 人)</span>
+          </div>
+          <div class="team-url">
+            <small>加入連結: <a href="${team.joinUrl}" target="_blank">${team.joinUrl}</a></small>
+          </div>
+        </div>
+        <div class="team-actions">
+          <button class="qr-btn" onclick="window.gameApp.hostControls.showQRCode('${team.id}', '${team.joinUrl}', '${team.name}')">
+            📱 QR 碼
+          </button>
+          <button class="copy-btn" onclick="window.gameApp.hostControls.copyURL('${team.joinUrl}')">
+            📋 複製連結
+          </button>
+        </div>
+      </div>
+    `).join('')
+  }
+
+  showQRCode(teamId, joinUrl, teamName) {
+    // For now, show URL - will implement QR generation later
+    const qrModal = document.createElement('div')
+    qrModal.className = 'qr-modal'
+    qrModal.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-content qr-content">
+          <div class="modal-header">
+            <h3>📱 ${teamName} QR 碼</h3>
+            <button class="close-btn" onclick="this.closest('.qr-modal').remove()">×</button>
+          </div>
+          <div class="modal-body">
+            <div class="qr-display">
+              <div class="qr-placeholder">
+                <div style="font-size: 48px; margin-bottom: 20px;">📱</div>
+                <p>QR 碼生成功能即將推出</p>
+                <p>目前請使用以下連結:</p>
+                <div class="url-display">
+                  <input type="text" value="${joinUrl}" readonly onclick="this.select()">
+                  <button onclick="navigator.clipboard.writeText('${joinUrl}').then(() => alert('已複製到剪貼板!'))">
+                    📋 複製
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+    document.body.appendChild(qrModal)
+  }
+
+  copyURL(url) {
+    navigator.clipboard.writeText(url).then(() => {
+      // Show success message
+      const successMsg = document.createElement('div')
+      successMsg.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #2ecc71;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 14px;
+        z-index: 10000;
+        animation: fadeInOut 2s ease-out;
+      `
+      successMsg.textContent = '✅ 連結已複製到剪貼板'
+      
+      if (!document.querySelector('#copyAnimation')) {
+        const style = document.createElement('style')
+        style.id = 'copyAnimation'
+        style.textContent = `
+          @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            20% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+          }
+        `
+        document.head.appendChild(style)
+      }
+      
+      document.body.appendChild(successMsg)
+      setTimeout(() => successMsg.remove(), 2000)
+    }).catch(err => {
+      alert('複製失敗，請手動複製連結')
+    })
   }
 
   startGame() {
@@ -367,11 +510,14 @@ class HostControls {
 
     const hasPlayers = Object.keys(this.currentGameState.players).length > 0
     const hasTeams = this.currentGameState.teams.length > 0
+    const hasTeamsWithMembers = this.currentGameState.teams.some(team => team.members.length > 0)
     const gameInProgress = this.currentGameState.phase === 'in_progress'
     const gameEnded = this.currentGameState.phase === 'ended'
 
-    if (assignTeamsBtn) assignTeamsBtn.disabled = !hasPlayers || gameInProgress || gameEnded
-    if (startGameBtn) startGameBtn.disabled = !hasTeams || gameInProgress || gameEnded
+    // Create Teams button is always enabled until game starts
+    if (assignTeamsBtn) assignTeamsBtn.disabled = gameInProgress || gameEnded
+    // Start Game button requires teams with members
+    if (startGameBtn) startGameBtn.disabled = !hasTeamsWithMembers || gameInProgress || gameEnded
     if (skipTurnBtn) skipTurnBtn.disabled = !gameInProgress
     if (endGameBtn) endGameBtn.disabled = !gameInProgress
   }
@@ -590,6 +736,201 @@ class HostControls {
                 font-weight: bold;
             }
         `
+    document.head.appendChild(styles)
+  }
+
+  addTeamModalStyles() {
+    if (document.getElementById('teamModalStyles')) return
+
+    const styles = document.createElement('style')
+    styles.id = 'teamModalStyles'
+    styles.textContent = `
+      .team-creation-modal,
+      .qr-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .team-creation-modal .modal-content {
+        background: white;
+        border-radius: 15px;
+        max-width: 700px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      }
+
+      .qr-content {
+        max-width: 400px !important;
+      }
+
+      .team-creation-form {
+        padding: 20px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #2c3e50;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+
+      .create-btn, .cancel-btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .create-btn {
+        background: #2ecc71;
+        color: white;
+      }
+
+      .create-btn:hover {
+        background: #27ae60;
+      }
+
+      .cancel-btn {
+        background: #95a5a6;
+        color: white;
+      }
+
+      .cancel-btn:hover {
+        background: #7f8c8d;
+      }
+
+      .existing-teams {
+        padding: 20px;
+      }
+
+      .existing-teams h4 {
+        margin: 0 0 15px 0;
+        color: #34495e;
+      }
+
+      .team-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border-left: 4px solid #3498db;
+      }
+
+      .team-name {
+        font-size: 16px;
+        margin-bottom: 5px;
+      }
+
+      .team-url {
+        font-size: 12px;
+      }
+
+      .team-url a {
+        color: #3498db;
+        text-decoration: none;
+      }
+
+      .team-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .qr-btn, .copy-btn {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .qr-btn {
+        background: #3498db;
+        color: white;
+      }
+
+      .qr-btn:hover {
+        background: #2980b9;
+      }
+
+      .copy-btn {
+        background: #2ecc71;
+        color: white;
+      }
+
+      .copy-btn:hover {
+        background: #27ae60;
+      }
+
+      .qr-display {
+        text-align: center;
+        padding: 20px;
+      }
+
+      .qr-placeholder {
+        color: #666;
+      }
+
+      .url-display {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+        align-items: center;
+      }
+
+      .url-display input {
+        flex: 1;
+        padding: 8px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 12px;
+      }
+
+      .url-display button {
+        padding: 8px 12px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+    `
     document.head.appendChild(styles)
   }
 }

@@ -44,6 +44,7 @@ app.get('/mobile', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/mobile/index.html'));
 });
 
+
 // Initialize game manager
 const gameManager = new GameManager();
 
