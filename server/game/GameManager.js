@@ -221,10 +221,23 @@ class GameManager {
       if (team) {
         team.members = team.members.filter(m => m.id !== playerId);
         
-        // If team is now empty, remove it from the game
+        // If team is now empty, check if it's a predefined team
         if (team.members.length === 0) {
-          console.log(`Team ${team.id} is now empty, removing from game`);
-          this.gameState.teams = this.gameState.teams.filter(t => t.id !== team.id);
+          // Check if this is a predefined team (should not be removed)
+          const isPredefinedTeam = PREDEFINED_TEAMS.some(predefined => predefined.id === team.id);
+          
+          if (isPredefinedTeam) {
+            console.log(`Team ${team.id} is now empty but is predefined, keeping it for future games`);
+            // Reset team properties to initial state but keep the team
+            team.score = GAME_CONFIG.SCORING.STARTING_SCORE;
+            team.position = 0;
+            team.runsCompleted = 0;
+            team.currentCaptainId = null;
+            team.captainRotationIndex = 0;
+          } else {
+            console.log(`Team ${team.id} is now empty, removing from game`);
+            this.gameState.teams = this.gameState.teams.filter(t => t.id !== team.id);
+          }
           
           // If the removed team was the current turn team, skip to next team
           if (this.gameState.currentTurnTeamId === team.id) {
@@ -278,11 +291,16 @@ class GameManager {
     const player = this.gameState.players[playerId];
     const team = this.gameState.teams.find(t => t.id === teamId);
     
+    console.log(`Join team request: player=${playerId}, teamId=${teamId}`);
+    console.log(`Player exists: ${!!player}, Team exists: ${!!team}`);
+    
     if (!player) {
+      console.error(`Player ${playerId} not found in game state`);
       throw new Error('Player not found');
     }
     
     if (!team) {
+      console.error(`Team ${teamId} not found. Available teams: ${this.gameState.teams.map(t => t.id).join(', ')}`);
       throw new Error('Team not found');
     }
     
@@ -728,9 +746,11 @@ class GameManager {
       winner,
       finalScores: this.gameState.teams.map(t => ({
         teamId: t.id,
+        name: t.name,
         score: t.score,
         color: t.color,
-        emoji: t.emoji
+        emoji: t.emoji,
+        image: t.image
       }))
     });
 
@@ -749,6 +769,9 @@ class GameManager {
     
     // Reset game state to initial values
     this.gameState = createGameState();
+    
+    // Reinitialize predefined teams after reset
+    this.initializePredefinedTeams();
     
     // Generate new board for fresh game
     this.board = this.generateBoard();

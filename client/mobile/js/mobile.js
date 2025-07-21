@@ -62,11 +62,18 @@ class MobileGameApp {
       this.playerData = data.player
       this.updatePlayerInfo()
       
-      // If we have a target team, try to join it
+      // If we have a target team, try to join it after a small delay
+      // This allows time for the game state to be synchronized
       if (this.targetTeamId) {
         console.log(`Attempting to join team: ${this.targetTeamId}`)
-        this.socket.emit('team_join', { teamId: this.targetTeamId })
         this.showTeamJoiningIndicator()
+        
+        // Wait a bit for game state to sync, then attempt team join
+        setTimeout(() => {
+          if (this.targetTeamId) { // Check again in case it was cleared
+            this.socket.emit('team_join', { teamId: this.targetTeamId })
+          }
+        }, 500) // 500ms delay
       }
       
       this.showScreen('lobbyScreen')
@@ -163,7 +170,29 @@ class MobileGameApp {
     // Error handling
     this.socket.on('error', (error) => {
       console.error('Socket error:', error)
-      // If team joining failed, show the error and clear target team
+      
+      // If team joining failed, provide specific handling
+      if (this.targetTeamId && error.message.includes('Team not found')) {
+        // Remove joining indicator
+        const joiningIndicator = document.getElementById('teamJoiningIndicator')
+        if (joiningIndicator) {
+          joiningIndicator.remove()
+        }
+        
+        // Show specific error message for team not found
+        const errorMsg = `隊伍連結無效或已過期\n\n` +
+                        `原因: ${error.message}\n\n` +
+                        `建議解決方案:\n` +
+                        `• 檢查連結是否正確\n` +
+                        `• 重新掃描 QR 碼\n` +
+                        `• 詢問主持人最新連結`
+        
+        this.showError(errorMsg)
+        this.targetTeamId = null
+        return
+      }
+      
+      // Generic team joining error
       if (this.targetTeamId && error.message.includes('Team')) {
         // Remove joining indicator
         const joiningIndicator = document.getElementById('teamJoiningIndicator')
@@ -172,6 +201,7 @@ class MobileGameApp {
         }
         this.targetTeamId = null
       }
+      
       this.showError(error.message)
     })
   }
@@ -414,7 +444,12 @@ class MobileGameApp {
       } else {
         const currentTeam = this.gameState.teams.find((t) => t.id === this.gameState.currentTurnTeamId)
         if (currentTeam) {
-          turnStatusEl.textContent = `${currentTeam.emoji} 隊伍 ${currentTeam.id.split('_')[1]} 的回合`
+          const teamDisplay = currentTeam.name || `隊伍 ${currentTeam.id.split('_')[1]}`;
+          if (currentTeam.image) {
+            turnStatusEl.innerHTML = `<img src="${currentTeam.image}" alt="${teamDisplay}" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;">${teamDisplay} 的回合`;
+          } else {
+            turnStatusEl.textContent = `${currentTeam.emoji} ${teamDisplay} 的回合`;
+          }
           turnStatusEl.style.color = '#f39c12'
         }
       }
@@ -913,10 +948,16 @@ class MobileGameApp {
 
     if (winnerDisplay) {
       if (data.winner) {
+        const teamDisplay = data.winner.name || `隊伍 ${data.winner.id.split('_')[1]}`;
         winnerDisplay.innerHTML = `
-                  <div style="font-size: 48px; margin-bottom: 10px;">${data.winner.emoji}</div>
+                  <div style="font-size: 48px; margin-bottom: 10px;">
+                    ${data.winner.image ? 
+                      `<img src="${data.winner.image}" alt="${teamDisplay}" style="width: 48px; height: 48px;">` :
+                      `<span style="font-size: 48px;">${data.winner.emoji}</span>`
+                    }
+                  </div>
                   <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">
-                      隊伍 ${data.winner.id.split('_')[1]} 獲勝！
+                      ${teamDisplay} 獲勝！
                   </div>
                   <div style="font-size: 18px; color: #2ecc71;">
                       最終分數: ${data.winner.score} 分
@@ -939,16 +980,22 @@ class MobileGameApp {
       finalScoresList.innerHTML = data.finalScores
         .sort((a, b) => b.score - a.score)
         .map(
-          (team, index) => `
+          (team, index) => {
+            const teamDisplay = team.name || `隊伍 ${team.teamId.split('_')[1]}`;
+            return `
                     <div class="score-item">
                         <div>
                             <span style="margin-right: 10px;">${index + 1}.</span>
-                            <span style="margin-right: 10px;">${team.emoji}</span>
-                            <span>隊伍 ${team.teamId.split('_')[1]}</span>
+                            ${team.image ? 
+                              `<img src="${team.image}" alt="${teamDisplay}" style="width: 20px; height: 20px; margin-right: 10px; vertical-align: middle;">` :
+                              `<span style="margin-right: 10px; font-size: 20px;">${team.emoji}</span>`
+                            }
+                            <span>${teamDisplay}</span>
                         </div>
                         <span style="font-weight: bold;">${team.score}</span>
                     </div>
-                `
+                `;
+          }
         )
         .join('')
     }

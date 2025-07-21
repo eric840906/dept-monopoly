@@ -84,10 +84,13 @@ class ScoreBoard {
             return `
                 <div class="team-score ${isCurrentTurn ? 'current-turn' : ''} ${isWinning ? 'winning' : ''}">
                     <div class="team-info">
-                        <span class="team-emoji">${team.emoji}</span>
+                        ${team.image ? 
+                          `<img src="${team.image}" alt="${team.name}" class="team-emoji" style="width: 20px; height: 20px;">` :
+                          `<span class="team-emoji">${team.emoji}</span>`
+                        }
                         <div class="team-color" style="background-color: ${team.color}"></div>
                         <div class="team-details">
-                            <span class="team-name">隊伍 ${team.id.split('_')[1]}</span>
+                            <span class="team-name">${team.name || '隊伍 ' + team.id.split('_')[1]}</span>
                             <span class="team-members">${memberCount} 人</span>
                         </div>
                     </div>

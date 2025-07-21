@@ -28,11 +28,29 @@ function setupSocketHandlers(io, gameManager) {
     socket.on(SOCKET_EVENTS.TEAM_JOIN, (data) => {
       try {
         const { teamId } = data;
+        console.log(`Player ${socket.id} attempting to join team: ${teamId}`);
+        
+        // Log available teams for debugging
+        const availableTeams = gameManager.getGameState().teams;
+        console.log(`Available teams: ${availableTeams.map(t => t.id).join(', ')}`);
+        
+        if (!teamId) {
+          throw new Error('Team ID is required');
+        }
+        
+        // Check if team exists before attempting to join
+        const existingTeam = availableTeams.find(t => t.id === teamId);
+        if (!existingTeam) {
+          console.error(`Team not found: ${teamId}. Available teams: ${availableTeams.map(t => t.id).join(', ')}`);
+          throw new Error(`Team not found: ${teamId}. Please check the team link or try refreshing the page.`);
+        }
+        
         const team = gameManager.joinTeam(socket.id, teamId);
         io.emit(SOCKET_EVENTS.TEAMS_UPDATED, gameManager.getGameState().teams);
         socket.emit('team_joined', { team });
-        console.log(`Player ${socket.id} joined team ${team.name}`);
+        console.log(`Player ${socket.id} successfully joined team ${team.name} (${team.id})`);
       } catch (error) {
+        console.error(`Team join error for player ${socket.id}:`, error.message);
         socket.emit(SOCKET_EVENTS.ERROR, { message: error.message });
       }
     });

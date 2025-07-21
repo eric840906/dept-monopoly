@@ -41,53 +41,53 @@ const TEAM_EMOJIS = ['🚀', '⚡', '🎯', '🌟', '🔥', '💎', '🎪', '�
 // Pre-configured teams that are created when server starts
 const PREDEFINED_TEAMS = [
   {
-    id: 'team_alpha',
-    name: '阿爾法隊',
+    id: 'team_A',
+    name: 'A隊',
     color: '#FF6B6B', // Red
     emoji: '🚀',
-    image: '/images/teams/team_alpha.png',
-    maxPlayers: null // No limit
+    image: '/images/teams/team_A.png',
+    maxPlayers: null, // No limit
   },
   {
-    id: 'team_beta', 
-    name: '貝塔隊',
+    id: 'team_B',
+    name: 'B隊',
     color: '#4ECDC4', // Teal
     emoji: '⚡',
-    image: '/images/teams/team_beta.png',
-    maxPlayers: null
+    image: '/images/teams/team_B.png',
+    maxPlayers: null,
   },
   {
-    id: 'team_gamma',
-    name: '伽瑪隊', 
+    id: 'team_C',
+    name: 'C隊',
     color: '#45B7D1', // Blue
     emoji: '🎯',
-    image: '/images/teams/team_gamma.png',
-    maxPlayers: null
+    image: '/images/teams/team_C.png',
+    maxPlayers: null,
   },
   {
-    id: 'team_delta',
-    name: '德爾塔隊',
-    color: '#96CEB4', // Green  
+    id: 'team_D',
+    name: 'D隊',
+    color: '#96CEB4', // Green
     emoji: '🌟',
-    image: '/images/teams/team_delta.png',
-    maxPlayers: null
+    image: '/images/teams/team_D.png',
+    maxPlayers: null,
   },
   {
-    id: 'team_epsilon',
-    name: '艾普西隆隊',
+    id: 'team_E',
+    name: 'E隊',
     color: '#FFEAA7', // Yellow
     emoji: '🔥',
-    image: '/images/teams/team_epsilon.png',
-    maxPlayers: null
+    image: '/images/teams/team_E.png',
+    maxPlayers: null,
   },
   {
-    id: 'team_zeta',
-    name: '澤塔隊',
+    id: 'team_F',
+    name: 'F隊',
     color: '#DDA0DD', // Plum
     emoji: '💎',
-    image: '/images/teams/team_zeta.png',
-    maxPlayers: null
-  }
+    image: '/images/teams/team_F.png',
+    maxPlayers: null,
+  },
 ]
 
 const SOCKET_EVENTS = {

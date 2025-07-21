@@ -14,6 +14,9 @@ class GameScene extends Phaser.Scene {
     // Create colored rectangles for different tile types
     this.createTileTextures()
     this.createTokenTextures()
+    
+    // Preload team images
+    this.preloadTeamImages()
   }
 
   create(data) {
@@ -102,6 +105,29 @@ class GameScene extends Phaser.Scene {
     })
 
     graphics.destroy()
+  }
+
+  preloadTeamImages() {
+    // Preload all team images to avoid loading delays during gameplay
+    try {
+      // Try to get predefined teams from constants
+      const teamImages = [
+        { id: 'team_A', image: '/images/teams/team_A.png' },
+        { id: 'team_B', image: '/images/teams/team_B.png' },
+        { id: 'team_C', image: '/images/teams/team_C.png' },
+        { id: 'team_D', image: '/images/teams/team_D.png' },
+        { id: 'team_E', image: '/images/teams/team_E.png' },
+        { id: 'team_F', image: '/images/teams/team_F.png' }
+      ]
+
+      teamImages.forEach(team => {
+        if (team.image) {
+          this.load.image(team.id, team.image)
+        }
+      })
+    } catch (error) {
+      console.log('Could not preload team images:', error)
+    }
   }
 
   createBoard() {
@@ -253,20 +279,34 @@ class GameScene extends Phaser.Scene {
         const offsetX = (index % 2) * 20 - 10
         const offsetY = Math.floor(index / 2) * 20 - 10
 
-        const token = this.add.image(tileData.x + offsetX, tileData.y + offsetY, `team-token-${index}`)
-        token.setDisplaySize(30, 30)
+        let tokenImage;
+        
+        // Use PNG image if available, otherwise fallback to colored circle and emoji
+        if (team.image && this.textures.exists(team.id)) {
+          // Create team PNG image only (no background circle needed)
+          tokenImage = this.add.image(tileData.x + offsetX, tileData.y + offsetY, team.id)
+          tokenImage.setDisplaySize(32, 32) // Full size since no background
+          
+          this.teamTokens[team.id] = {
+            token: tokenImage, // Use the image as the main token
+            team: team,
+          }
+        } else {
+          // Fallback to original emoji system
+          const token = this.add.image(tileData.x + offsetX, tileData.y + offsetY, `team-token-${index}`)
+          token.setDisplaySize(30, 30)
 
-        // Add team emoji as text overlay
-        const emoji = this.add.text(tileData.x + offsetX, tileData.y + offsetY, team.emoji, {
-          fontSize: '16px',
-          align: 'center',
-        })
-        emoji.setOrigin(0.5)
+          const emoji = this.add.text(tileData.x + offsetX, tileData.y + offsetY, team.emoji, {
+            fontSize: '16px',
+            align: 'center',
+          })
+          emoji.setOrigin(0.5)
 
-        this.teamTokens[team.id] = {
-          token: token,
-          emoji: emoji,
-          team: team,
+          this.teamTokens[team.id] = {
+            token: token,
+            emoji: emoji,
+            team: team,
+          }
         }
 
         console.log(`Created token for team: ${team.id} with ${team.members.length} members`)
@@ -331,20 +371,32 @@ class GameScene extends Phaser.Scene {
     const offsetX = (index % 2) * 20 - 10
     const offsetY = Math.floor(index / 2) * 20 - 10
 
-    const token = this.add.image(tileData.x + offsetX, tileData.y + offsetY, `team-token-${index}`)
-    token.setDisplaySize(30, 30)
+    // Use PNG image if available, otherwise fallback to colored circle and emoji
+    if (team.image && this.textures.exists(team.id)) {
+      // Create team PNG image only (no background circle needed)
+      const tokenImage = this.add.image(tileData.x + offsetX, tileData.y + offsetY, team.id)
+      tokenImage.setDisplaySize(32, 32) // Full size since no background
+      
+      this.teamTokens[team.id] = {
+        token: tokenImage, // Use the image as the main token
+        team: team,
+      }
+    } else {
+      // Fallback to original emoji system
+      const token = this.add.image(tileData.x + offsetX, tileData.y + offsetY, `team-token-${index}`)
+      token.setDisplaySize(30, 30)
 
-    // Add team emoji as text overlay
-    const emoji = this.add.text(tileData.x + offsetX, tileData.y + offsetY, team.emoji, {
-      fontSize: '16px',
-      align: 'center',
-    })
-    emoji.setOrigin(0.5)
+      const emoji = this.add.text(tileData.x + offsetX, tileData.y + offsetY, team.emoji, {
+        fontSize: '16px',
+        align: 'center',
+      })
+      emoji.setOrigin(0.5)
 
-    this.teamTokens[team.id] = {
-      token: token,
-      emoji: emoji,
-      team: team,
+      this.teamTokens[team.id] = {
+        token: token,
+        emoji: emoji,
+        team: team,
+      }
     }
 
     console.log(`Created token for team: ${team.id} with ${team.members.length} members`)
@@ -359,8 +411,11 @@ class GameScene extends Phaser.Scene {
     const offsetY = Math.floor(index / 2) * 20 - 10
 
     // Animate token movement
+    const targets = [token.token]
+    if (token.emoji) targets.push(token.emoji)
+    
     this.tweens.add({
-      targets: [token.token, token.emoji],
+      targets: targets,
       x: tileData.x + offsetX,
       y: tileData.y + offsetY,
       duration: 1000,
@@ -554,7 +609,8 @@ class GameScene extends Phaser.Scene {
     const notification = this.add.rectangle(this.centerX, 100, 600, 80, 0x3498db, 0.9)
     notification.setStrokeStyle(3, 0x2980b9)
 
-    const notificationText = this.add.text(this.centerX, 100, `⚡ ${team.emoji} 隊伍 ${team.id.split('_')[1]} 觸發事件！\n${this.getEventName(eventType)}`, {
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`;
+    const notificationText = this.add.text(this.centerX, 100, `⚡ ${team.emoji} ${teamDisplay} 觸發事件！\n${this.getEventName(eventType)}`, {
       fontSize: '20px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -604,7 +660,8 @@ class GameScene extends Phaser.Scene {
 
     const captainDisplay = captainName ? `🎯 隊長：${captainName}` : '等待隊長指定'
 
-    const bannerText = this.add.text(this.centerX, this.centerY, `🎮 小遊戲準備中...\n${team.emoji} 隊伍 ${team.id.split('_')[1]}\n${this.getEventName(eventType)}\n${captainDisplay}\n等待介面載入完成`, {
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`;
+    const bannerText = this.add.text(this.centerX, this.centerY, `🎮 小遊戲準備中...\n${team.emoji} ${teamDisplay}\n${this.getEventName(eventType)}\n${captainDisplay}\n等待介面載入完成`, {
       fontSize: '16px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -665,7 +722,8 @@ class GameScene extends Phaser.Scene {
     background.setStrokeStyle(4, 0x3498db)
     container.add(background)
 
-    const headerText = this.add.text(0, -100, `${team.emoji} 隊伍 ${team.id.split('_')[1]} - 小遊戲進行中`, {
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`;
+    const headerText = this.add.text(0, -100, `${team.emoji} ${teamDisplay} - 小遊戲進行中`, {
       fontSize: '24px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -704,7 +762,8 @@ class GameScene extends Phaser.Scene {
     container.add(background)
 
     // Add team header
-    const teamHeader = this.add.text(0, -280, `${team.emoji} 隊伍 ${team.id.split('_')[1]} - ${this.getEventName(gameData.eventType)}`, {
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`;
+    const teamHeader = this.add.text(0, -280, `${team.emoji} ${teamDisplay} - ${this.getEventName(gameData.eventType)}`, {
       fontSize: '24px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -1139,7 +1198,8 @@ class GameScene extends Phaser.Scene {
     const resultBanner = this.add.rectangle(this.centerX, this.centerY - 50, 400, 100, color, 0.9)
     resultBanner.setStrokeStyle(3, success ? 0x27ae60 : 0xc0392b)
 
-    const resultText = this.add.text(this.centerX, this.centerY - 50, `${success ? '✅' : '❌'} ${team.emoji} 隊伍 ${team.id.split('_')[1]}\n${feedback}\n${scoreText} 分`, {
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`;
+    const resultText = this.add.text(this.centerX, this.centerY - 50, `${success ? '✅' : '❌'} ${team.emoji} ${teamDisplay}\n${feedback}\n${scoreText} 分`, {
       fontSize: '16px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -1216,7 +1276,8 @@ class GameScene extends Phaser.Scene {
     const scoreText = chanceCard.scoreChange > 0 ? `+${chanceCard.scoreChange}` : `${chanceCard.scoreChange}`
     const positionText = chanceCard.effect === 'reset_to_start' ? '\n📍 回到起點！' : ''
 
-    const cardText = this.add.text(this.centerX, this.centerY, `🃏 ${team.emoji} 隊伍 ${team.id.split('_')[1]} 抽到機會卡！\n\n${chanceCard.title}\n${chanceCard.description}\n\n💰 分數變化: ${scoreText}${positionText}`, {
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`;
+    const cardText = this.add.text(this.centerX, this.centerY, `🃏 ${team.emoji} ${teamDisplay} 抽到機會卡！\n\n${chanceCard.title}\n${chanceCard.description}\n\n💰 分數變化: ${scoreText}${positionText}`, {
       fontSize: '16px',
       fontFamily: 'Arial',
       color: '#ffffff',
