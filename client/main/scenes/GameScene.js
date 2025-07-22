@@ -435,31 +435,31 @@ class GameScene extends Phaser.Scene {
     console.log(`Moved from position ${oldPosition} to ${newPosition}`)
     console.log(`Landed on: ${landedTile.name} (${landedTile.type})`)
 
-    // Show dice roll animation
-    this.showDiceRoll(dice, total)
-
-    // Animate token movement and handle events after completion
-    const token = this.teamTokens[teamId]
-    if (token) {
-      this.animateTokenMovement(token, oldPosition, newPosition, () => {
-        // Movement complete - notify server to handle tile effects
+    // Show dice roll animation and wait for it to complete before moving token
+    this.showDiceRoll(dice, total, () => {
+      // Dice animation complete, now animate token movement
+      const token = this.teamTokens[teamId]
+      if (token) {
+        this.animateTokenMovement(token, oldPosition, newPosition, () => {
+          // Movement complete - notify server to handle tile effects
+          this.game.socket.emit('movement_complete', {
+            teamId: teamId,
+            position: newPosition,
+          })
+        })
+      } else {
+        // No token to animate, directly notify server
         this.game.socket.emit('movement_complete', {
           teamId: teamId,
           position: newPosition,
         })
-      })
-    } else {
-      // No token to animate, directly notify server
-      this.game.socket.emit('movement_complete', {
-        teamId: teamId,
-        position: newPosition,
-      })
-    }
+      }
 
-    // Show tile effect animation (visual only, events handled after movement)
-    if (landedTile.type === 'event') {
-      this.showTileEffect(newPosition, landedTile)
-    }
+      // Show tile effect animation (visual only, events handled after movement)
+      if (landedTile.type === 'event') {
+        this.showTileEffect(newPosition, landedTile)
+      }
+    })
   }
 
   handleEventTrigger(data) {
@@ -497,27 +497,226 @@ class GameScene extends Phaser.Scene {
     this.showChanceCard(teamId, chanceCard, newScore, newPosition)
   }
 
-  showDiceRoll(dice, total) {
-    const diceText = this.add.text(this.centerX, this.centerY - 50, `🎲 ${dice[0]} + ${dice[1]} = ${total}`, {
-      fontSize: '24px',
+  showDiceRoll(dice, total, onComplete = null) {
+    // Create animated dice rolling display
+    this.createAnimatedDiceRoll(dice, total, onComplete)
+  }
+
+  createAnimatedDiceRoll(finalDice, total, onComplete = null) {
+    // Create container for dice roll display
+    const diceContainer = this.add.container(this.centerX, this.centerY - 50)
+    
+    // Create background panel
+    const background = this.add.rectangle(0, 0, 300, 100, 0x2c3e50, 0.9)
+    background.setStrokeStyle(3, 0x3498db)
+    diceContainer.add(background)
+    
+    // Create two dice sprites
+    const dice1 = this.createDiceSprite(-60, 0, 1)
+    const dice2 = this.createDiceSprite(60, 0, 1)
+    diceContainer.add(dice1)
+    diceContainer.add(dice2)
+    
+    // Add title text
+    const titleText = this.add.text(0, -35, '🎲 擲骰子', {
+      fontSize: '16px',
       fontFamily: 'Arial',
       color: '#ffffff',
-      backgroundColor: '#2c3e50',
-      padding: { x: 20, y: 10 },
+      align: 'center'
     })
-    diceText.setOrigin(0.5)
-
-    // Animate and remove
+    titleText.setOrigin(0.5)
+    diceContainer.add(titleText)
+    
+    // Add total text (initially hidden)
+    const totalText = this.add.text(0, 35, `總和: ${total}`, {
+      fontSize: '18px',
+      fontFamily: 'Arial',
+      color: '#f39c12',
+      align: 'center'
+    })
+    totalText.setOrigin(0.5)
+    totalText.setAlpha(0)
+    diceContainer.add(totalText)
+    
+    // Start rolling animation
+    this.animateDiceRoll(dice1, dice2, finalDice, totalText, diceContainer, onComplete)
+  }
+  
+  createDiceSprite(x, y, value) {
+    // Create dice background
+    const diceContainer = this.add.container(x, y)
+    
+    const diceBg = this.add.rectangle(0, 0, 40, 40, 0xffffff, 1)
+    diceBg.setStrokeStyle(2, 0x2c3e50)
+    diceContainer.add(diceBg)
+    
+    // Create dots based on value
+    const dots = this.createDiceDots(value)
+    dots.forEach(dot => diceContainer.add(dot))
+    
+    return diceContainer
+  }
+  
+  createDiceDots(value) {
+    const dots = []
+    const dotSize = 4
+    const dotColor = 0x2c3e50
+    
+    switch(value) {
+      case 1:
+        dots.push(this.add.circle(0, 0, dotSize, dotColor))
+        break
+      case 2:
+        dots.push(this.add.circle(-8, -8, dotSize, dotColor))
+        dots.push(this.add.circle(8, 8, dotSize, dotColor))
+        break
+      case 3:
+        dots.push(this.add.circle(-10, -10, dotSize, dotColor))
+        dots.push(this.add.circle(0, 0, dotSize, dotColor))
+        dots.push(this.add.circle(10, 10, dotSize, dotColor))
+        break
+      case 4:
+        dots.push(this.add.circle(-8, -8, dotSize, dotColor))
+        dots.push(this.add.circle(8, -8, dotSize, dotColor))
+        dots.push(this.add.circle(-8, 8, dotSize, dotColor))
+        dots.push(this.add.circle(8, 8, dotSize, dotColor))
+        break
+      case 5:
+        dots.push(this.add.circle(-8, -8, dotSize, dotColor))
+        dots.push(this.add.circle(8, -8, dotSize, dotColor))
+        dots.push(this.add.circle(0, 0, dotSize, dotColor))
+        dots.push(this.add.circle(-8, 8, dotSize, dotColor))
+        dots.push(this.add.circle(8, 8, dotSize, dotColor))
+        break
+      case 6:
+        dots.push(this.add.circle(-8, -10, dotSize, dotColor))
+        dots.push(this.add.circle(8, -10, dotSize, dotColor))
+        dots.push(this.add.circle(-8, 0, dotSize, dotColor))
+        dots.push(this.add.circle(8, 0, dotSize, dotColor))
+        dots.push(this.add.circle(-8, 10, dotSize, dotColor))
+        dots.push(this.add.circle(8, 10, dotSize, dotColor))
+        break
+    }
+    
+    return dots
+  }
+  
+  updateDiceValue(diceSprite, value) {
+    // Clear existing dots
+    const dotsToRemove = diceSprite.list.slice(1) // Keep background, remove dots
+    dotsToRemove.forEach(dot => {
+      diceSprite.remove(dot)
+      dot.destroy()
+    })
+    
+    // Add new dots
+    const newDots = this.createDiceDots(value)
+    newDots.forEach(dot => diceSprite.add(dot))
+  }
+  
+  animateDiceRoll(dice1, dice2, finalValues, totalText, container, onComplete = null) {
+    let rollCount = 0
+    const maxRolls = 15 // Number of random values to show
+    const rollInterval = 100 // ms between rolls
+    
+    // Add bouncing animation to dice
     this.tweens.add({
-      targets: diceText,
-      alpha: 0,
-      y: this.centerY - 100,
-      duration: 2000,
-      ease: 'Power2',
-      onComplete: () => {
-        diceText.destroy()
-      },
+      targets: [dice1, dice2],
+      scaleX: 1.2,
+      scaleY: 1.2,
+      duration: rollInterval,
+      yoyo: true,
+      repeat: maxRolls - 1,
+      ease: 'Power2'
     })
+    
+    // Add rotation animation
+    this.tweens.add({
+      targets: [dice1, dice2],
+      rotation: Math.PI * 2,
+      duration: rollInterval * maxRolls,
+      ease: 'Linear'
+    })
+    
+    const rollTimer = this.time.addEvent({
+      delay: rollInterval,
+      callback: () => {
+        rollCount++
+        
+        // Generate random dice values during rolling
+        const randomValue1 = Phaser.Math.Between(1, 6)
+        const randomValue2 = Phaser.Math.Between(1, 6)
+        
+        this.updateDiceValue(dice1, randomValue1)
+        this.updateDiceValue(dice2, randomValue2)
+        
+        if (rollCount >= maxRolls) {
+          // Show final values
+          this.updateDiceValue(dice1, finalValues[0])
+          this.updateDiceValue(dice2, finalValues[1])
+          
+          // Show total with fade in
+          this.tweens.add({
+            targets: totalText,
+            alpha: 1,
+            duration: 300,
+            ease: 'Power2',
+            onComplete: () => {
+              // Add celebration effect
+              this.addDiceRollCelebration(container)
+              
+              // Wait a bit after showing result, then call completion callback
+              this.time.delayedCall(800, () => {
+                if (onComplete) {
+                  onComplete()
+                }
+              })
+            }
+          })
+          
+          rollTimer.destroy()
+        }
+      },
+      loop: true
+    })
+    
+    // Auto-remove the entire display after showing result
+    this.time.delayedCall(4000, () => {
+      this.tweens.add({
+        targets: container,
+        alpha: 0,
+        y: container.y - 50,
+        duration: 1000,
+        ease: 'Power2',
+        onComplete: () => {
+          container.destroy()
+        }
+      })
+    })
+  }
+  
+  addDiceRollCelebration(container) {
+    // Add sparkle effect around dice
+    for (let i = 0; i < 8; i++) {
+      const sparkle = this.add.circle(
+        Phaser.Math.Between(-100, 100),
+        Phaser.Math.Between(-40, 40),
+        3,
+        0xf1c40f
+      )
+      container.add(sparkle)
+      
+      this.tweens.add({
+        targets: sparkle,
+        alpha: 0,
+        scaleX: 2,
+        scaleY: 2,
+        duration: 800,
+        delay: i * 50,
+        ease: 'Power2',
+        onComplete: () => sparkle.destroy()
+      })
+    }
   }
 
   animateTokenMovement(token, oldPosition, newPosition, onComplete = null) {

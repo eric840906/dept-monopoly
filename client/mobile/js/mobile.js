@@ -565,27 +565,291 @@ class MobileGameApp {
 
   handleDiceRoll(data) {
     if (data.teamId === this.teamData?.id) {
-      // Show dice result
-      const diceResultEl = document.getElementById('diceResult')
-      const dice1El = document.getElementById('dice1')
-      const dice2El = document.getElementById('dice2')
-      const diceTotalEl = document.getElementById('diceTotal')
+      // Show animated dice roll
+      this.showAnimatedDiceRoll(data.dice, data.total)
 
-      if (diceResultEl && dice1El && dice2El && diceTotalEl) {
-        dice1El.textContent = data.dice[0]
-        dice2El.textContent = data.dice[1]
-        diceTotalEl.textContent = data.total
-        diceResultEl.classList.remove('hidden')
-      }
-
-      // Reset roll button
-      const rollBtn = document.getElementById('rollDiceBtn')
-      rollBtn.disabled = false
-      rollBtn.textContent = '🎲 擲骰子'
+      // Reset roll button after animation completes
+      setTimeout(() => {
+        const rollBtn = document.getElementById('rollDiceBtn')
+        if (rollBtn) {
+          rollBtn.disabled = false
+          rollBtn.textContent = '🎲 擲骰子'
+        }
+      }, 4000) // Wait for animation to complete (same timing as main screen)
     }
 
     // Update team position
     this.updateGameTeamInfo()
+  }
+
+  showAnimatedDiceRoll(finalDice, total) {
+    // Create dice animation overlay similar to main screen
+    const overlay = document.createElement('div')
+    overlay.id = 'diceAnimationOverlay'
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    `
+
+    // Create container for dice roll display - same as main screen
+    const diceContainer = document.createElement('div')
+    diceContainer.style.cssText = `
+      background: #2c3e50;
+      border: 3px solid #3498db;
+      border-radius: 15px;
+      padding: 30px;
+      text-align: center;
+      opacity: 0.9;
+      min-width: 300px;
+    `
+    
+    // Add title text
+    const titleText = document.createElement('div')
+    titleText.textContent = '🎲 擲骰子'
+    titleText.style.cssText = `
+      font-size: 20px;
+      font-family: Arial;
+      color: #ffffff;
+      text-align: center;
+      margin-bottom: 25px;
+      font-weight: bold;
+    `
+    diceContainer.appendChild(titleText)
+    
+    // Create two dice containers
+    const diceRow = document.createElement('div')
+    diceRow.style.cssText = `
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 30px;
+      margin-bottom: 25px;
+    `
+    
+    const dice1Container = this.createMobileDiceSprite()
+    const dice2Container = this.createMobileDiceSprite()
+    
+    diceRow.appendChild(dice1Container)
+    const plusSign = document.createElement('div')
+    plusSign.textContent = '+'
+    plusSign.style.cssText = `
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+    `
+    diceRow.appendChild(plusSign)
+    diceRow.appendChild(dice2Container)
+    
+    diceContainer.appendChild(diceRow)
+    
+    // Add total text (initially hidden)
+    const totalText = document.createElement('div')
+    totalText.textContent = `總和: ${total}`
+    totalText.style.cssText = `
+      font-size: 22px;
+      font-family: Arial;
+      color: #f39c12;
+      text-align: center;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    `
+    diceContainer.appendChild(totalText)
+    
+    overlay.appendChild(diceContainer)
+    document.body.appendChild(overlay)
+
+    // Start rolling animation - same logic as main screen
+    this.animateMobileDiceRoll(dice1Container, dice2Container, finalDice, totalText, overlay)
+  }
+  
+  createMobileDiceSprite() {
+    // Create dice container
+    const diceContainer = document.createElement('div')
+    diceContainer.style.cssText = `
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    `
+    
+    const diceBg = document.createElement('div')
+    diceBg.style.cssText = `
+      width: 50px;
+      height: 50px;
+      background: #ffffff;
+      border: 2px solid #2c3e50;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    `
+    diceContainer.appendChild(diceBg)
+    
+    // Store reference to background for adding dots
+    diceContainer.diceBg = diceBg
+    
+    return diceContainer
+  }
+  
+  createMobileDiceDots(value) {
+    const dots = []
+    const dotSize = 4
+    const dotColor = '#2c3e50'
+    
+    // Create dots in mobile-friendly positions
+    const positions = {
+      1: [[0, 0]], // center
+      2: [[-10, -10], [10, 10]], // diagonal
+      3: [[-12, -12], [0, 0], [12, 12]], // diagonal
+      4: [[-10, -10], [10, -10], [-10, 10], [10, 10]], // corners
+      5: [[-10, -10], [10, -10], [0, 0], [-10, 10], [10, 10]], // corners + center
+      6: [[-10, -12], [10, -12], [-10, 0], [10, 0], [-10, 12], [10, 12]] // two columns
+    }
+    
+    if (positions[value]) {
+      positions[value].forEach(([x, y]) => {
+        const dot = document.createElement('div')
+        dot.style.cssText = `
+          position: absolute;
+          width: ${dotSize}px;
+          height: ${dotSize}px;
+          background: ${dotColor};
+          border-radius: 50%;
+          left: 50%;
+          top: 50%;
+          transform: translate(${x - dotSize/2}px, ${y - dotSize/2}px);
+        `
+        dots.push(dot)
+      })
+    }
+    
+    return dots
+  }
+  
+  updateMobileDiceValue(diceSprite, value) {
+    // Clear existing dots
+    const existingDots = diceSprite.diceBg.querySelectorAll('div')
+    existingDots.forEach(dot => dot.remove())
+    
+    // Add new dots
+    const newDots = this.createMobileDiceDots(value)
+    newDots.forEach(dot => diceSprite.diceBg.appendChild(dot))
+  }
+  
+  animateMobileDiceRoll(dice1, dice2, finalValues, totalText, overlay) {
+    let rollCount = 0
+    const maxRolls = 15 // Same as main screen
+    const rollInterval = 100 // Same as main screen
+    
+    // Add bouncing animation to dice - same as main screen
+    dice1.style.animation = 'mobileDiceBounce 0.1s ease infinite'
+    dice2.style.animation = 'mobileDiceBounce 0.1s ease infinite'
+    
+    // Add CSS for mobile dice bounce if not exists
+    if (!document.querySelector('#mobileDiceAnimation')) {
+      const style = document.createElement('style')
+      style.id = 'mobileDiceAnimation'
+      style.textContent = `
+        @keyframes mobileDiceBounce {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.1) rotate(5deg); }
+        }
+        @keyframes mobileSparkle {
+          0% { opacity: 1; transform: scale(0); }
+          50% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(1.2); }
+        }
+      `
+      document.head.appendChild(style)
+    }
+    
+    const rollTimer = setInterval(() => {
+      rollCount++
+      
+      // Generate random dice values during rolling - same as main screen
+      const randomValue1 = Math.floor(Math.random() * 6) + 1
+      const randomValue2 = Math.floor(Math.random() * 6) + 1
+      
+      this.updateMobileDiceValue(dice1, randomValue1)
+      this.updateMobileDiceValue(dice2, randomValue2)
+      
+      if (rollCount >= maxRolls) {
+        // Show final values
+        this.updateMobileDiceValue(dice1, finalValues[0])
+        this.updateMobileDiceValue(dice2, finalValues[1])
+        
+        // Stop bouncing animation
+        dice1.style.animation = 'none'
+        dice2.style.animation = 'none'
+        
+        // Show total with fade in - same as main screen
+        totalText.style.opacity = '1'
+        
+        // Add simple celebration effect
+        this.addMobileCelebration(overlay)
+        
+        clearInterval(rollTimer)
+        
+        // Remove overlay after showing result - same timing as main screen
+        setTimeout(() => {
+          overlay.remove()
+          // Update static dice display
+          this.updateStaticDiceDisplay(finalValues, total)
+        }, 3000)
+      }
+    }, rollInterval)
+  }
+  
+  addMobileCelebration(overlay) {
+    // Add simple sparkle effect - much more subtle than before
+    for (let i = 0; i < 6; i++) {
+      const sparkle = document.createElement('div')
+      sparkle.style.cssText = `
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: #f1c40f;
+        border-radius: 50%;
+        left: ${40 + Math.random() * 20}%;
+        top: ${40 + Math.random() * 20}%;
+        animation: mobileSparkle 0.8s ease-out;
+        animation-delay: ${i * 0.1}s;
+        pointer-events: none;
+      `
+      overlay.appendChild(sparkle)
+      
+      // Remove sparkle after animation
+      setTimeout(() => {
+        if (sparkle.parentElement) {
+          sparkle.remove()
+        }
+      }, 800 + (i * 100))
+    }
+  }
+
+  updateStaticDiceDisplay(dice, total) {
+    // Update the original static dice display that might exist
+    const diceResultEl = document.getElementById('diceResult')
+    const dice1El = document.getElementById('dice1')
+    const dice2El = document.getElementById('dice2')
+    const diceTotalEl = document.getElementById('diceTotal')
+
+    if (diceResultEl && dice1El && dice2El && diceTotalEl) {
+      dice1El.textContent = dice[0]
+      dice2El.textContent = dice[1]
+      diceTotalEl.textContent = total
+      diceResultEl.classList.remove('hidden')
+    }
   }
 
   updateTimer(timeLeft) {
