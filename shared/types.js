@@ -61,7 +61,8 @@ function createTeam(id, color, emoji) {
     score: 100,
     position: 0,
     isEliminated: false,
-    runsCompleted: 0 // Track number of runs completed by this team
+    runsCompleted: 0, // Track number of runs completed by this team
+    isMoving: false // Track if team token is currently moving
   };
 }
 

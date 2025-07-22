@@ -396,24 +396,42 @@ class GameManager {
       throw new Error('Not your turn');
     }
 
+    const team = this.gameState.teams.find(t => t.id === teamId);
+    if (!team) {
+      throw new Error('Team not found');
+    }
+
+    // Prevent rolling dice while team is moving
+    if (team.isMoving) {
+      throw new Error('Cannot roll dice while team is moving');
+    }
+
     const dice1 = Math.floor(Math.random() * 6) + 1;
     const dice2 = Math.floor(Math.random() * 6) + 1;
     const total = dice1 + dice2;
 
-    const team = this.gameState.teams.find(t => t.id === teamId);
     const oldPosition = team.position;
-    team.position = (team.position + total) % GAME_CONFIG.BOARD_SIZE;
+    const newPosition = (team.position + total) % GAME_CONFIG.BOARD_SIZE;
+    
+    // Don't update team.position here - let handleMovementComplete do it
+    // This prevents the visual jump issue
+    
+    // Set movement state to prevent further dice rolls
+    team.isMoving = true;
 
-    const landedTile = this.board[team.position];
+    const landedTile = this.board[newPosition];
 
     this.io.emit(SOCKET_EVENTS.DICE_ROLL, {
       teamId,
       dice: [dice1, dice2],
       total,
       oldPosition,
-      newPosition: team.position,
+      newPosition,
       landedTile
     });
+
+    // Broadcast updated game state with movement flag
+    this.broadcastGameState();
 
     // Note: Event triggering will be handled by frontend after movement animation completes
     // Events are triggered via movement_complete socket event
@@ -522,7 +540,16 @@ class GameManager {
     const team = this.gameState.teams.find(t => t.id === teamId);
     if (!team) return;
 
+    // Update team position now that movement animation is complete
+    team.position = position;
+    
+    // Clear movement flag - team has finished moving
+    team.isMoving = false;
+    
     const landedTile = this.board[position];
+    
+    // Broadcast updated game state with new position and cleared movement flag
+    this.broadcastGameState();
     
     // Handle tile effect after movement animation is complete
     if (landedTile.type === TileType.EVENT) {

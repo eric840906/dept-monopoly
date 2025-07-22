@@ -427,12 +427,16 @@ class MobileGameApp {
 
     const isMyTurn = this.gameState.currentTurnTeamId === this.teamData.id
     const isCaptain = this.teamData.currentCaptainId === this.playerData.id
+    const isMoving = this.teamData.isMoving
 
     // Update turn status
     const turnStatusEl = document.getElementById('turnStatus')
     if (turnStatusEl) {
       if (isMyTurn) {
-        if (isCaptain) {
+        if (isMoving) {
+          turnStatusEl.textContent = '🎲 隊伍移動中...'
+          turnStatusEl.style.color = '#e67e22'
+        } else if (isCaptain) {
           turnStatusEl.textContent = '🎯 您的回合！(隊長)'
           turnStatusEl.style.color = '#2ecc71'
         } else {
@@ -445,23 +449,39 @@ class MobileGameApp {
         const currentTeam = this.gameState.teams.find((t) => t.id === this.gameState.currentTurnTeamId)
         if (currentTeam) {
           const teamDisplay = currentTeam.name || `隊伍 ${currentTeam.id.split('_')[1]}`;
-          if (currentTeam.image) {
-            turnStatusEl.innerHTML = `<img src="${currentTeam.image}" alt="${teamDisplay}" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;">${teamDisplay} 的回合`;
+          if (currentTeam.isMoving) {
+            turnStatusEl.textContent = `🎲 ${teamDisplay} 移動中...`
+            turnStatusEl.style.color = '#e67e22'
           } else {
-            turnStatusEl.textContent = `${currentTeam.emoji} ${teamDisplay} 的回合`;
+            if (currentTeam.image) {
+              turnStatusEl.innerHTML = `<img src="${currentTeam.image}" alt="${teamDisplay}" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;">${teamDisplay} 的回合`;
+            } else {
+              turnStatusEl.textContent = `${currentTeam.emoji} ${teamDisplay} 的回合`;
+            }
+            turnStatusEl.style.color = '#f39c12'
           }
-          turnStatusEl.style.color = '#f39c12'
         }
       }
     }
 
-    // Show/hide interfaces based on turn and captain status
-    if (isMyTurn && isCaptain) {
+    // Show/hide interfaces based on turn, captain status, and movement state
+    if (isMyTurn && !isMoving && isCaptain) {
       this.showInterface('diceInterface')
-    } else if (isMyTurn && !isCaptain) {
+    } else if (isMyTurn && !isMoving && !isCaptain) {
       this.showAdvisorDiceInterface()
     } else {
       this.showInterface('waitingInterface')
+    }
+    
+    // Disable dice button if team is moving
+    const rollBtn = document.getElementById('rollDiceBtn')
+    if (rollBtn && isMyTurn && isCaptain) {
+      rollBtn.disabled = isMoving
+      if (isMoving) {
+        rollBtn.textContent = '移動中...'
+      } else {
+        rollBtn.textContent = '🎲 擲骰子'
+      }
     }
   }
 
@@ -540,6 +560,12 @@ class MobileGameApp {
 
   rollDice() {
     if (!this.teamData || this.gameState.currentTurnTeamId !== this.teamData.id) {
+      return
+    }
+
+    // Prevent rolling if team is currently moving
+    if (this.teamData.isMoving) {
+      console.log('Cannot roll dice - team is currently moving')
       return
     }
 
