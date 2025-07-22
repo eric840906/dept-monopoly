@@ -34,8 +34,8 @@ window.MiniGames = {
             case 'team_info_pairing':
                 this.loadTeamPairing(gameData);
                 break;
-            case 'random_stat_check':
-                this.loadRandomEvent(gameData);
+            case 'true_or_false':
+                this.loadTrueOrFalse(gameData);
                 break;
             default:
                 this.loadDefaultGame(gameData);
@@ -1408,98 +1408,125 @@ window.MiniGames = {
         updateSubmitButton();
     },
 
-    loadRandomEvent(gameData) {
-        // Use actual event data from server or fallback
-        const event = gameData.data?.event || {
-            title: "技術挑戰",
-            description: "需要解決一個緊急的技術問題",
-            ability: "tech",
-            threshold: 4
-        };
+    loadTrueOrFalse(gameData) {
+        const question = gameData.data;
         
         this.gameContainer.innerHTML = `
-            <div class="mini-game random-event">
-                <h3>🎲 隨機事件</h3>
-                <div class="event-card">
-                    <h4>${event.title}</h4>
-                    <p>${event.description}</p>
-                    <div class="stat-check">
-                        <span>需要 ${event.ability} 能力：${event.threshold}+</span>
-                    </div>
+            <div class="mini-game true-or-false">
+                <h3>✅❌ 是非題</h3>
+                <div class="question-text">
+                    <p>${question.question}</p>
                 </div>
-                <div class="action-buttons">
-                    <button id="rollCheck" class="btn btn-primary">
-                        🎲 擲骰檢定
+                <div class="answer-buttons">
+                    <button id="trueBtn" class="btn btn-true">
+                        <div class="btn-emoji">${question.trueEmoji || '⭕'}</div>
+                        <div class="btn-label">正確</div>
                     </button>
-                    <button id="useReroll" class="btn btn-secondary" disabled>
-                        🔄 使用重擲 (剩餘: <span id="rerollCount">3</span>)
+                    <button id="falseBtn" class="btn btn-false">
+                        <div class="btn-emoji">${question.falseEmoji || '❌'}</div>
+                        <div class="btn-label">錯誤</div>
                     </button>
                 </div>
-                <div id="checkResult" class="check-result hidden">
-                    <!-- Result will be shown here -->
+                <div class="timer-display">
+                    剩餘時間: <span id="miniGameTimer">${Math.floor((gameData.timeLimit || 20000) / 1000)}</span> 秒
                 </div>
             </div>
         `;
 
-        this.setupRandomEventHandlers(event);
-    },
-
-    setupRandomEventHandlers(event) {
-        let rollResult = null;
-        let hasRolled = false;
-
-        document.getElementById('rollCheck').addEventListener('click', () => {
-            const roll = Math.floor(Math.random() * 6) + 1;
-            rollResult = roll;
-            hasRolled = true;
-
-            const success = roll >= event.threshold;
-            const resultEl = document.getElementById('checkResult');
-            
-            resultEl.innerHTML = `
-                <div class="roll-result">
-                    <div class="dice-roll">🎲 ${roll}</div>
-                    <div class="result-text ${success ? 'success' : 'failure'}">
-                        ${success ? '✅ 成功！' : '❌ 失敗'}
-                    </div>
-                </div>
-                <button id="acceptResult" class="btn btn-primary">
-                    接受結果
-                </button>
-            `;
-            
-            resultEl.classList.remove('hidden');
-            
-            // Enable reroll if available and failed
-            if (!success) {
-                document.getElementById('useReroll').disabled = false;
+        // Add CSS styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .mini-game.true-or-false {
+                text-align: center;
+                padding: 20px;
             }
+            .question-text {
+                margin: 20px 0;
+                font-size: 18px;
+                font-weight: bold;
+                line-height: 1.4;
+                color: #2c3e50;
+            }
+            .answer-buttons {
+                display: flex;
+                justify-content: space-around;
+                margin: 30px 0;
+                gap: 20px;
+            }
+            .btn-true, .btn-false {
+                flex: 1;
+                max-width: 120px;
+                padding: 15px;
+                border: 3px solid;
+                border-radius: 10px;
+                background: white;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            .btn-true {
+                border-color: #27ae60;
+                color: #27ae60;
+            }
+            .btn-true:hover {
+                background: #27ae60;
+                color: white;
+            }
+            .btn-false {
+                border-color: #e74c3c;
+                color: #e74c3c;
+            }
+            .btn-false:hover {
+                background: #e74c3c;
+                color: white;
+            }
+            .btn-emoji {
+                font-size: 24px;
+                margin-bottom: 5px;
+            }
+            .btn-label {
+                font-size: 14px;
+            }
+            .answer-buttons button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        `;
+        document.head.appendChild(style);
 
-            document.getElementById('acceptResult').addEventListener('click', () => {
+        let answered = false;
+
+        // True button handler
+        document.getElementById('trueBtn').addEventListener('click', () => {
+            if (!answered) {
+                answered = true;
+                document.getElementById('trueBtn').style.background = '#27ae60';
+                document.getElementById('trueBtn').style.color = 'white';
+                document.getElementById('falseBtn').disabled = true;
                 this.submitResult({
-                    gameType: 'random_event',
-                    roll: roll,
-                    success: success,
-                    score: success ? 10 : -10
+                    gameType: 'true_or_false',
+                    answer: true
                 });
-            });
-        });
-
-        document.getElementById('useReroll').addEventListener('click', () => {
-            // Reset for reroll
-            hasRolled = false;
-            document.getElementById('checkResult').classList.add('hidden');
-            document.getElementById('useReroll').disabled = true;
-            
-            // Decrease reroll count
-            const rerollEl = document.getElementById('rerollCount');
-            const currentCount = parseInt(rerollEl.textContent) - 1;
-            rerollEl.textContent = currentCount;
-            
-            if (currentCount <= 0) {
-                document.getElementById('useReroll').style.display = 'none';
             }
         });
+
+        // False button handler
+        document.getElementById('falseBtn').addEventListener('click', () => {
+            if (!answered) {
+                answered = true;
+                document.getElementById('falseBtn').style.background = '#e74c3c';
+                document.getElementById('falseBtn').style.color = 'white';
+                document.getElementById('trueBtn').disabled = true;
+                this.submitResult({
+                    gameType: 'true_or_false',
+                    answer: false
+                });
+            }
+        });
+
+        // Start the timer
+        this.startTimer(Math.floor((gameData.timeLimit || 20000) / 1000));
     },
 
     loadDefaultGame(gameData) {

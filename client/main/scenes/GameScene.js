@@ -1005,9 +1005,8 @@ class GameScene extends Phaser.Scene {
       case 'team_info_pairing':
         this.renderTeamPairing(container, gameData)
         break
-      case 'random_stat_check':
-      case 'random_event':
-        this.renderRandomEvent(container, gameData)
+      case 'true_or_false':
+        this.renderTrueOrFalse(container, gameData)
         break
       default:
         this.renderDefaultGame(container, gameData)
@@ -1015,20 +1014,22 @@ class GameScene extends Phaser.Scene {
   }
 
   renderMultipleChoiceQuiz(container, gameData) {
-    // Use actual question data from server or fallback to sample
-    let question = gameData.data?.question
+    // Use actual question data from server or fallback - same as mobile implementation
+    let question = gameData.data
 
     // If question is just a string, wrap it in proper structure
     if (typeof question === 'string') {
       question = {
         question: question,
         options: ['創新', '誠信', '團隊合作', '客戶至上'],
+        correct: 1
       }
     } else if (!question || typeof question !== 'object') {
       // Fallback if no question data
       question = {
         question: '公司最重要的價值觀是什麼？',
         options: ['創新', '誠信', '團隊合作', '客戶至上'],
+        correct: 1
       }
     }
 
@@ -1251,66 +1252,6 @@ class GameScene extends Phaser.Scene {
     container.add(instructionText)
   }
 
-  renderRandomEvent(container, gameData) {
-    const title = this.add.text(0, -150, '🎲 隨機事件', {
-      fontSize: '20px',
-      fontFamily: 'Arial',
-      color: '#ffffff',
-      align: 'center',
-    })
-    title.setOrigin(0.5)
-    container.add(title)
-
-    const eventBg = this.add.rectangle(0, -50, 500, 200, 0x8e44ad, 0.8)
-    eventBg.setStrokeStyle(3, 0x9b59b6)
-    container.add(eventBg)
-
-    const eventTitle = this.add.text(0, -100, '技術挑戰', {
-      fontSize: '18px',
-      fontFamily: 'Arial',
-      color: '#ffffff',
-      align: 'center',
-    })
-    eventTitle.setOrigin(0.5)
-    container.add(eventTitle)
-
-    const eventDesc = this.add.text(0, -60, '需要解決一個緊急的技術問題', {
-      fontSize: '16px',
-      fontFamily: 'Arial',
-      color: '#ecf0f1',
-      align: 'center',
-    })
-    eventDesc.setOrigin(0.5)
-    container.add(eventDesc)
-
-    const statCheck = this.add.text(0, -20, '需要技術能力：4+', {
-      fontSize: '16px',
-      fontFamily: 'Arial',
-      color: '#f1c40f',
-      align: 'center',
-    })
-    statCheck.setOrigin(0.5)
-    container.add(statCheck)
-
-    const diceDisplay = this.add.text(0, 20, '🎲 ?', {
-      fontSize: '48px',
-      fontFamily: 'Arial',
-      color: '#ffffff',
-      align: 'center',
-    })
-    diceDisplay.setOrigin(0.5)
-    container.add(diceDisplay)
-
-    const instructionText = this.add.text(0, 150, '🎲 隊伍準備擲骰檢定...', {
-      fontSize: '16px',
-      fontFamily: 'Arial',
-      color: '#f39c12',
-      align: 'center',
-    })
-    instructionText.setOrigin(0.5)
-    container.add(instructionText)
-  }
-
   renderDefaultGame(container, gameData) {
     const title = this.add.text(0, -100, '🎯 特殊事件', {
       fontSize: '20px',
@@ -1338,6 +1279,102 @@ class GameScene extends Phaser.Scene {
     })
     instructionText.setOrigin(0.5)
     container.add(instructionText)
+  }
+
+  renderTrueOrFalse(container, gameData) {
+    const question = gameData.data
+
+    // Question text
+    const questionText = this.add.text(0, -120, question.question, {
+      fontSize: '18px',
+      fontFamily: 'Arial',
+      color: '#ffffff',
+      align: 'center',
+      wordWrap: { width: 400 },
+    })
+    questionText.setOrigin(0.5)
+    container.add(questionText)
+
+    // Create True button
+    const trueButton = this.add.rectangle(-80, 20, 120, 60, 0x27ae60)
+    trueButton.setStrokeStyle(2, 0x2ecc71)
+    container.add(trueButton)
+
+    const trueEmoji = this.add.text(-80, 0, question.trueEmoji || '⭕', {
+      fontSize: '24px',
+      fontFamily: 'Arial',
+    })
+    trueEmoji.setOrigin(0.5)
+    container.add(trueEmoji)
+
+    const trueLabel = this.add.text(-80, 30, '正確', {
+      fontSize: '14px',
+      fontFamily: 'Arial',
+      color: '#ffffff',
+      align: 'center',
+    })
+    trueLabel.setOrigin(0.5)
+    container.add(trueLabel)
+
+    // Create False button
+    const falseButton = this.add.rectangle(80, 20, 120, 60, 0xe74c3c)
+    falseButton.setStrokeStyle(2, 0xc0392b)
+    container.add(falseButton)
+
+    const falseEmoji = this.add.text(80, 0, question.falseEmoji || '❌', {
+      fontSize: '24px',
+      fontFamily: 'Arial',
+    })
+    falseEmoji.setOrigin(0.5)
+    container.add(falseEmoji)
+
+    const falseLabel = this.add.text(80, 30, '錯誤', {
+      fontSize: '14px',
+      fontFamily: 'Arial',
+      color: '#ffffff',
+      align: 'center',
+    })
+    falseLabel.setOrigin(0.5)
+    container.add(falseLabel)
+
+    // Make buttons interactive
+    trueButton.setInteractive({ cursor: 'pointer' })
+    falseButton.setInteractive({ cursor: 'pointer' })
+
+    let answered = false
+
+    trueButton.on('pointerdown', () => {
+      if (!answered) {
+        answered = true
+        this.submitMiniGameAnswer(true)
+        trueButton.setFillStyle(0x2ecc71)
+        falseButton.setAlpha(0.5)
+      }
+    })
+
+    falseButton.on('pointerdown', () => {
+      if (!answered) {
+        answered = true
+        this.submitMiniGameAnswer(false)
+        falseButton.setFillStyle(0xc0392b)
+        trueButton.setAlpha(0.5)
+      }
+    })
+
+    // Hover effects
+    trueButton.on('pointerover', () => {
+      if (!answered) trueButton.setFillStyle(0x2ecc71)
+    })
+    trueButton.on('pointerout', () => {
+      if (!answered) trueButton.setFillStyle(0x27ae60)
+    })
+
+    falseButton.on('pointerover', () => {
+      if (!answered) falseButton.setFillStyle(0xc0392b)
+    })
+    falseButton.on('pointerout', () => {
+      if (!answered) falseButton.setFillStyle(0xe74c3c)
+    })
   }
 
   startMiniGameTimer(timeLimit) {
@@ -1545,8 +1582,7 @@ class GameScene extends Phaser.Scene {
       drag_drop_workflow: '🔄 流程排序',
       format_matching: '🔗 配對遊戲',
       team_info_pairing: '👥 團隊協作',
-      random_stat_check: '🎲 隨機事件',
-      random_event: '🎲 隨機事件',
+      true_or_false: '✅❌ 是非題',
     }
     return eventNames[eventType] || `🎯 ${eventType}`
   }

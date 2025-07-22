@@ -52,6 +52,7 @@ class GameManager {
 
   generateBoard() {
     const board = [];
+    const eventCounts = {};
     
     // Start tile
     board.push(createTile(0, TileType.START));
@@ -63,20 +64,25 @@ class GameManager {
         board.push(createTile(i, TileType.CHANCE));
       } else {
         // All other tiles are event tiles
-        board.push(createTile(i, TileType.EVENT, this.generateRandomEvent()));
+        const eventType = this.generateRandomEvent();
+        board.push(createTile(i, TileType.EVENT, eventType));
+        eventCounts[eventType] = (eventCounts[eventType] || 0) + 1;
       }
     }
     
+    console.log('Generated board with event distribution:', eventCounts);
     return board;
   }
 
   generateRandomEvent() {
     const events = [
       'multiple_choice_quiz',
-      'drag_drop_workflow',
+      'drag_drop_workflow', 
       'format_matching',
       'team_info_pairing',
-      'random_stat_check'
+      'true_or_false',
+      'true_or_false',  // Duplicate to increase probability for testing
+      'true_or_false'   // Duplicate to increase probability for testing
     ];
     return events[Math.floor(Math.random() * events.length)];
   }
