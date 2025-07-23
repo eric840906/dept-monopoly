@@ -31,9 +31,6 @@ window.MiniGames = {
       case 'format_matching':
         this.loadFormatMatching(gameData)
         break
-      case 'team_info_pairing':
-        this.loadTeamPairing(gameData)
-        break
       case 'true_or_false':
         this.loadTrueOrFalse(gameData)
         break
@@ -108,6 +105,21 @@ window.MiniGames = {
                         color: #495057;
                         border: 2px solid #e9ecef;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }
+                    .question-image {
+                        display: block;
+                        max-width: 100%;
+                        width: auto;
+                        height: auto;
+                        max-height: 180px;
+                        margin: 0 auto 20px auto;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                        object-fit: contain;
+                        /* SVG support - ensures proper scaling */
+                        background: transparent;
+                        /* Maintain 16:9 aspect ratio */
+                        aspect-ratio: 16/9;
                     }
                     .options-container {
                         display: flex;
@@ -248,6 +260,7 @@ window.MiniGames = {
                     💡 仔細閱讀題目，選擇最合適的答案
                 </div>
                 <div class="question-text">${question.question}</div>
+                ${question.image ? `<img src="${question.image}" alt="Quiz Image" class="question-image" onerror="this.style.display='none'">` : ''}
                 <div class="options-container">
                     ${question.options
                       .map(
@@ -440,10 +453,13 @@ window.MiniGames = {
                         border-radius: 8px;
                         border: 2px dashed #9c27b0;
                         min-height: 240px;
+                        max-height: 400px;
                         position: relative;
                         display: flex;
                         flex-direction: column;
                         gap: 4px;
+                        overflow-y: auto;
+                        overflow-x: hidden;
                     }
                     .drop-zone-empty {
                         display: flex;
@@ -494,6 +510,9 @@ window.MiniGames = {
                         overflow-wrap: break-word;
                         flex-shrink: 0;
                         min-height: 36px;
+                        max-width: 100%;
+                        box-sizing: border-box;
+                        position: relative;
                     }
                     .dropped-item:hover {
                         background: #e1bee7;
@@ -1163,277 +1182,7 @@ window.MiniGames = {
     updateMatchCount()
   },
 
-  loadTeamPairing(gameData) {
-    // Use actual team pairing data from server or fallback
-    const taskData = gameData.data || {}
-    const taskTitle = taskData.title || '設計一個完美的工作日'
-    const taskDescription = taskData.description || '請按優先順序排列以下活動（隊伍共同決定）：'
-    const activities = taskData.items || ['團隊會議', '專案開發', '客戶溝通', '學習成長', '休息放鬆']
 
-    this.gameContainer.innerHTML = `
-            <div class="mini-game team-pairing">
-                <style>
-                    .team-pairing {
-                        padding: 15px;
-                        max-height: 100vh;
-                        overflow-y: auto;
-                        box-sizing: border-box;
-                    }
-                    .team-pairing h3 {
-                        margin: 0 0 10px 0;
-                        text-align: center;
-                        color: #333;
-                        font-size: 18px;
-                    }
-                    .team-pairing p {
-                        margin: 0 0 15px 0;
-                        text-align: center;
-                        color: #666;
-                        font-size: 14px;
-                    }
-                    .collaboration-task {
-                        background: #f8f9fa;
-                        border-radius: 12px;
-                        padding: 15px;
-                        margin-bottom: 15px;
-                        border: 2px solid #e9ecef;
-                    }
-                    .collaboration-task h4 {
-                        margin: 0 0 8px 0;
-                        color: #495057;
-                        font-size: 16px;
-                        text-align: center;
-                    }
-                    .collaboration-task p {
-                        margin: 0 0 15px 0;
-                        color: #6c757d;
-                        font-size: 13px;
-                        text-align: center;
-                    }
-                    .priority-list {
-                        display: flex;
-                        flex-direction: column;
-                        gap: 10px;
-                        max-height: 50vh;
-                        overflow-y: auto;
-                        padding: 10px;
-                        border: 1px solid #e9ecef;
-                        border-radius: 8px;
-                        background: #ffffff;
-                    }
-                    .priority-item {
-                        background: #ffffff;
-                        border: 2px solid #dee2e6;
-                        border-radius: 12px;
-                        padding: 16px 20px;
-                        cursor: pointer;
-                        transition: all 0.3s ease;
-                        font-size: 15px;
-                        font-weight: 500;
-                        line-height: 1.4;
-                        position: relative;
-                        display: flex;
-                        align-items: center;
-                        justify-content: space-between;
-                        min-height: 60px;
-                        word-wrap: break-word;
-                        user-select: none;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    }
-                    .priority-item:hover {
-                        border-color: #007bff;
-                        background: #f8f9ff;
-                        transform: translateY(-1px);
-                        box-shadow: 0 2px 4px rgba(0,123,255,0.1);
-                    }
-                    .priority-item.selected {
-                        background: #e3f2fd;
-                        border-color: #2196f3;
-                        border-width: 3px;
-                        color: #1976d2;
-                        font-weight: bold;
-                    }
-                    .priority-item.selected::before {
-                        content: "✓";
-                        position: absolute;
-                        left: -8px;
-                        top: -8px;
-                        background: #2196f3;
-                        color: white;
-                        border-radius: 50%;
-                        width: 20px;
-                        height: 20px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        font-size: 12px;
-                        font-weight: bold;
-                    }
-                    .order-number {
-                        background: #ff9800;
-                        color: white;
-                        border-radius: 50%;
-                        width: 24px;
-                        height: 24px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        font-size: 12px;
-                        font-weight: bold;
-                        margin-left: 8px;
-                        flex-shrink: 0;
-                    }
-                    .timer-display {
-                        text-align: center;
-                        font-size: 16px;
-                        font-weight: bold;
-                        margin: 15px 0;
-                        color: #d32f2f;
-                        background: #fff3e0;
-                        padding: 8px;
-                        border-radius: 8px;
-                        border: 2px solid #ffcc02;
-                    }
-                    .btn {
-                        width: 100%;
-                        padding: 12px;
-                        border: none;
-                        border-radius: 8px;
-                        font-size: 16px;
-                        font-weight: bold;
-                        cursor: pointer;
-                        transition: all 0.2s ease;
-                        margin-top: 10px;
-                    }
-                    .btn-primary {
-                        background: #28a745;
-                        color: white;
-                    }
-                    .btn-primary:hover {
-                        background: #218838;
-                        transform: translateY(-1px);
-                    }
-                    .btn-primary:disabled {
-                        background: #6c757d;
-                        cursor: not-allowed;
-                        transform: none;
-                    }
-                    .instructions {
-                        background: #fff3cd;
-                        border: 1px solid #ffeaa7;
-                        border-radius: 6px;
-                        padding: 10px;
-                        margin-bottom: 15px;
-                        font-size: 13px;
-                        text-align: center;
-                        color: #856404;
-                    }
-                </style>
-                <h3>👥 團隊協作</h3>
-                <p>請與隊友討論並共同完成以下任務：</p>
-                <div class="instructions">
-                    💡 點擊項目來選擇優先順序，數字表示優先級排序
-                </div>
-                <div class="collaboration-task">
-                    <h4>任務：${taskTitle}</h4>
-                    <p>${taskDescription}</p>
-                    <div class="priority-list" id="priorityList">
-                        ${activities
-                          .map(
-                            (activity) => `
-                            <div class="priority-item" data-item="${activity}">
-                                <span>📅 ${activity}</span>
-                            </div>
-                        `
-                          )
-                          .join('')}
-                    </div>
-                </div>
-                <div class="timer-display">
-                    ⏰ <span id="miniGameTimer">60</span> 秒
-                </div>
-                <button id="submitPriority" class="btn btn-primary" disabled>
-                    請至少選擇 3 個項目
-                </button>
-            </div>
-        `
-
-    this.setupTeamPairingHandlers()
-    this.startTimer(60)
-  },
-
-  setupTeamPairingHandlers() {
-    const priorityList = document.getElementById('priorityList')
-    let currentOrder = []
-
-    const updateSubmitButton = () => {
-      const submitBtn = document.getElementById('submitPriority')
-      if (currentOrder.length >= 3) {
-        submitBtn.disabled = false
-        submitBtn.textContent = `提交排序 (已選擇 ${currentOrder.length} 項)`
-      } else {
-        submitBtn.disabled = true
-        submitBtn.textContent = `請至少選擇 3 個項目 (目前 ${currentOrder.length} 項)`
-      }
-    }
-
-    const updateOrderNumbers = () => {
-      // Remove all existing order numbers
-      document.querySelectorAll('.order-number').forEach((el) => el.remove())
-
-      // Add order numbers to selected items in correct order
-      currentOrder.forEach((itemName, index) => {
-        const item = document.querySelector(`[data-item="${itemName}"]`)
-        if (item) {
-          const orderNumber = document.createElement('span')
-          orderNumber.className = 'order-number'
-          orderNumber.textContent = index + 1
-          item.appendChild(orderNumber)
-        }
-      })
-    }
-
-    // Make items clickable to reorder
-    document.querySelectorAll('.priority-item').forEach((item, index) => {
-      item.addEventListener('click', () => {
-        const itemName = item.dataset.item
-
-        if (currentOrder.includes(itemName)) {
-          // Remove from order
-          currentOrder = currentOrder.filter((i) => i !== itemName)
-          item.classList.remove('selected')
-          updateOrderNumbers()
-        } else {
-          // Add to order
-          currentOrder.push(itemName)
-          item.classList.add('selected')
-          updateOrderNumbers()
-        }
-
-        updateSubmitButton()
-      })
-    })
-
-    document.getElementById('submitPriority').addEventListener('click', () => {
-      if (currentOrder.length < 3) {
-        alert('請至少選擇 3 個項目後再提交！')
-        return
-      }
-
-      // For team pairing, success is based on participation
-      const score = currentOrder.length >= 3 ? 10 : 5
-
-      this.submitResult({
-        gameType: 'team_pairing',
-        answer: currentOrder,
-        correct: true,
-        score: score,
-      })
-    })
-
-    // Initial button state
-    updateSubmitButton()
-  },
 
   loadTrueOrFalse(gameData) {
     const question = gameData.data

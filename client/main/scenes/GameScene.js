@@ -17,6 +17,9 @@ class GameScene extends Phaser.Scene {
 
     // Preload team images
     this.preloadTeamImages()
+
+    // Preload quiz images
+    this.preloadQuizImages()
   }
 
   create(data) {
@@ -127,6 +130,22 @@ class GameScene extends Phaser.Scene {
       })
     } catch (error) {
       console.log('Could not preload team images:', error)
+    }
+  }
+
+  preloadQuizImages() {
+    // Preload quiz images to avoid loading delays during mini-games
+    try {
+      const quizImages = [
+        { key: 'mib_flash_location_door_video', path: '/images/quiz/mib_flash_location_door_video.svg' },
+        // Add more quiz images here as needed
+      ]
+
+      quizImages.forEach((img) => {
+        this.load.image(img.key, img.path)
+      })
+    } catch (error) {
+      console.log('Could not preload quiz images:', error)
     }
   }
 
@@ -1036,9 +1055,6 @@ class GameScene extends Phaser.Scene {
       case 'format_matching':
         this.renderFormatMatching(container, gameData)
         break
-      case 'team_info_pairing':
-        this.renderTeamPairing(container, gameData)
-        break
       case 'true_or_false':
         this.renderTrueOrFalse(container, gameData)
         break
@@ -1072,7 +1088,7 @@ class GameScene extends Phaser.Scene {
       question.options = ['創新', '誠信', '團隊合作', '客戶至上']
     }
 
-    const questionText = this.add.text(0, -150, question.question, {
+    const questionText = this.add.text(0, -200, question.question, {
       fontSize: '20px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -1082,9 +1098,29 @@ class GameScene extends Phaser.Scene {
     questionText.setOrigin(0.5)
     container.add(questionText)
 
-    // Display options
+    // Add image if available
+    let imageYOffset = 0
+    if (question.image) {
+      try {
+        // Convert path to texture key (remove path and extension)
+        const imageKey = question.image.split('/').pop().replace('.png', '').replace('.jpg', '').replace('.jpeg', '').replace('.svg', '')
+
+        if (this.textures.exists(imageKey)) {
+          const questionImage = this.add.image(0, -150, imageKey)
+          questionImage.setOrigin(0.5)
+          questionImage.setDisplaySize(192, 108) // 16:9 ratio (192÷108 = 1.78)
+          container.add(questionImage)
+          imageYOffset = 60 // Adjusted offset for new size
+        }
+      } catch (error) {
+        console.warn('Could not load quiz image:', question.image, error)
+      }
+    }
+
+    // Display options (adjusted position based on image presence)
+    const optionsStartY = imageYOffset > 0 ? -20 : -50
     question.options.forEach((option, index) => {
-      const optionText = this.add.text(0, -50 + index * 60, `${String.fromCharCode(65 + index)}. ${option}`, {
+      const optionText = this.add.text(0, optionsStartY + index * 60, `${String.fromCharCode(65 + index)}. ${option}`, {
         fontSize: '18px',
         fontFamily: 'Arial',
         color: '#bdc3c7',
@@ -1220,63 +1256,6 @@ class GameScene extends Phaser.Scene {
     })
 
     const instructionText = this.add.text(0, 150, '🔗 隊伍正在進行配對...', {
-      fontSize: '16px',
-      fontFamily: 'Arial',
-      color: '#f39c12',
-      align: 'center',
-    })
-    instructionText.setOrigin(0.5)
-    container.add(instructionText)
-  }
-
-  renderTeamPairing(container, gameData) {
-    const teamData = gameData.data || {}
-    const title = this.add.text(0, -150, '👥 團隊協作', {
-      fontSize: '20px',
-      fontFamily: 'Arial',
-      color: '#ffffff',
-      align: 'center',
-    })
-    title.setOrigin(0.5)
-    container.add(title)
-
-    const taskTitle = this.add.text(0, -110, teamData.title || '任務：設計一個完美的工作日', {
-      fontSize: '18px',
-      fontFamily: 'Arial',
-      color: '#e74c3c',
-      align: 'center',
-    })
-    taskTitle.setOrigin(0.5)
-    container.add(taskTitle)
-
-    const description = this.add.text(0, -80, teamData.description || '請按優先順序排列以下活動：', {
-      fontSize: '16px',
-      fontFamily: 'Arial',
-      color: '#bdc3c7',
-      align: 'center',
-      wordWrap: { width: 600 },
-    })
-    description.setOrigin(0.5)
-    container.add(description)
-
-    const activities = teamData.items || ['📅 團隊會議', '💻 專案開發', '📞 客戶溝通', '📚 學習成長', '☕ 休息放鬆']
-
-    activities.slice(0, 5).forEach((activity, index) => {
-      const itemBg = this.add.rectangle(0, -30 + index * 50, 400, 40, 0x34495e, 0.8)
-      itemBg.setStrokeStyle(2, 0x7f8c8d)
-      container.add(itemBg)
-
-      const itemText = this.add.text(0, -30 + index * 50, activity, {
-        fontSize: '16px',
-        fontFamily: 'Arial',
-        color: '#ffffff',
-        align: 'center',
-      })
-      itemText.setOrigin(0.5)
-      container.add(itemText)
-    })
-
-    const instructionText = this.add.text(0, 200, '👥 隊伍正在討論並排序...', {
       fontSize: '16px',
       fontFamily: 'Arial',
       color: '#f39c12',
@@ -1634,7 +1613,6 @@ class GameScene extends Phaser.Scene {
       multiple_choice_quiz: '📝 選擇題挑戰',
       drag_drop_workflow: '🔄 流程排序',
       format_matching: '🔗 配對遊戲',
-      team_info_pairing: '👥 團隊協作',
       true_or_false: '✅❌ 是非題',
     }
     return eventNames[eventType] || `🎯 ${eventType}`

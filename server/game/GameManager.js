@@ -79,7 +79,6 @@ class GameManager {
       'multiple_choice_quiz',
       'drag_drop_workflow', 
       'format_matching',
-      'team_info_pairing',
       'true_or_false',
       'true_or_false',  // Duplicate to increase probability for testing
       'true_or_false'   // Duplicate to increase probability for testing

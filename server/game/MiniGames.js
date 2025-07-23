@@ -40,8 +40,6 @@ class MiniGameProcessor {
         return this.generateDragDropWorkflow()
       case 'format_matching':
         return this.generateFormatMatching()
-      case 'team_info_pairing':
-        return this.generateTeamPairing()
       case 'true_or_false':
         return this.generateTrueOrFalse()
       default:
@@ -58,16 +56,18 @@ class MiniGameProcessor {
         explanation: '答案是1個，你現在知道了',
       },
       {
-        question: '專案管理的核心原則是？',
-        options: ['時間管理', '質量控制', '風險評估', '以上皆是'],
-        correct: 3,
-        explanation: '專案管理需要綜合考慮多個要素',
+        question: 'IAS 量測目前不支援什麼環境量測？',
+        options: ['Desktop', 'Mobile', 'APP', 'Instream'],
+        correct: 2,
+        explanation: 'IAS 量測目前不支援 APP 環境量測',
+        // No image for this question
       },
       {
-        question: '公司文化建設的關鍵是？',
-        options: ['制度規範', '價值觀念', '獎懲機制', '團隊活動'],
+        question: '以下 Studio 圖片示意是那個格式 ？',
+        options: ['MIB Flash', 'MIB Flash Location', 'MIB Location', 'MIB Location Video'],
         correct: 1,
         explanation: '共同的價值觀念是企業文化的核心',
+        image: '/images/quiz/mib_flash_location_door_video.svg', // Optional image
       },
       {
         question: '創新思維的特點是？',
@@ -192,37 +192,6 @@ class MiniGameProcessor {
         title: selectedSet.title,
         pairs: selectedPairs,
       },
-    }
-  }
-
-  generateTeamPairing() {
-    const collaborationTasks = [
-      {
-        title: '格式開發流程',
-        description: '請排出正確的順序',
-        items: ['裝置環境測試', 'UI/UX 設計', '技術可行性討論', '排程開發', 'Kick off 產品', '媒體投放測試', '總結反思'],
-        correctOrder: ['技術可行性討論', 'UI/UX 設計', 'Kick off 產品', '排程開發', '裝置環境測試', '媒體投放測試'],
-      },
-      {
-        title: '制定團隊價值觀',
-        description: '請從以下選項中選出最符合團隊的核心價值觀（最多選5個）',
-        items: ['誠信正直', '創新進取', '團隊合作', '客戶至上', '追求卓越', '持續學習', '責任擔當', '開放包容'],
-        correctAnswers: ['誠信正直', '團隊合作', '追求卓越', '持續學習', '責任擔當'],
-      },
-      {
-        title: '項目成功要素',
-        description: '請團隊討論並選出專案成功的關鍵要素（按重要性排序）',
-        items: ['明確目標', '團隊溝通', '資源配置', '風險管控', '時間管理', '質量把控', '客戶滿意'],
-        correctOrder: ['明確目標', '團隊溝通', '資源配置', '時間管理', '風險管控', '質量把控', '客戶滿意'],
-      },
-    ]
-
-    const selectedTask = collaborationTasks[Math.floor(Math.random() * collaborationTasks.length)]
-
-    return {
-      eventType: 'team_info_pairing',
-      timeLimit: GAME_CONFIG.MINI_GAME_TIME_LIMITS.TEAM_PAIRING,
-      data: selectedTask,
     }
   }
 
@@ -354,9 +323,6 @@ class MiniGameProcessor {
         case 'format_matching':
           ;({ score, success, feedback } = this.evaluateFormatMatching(data, submission))
           break
-        case 'team_info_pairing':
-          ;({ score, success, feedback } = this.evaluateTeamPairing(data, submission))
-          break
         case 'true_or_false':
           ;({ score, success, feedback } = this.evaluateTrueOrFalse(data, submission))
           break
@@ -467,28 +433,6 @@ class MiniGameProcessor {
       score,
       success,
       feedback: `配對正確: ${correctMatches}/${correctPairs.length}`,
-    }
-  }
-
-  evaluateTeamPairing(data, submission) {
-    const userSelection = submission.answer
-
-    if (!Array.isArray(userSelection) || userSelection.length === 0) {
-      return {
-        score: 0,
-        success: false,
-        feedback: '未提交有效答案',
-      }
-    }
-
-    // Team pairing is more about participation than correctness
-    const participationBonus = userSelection.length >= 3 ? 5 : 0
-    const completionBonus = userSelection.length >= 5 ? 5 : 0
-
-    return {
-      score: GAME_CONFIG.SCORING.PARTIAL + participationBonus + completionBonus,
-      success: true,
-      feedback: `團隊協作完成，獲得參與獎勵！`,
     }
   }
 
