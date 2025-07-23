@@ -1,81 +1,81 @@
 // Mini Games Component for Mobile Interface
 
 window.MiniGames = {
-    currentGame: null,
-    gameContainer: null,
-    socket: null,
-    teamId: null,
+  currentGame: null,
+  gameContainer: null,
+  socket: null,
+  teamId: null,
 
-    load(gameData, container, socket, teamId, playerId, onReadyCallback) {
-        // Stop any existing timer first
-        this.stopTimer();
+  load(gameData, container, socket, teamId, playerId, onReadyCallback) {
+    // Stop any existing timer first
+    this.stopTimer()
 
-        this.gameContainer = container;
-        this.socket = socket;
-        this.teamId = teamId;
-        this.playerId = playerId;
-        this.currentGame = gameData;
-        this.onReadyCallback = onReadyCallback;
+    this.gameContainer = container
+    this.socket = socket
+    this.teamId = teamId
+    this.playerId = playerId
+    this.currentGame = gameData
+    this.onReadyCallback = onReadyCallback
 
-        // Clear container
-        container.innerHTML = '';
+    // Clear container
+    container.innerHTML = ''
 
-        // Load appropriate mini-game
-        switch (gameData.eventType) {
-            case 'multiple_choice_quiz':
-                this.loadMultipleChoice(gameData);
-                break;
-            case 'drag_drop_workflow':
-                this.loadDragDrop(gameData);
-                break;
-            case 'format_matching':
-                this.loadFormatMatching(gameData);
-                break;
-            case 'team_info_pairing':
-                this.loadTeamPairing(gameData);
-                break;
-            case 'true_or_false':
-                this.loadTrueOrFalse(gameData);
-                break;
-            default:
-                this.loadDefaultGame(gameData);
-        }
+    // Load appropriate mini-game
+    switch (gameData.eventType) {
+      case 'multiple_choice_quiz':
+        this.loadMultipleChoice(gameData)
+        break
+      case 'drag_drop_workflow':
+        this.loadDragDrop(gameData)
+        break
+      case 'format_matching':
+        this.loadFormatMatching(gameData)
+        break
+      case 'team_info_pairing':
+        this.loadTeamPairing(gameData)
+        break
+      case 'true_or_false':
+        this.loadTrueOrFalse(gameData)
+        break
+      default:
+        this.loadDefaultGame(gameData)
+    }
 
-        // Call the ready callback after loading is complete
-        if (this.onReadyCallback) {
-            // Small delay to ensure DOM is fully rendered
-            setTimeout(() => {
-                this.onReadyCallback();
-            }, 100);
-        }
-    },
+    // Call the ready callback after loading is complete
+    if (this.onReadyCallback) {
+      // Small delay to ensure DOM is fully rendered
+      setTimeout(() => {
+        this.onReadyCallback()
+      }, 100)
+    }
+  },
 
-    loadMultipleChoice(gameData) {
-        // Use actual question data from server or fallback
-        let question = gameData.data;
-        
-        // If question is just a string, wrap it in proper structure
-        if (typeof question === 'string') {
-            question = {
-                question: question,
-                options: ["創新", "誠信", "團隊合作", "客戶至上"],
-                correct: 1
-            };
-        } else if (!question || typeof question !== 'object') {
-            // Fallback if no question data
-            question = {
-                question: "公司最重要的價值觀是什麼？",
-                options: ["創新", "誠信", "團隊合作", "客戶至上"],
-                correct: 1
-            };
-        }
-        
-        // Ensure options is always an array
-        if (!Array.isArray(question.options)) {
-            question.options = ["創新", "誠信", "團隊合作", "客戶至上"];
-        }
-        
-        this.gameContainer.innerHTML = `
+  loadMultipleChoice(gameData) {
+    // Use actual question data from server or fallback
+    let question = gameData.data
+
+    // If question is just a string, wrap it in proper structure
+    if (typeof question === 'string') {
+      question = {
+        question: question,
+        options: ['創新', '誠信', '團隊合作', '客戶至上'],
+        correct: 1,
+      }
+    } else if (!question || typeof question !== 'object') {
+      // Fallback if no question data
+      question = {
+        question: '公司最重要的價值觀是什麼？',
+        options: ['創新', '誠信', '團隊合作', '客戶至上'],
+        correct: 1,
+      }
+    }
+
+    // Ensure options is always an array
+    if (!Array.isArray(question.options)) {
+      question.options = ['創新', '誠信', '團隊合作', '客戶至上']
+    }
+
+    this.gameContainer.innerHTML = `
             <div class="mini-game multiple-choice">
                 <style>
                     .multiple-choice {
@@ -249,12 +249,16 @@ window.MiniGames = {
                 </div>
                 <div class="question-text">${question.question}</div>
                 <div class="options-container">
-                    ${question.options.map((option, index) => `
+                    ${question.options
+                      .map(
+                        (option, index) => `
                         <button class="option-btn" data-index="${index}">
                             <span style="margin-right: 12px; font-weight: bold; color: #666;">${String.fromCharCode(65 + index)}.</span>
                             <span>${option}</span>
                         </button>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </div>
                 <div class="timer-display">
                     <span id="miniGameTimer">30</span> 秒
@@ -263,113 +267,113 @@ window.MiniGames = {
                     請選擇一個答案
                 </button>
             </div>
-        `;
+        `
 
-        this.setupMultipleChoiceHandlers(question.correct);
-        this.startTimer(30);
-    },
+    this.setupMultipleChoiceHandlers(question.correct)
+    this.startTimer(30)
+  },
 
-    setupMultipleChoiceHandlers(correctIndex) {
-        let selectedAnswer = null;
-        let hasSubmitted = false;
-        
-        const updateSubmitButton = () => {
-            const submitBtn = document.getElementById('submitAnswer');
-            if (selectedAnswer !== null && !hasSubmitted) {
-                submitBtn.disabled = false;
-                const selectedOption = String.fromCharCode(65 + selectedAnswer);
-                submitBtn.textContent = `提交答案 (選擇 ${selectedOption})`;
-            } else if (hasSubmitted) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = '已提交答案';
-            } else {
-                submitBtn.disabled = true;
-                submitBtn.textContent = '請選擇一個答案';
-            }
-        };
-        
-        document.querySelectorAll('.option-btn').forEach((btn, index) => {
-            btn.addEventListener('click', () => {
-                if (hasSubmitted) return; // Prevent changes after submission
-                
-                // Remove previous selection
-                document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
-                
-                // Select current option
-                btn.classList.add('selected');
-                selectedAnswer = index;
-                
-                // Provide immediate feedback
-                btn.style.animation = 'none';
-                setTimeout(() => {
-                    btn.style.animation = '';
-                }, 10);
-                
-                updateSubmitButton();
-            });
-            
-            // Add touch feedback for mobile
-            btn.addEventListener('touchstart', () => {
-                if (!hasSubmitted) {
-                    btn.style.transform = 'translateY(-1px) scale(0.98)';
-                }
-            });
-            
-            btn.addEventListener('touchend', () => {
-                if (!hasSubmitted) {
-                    setTimeout(() => {
-                        btn.style.transform = '';
-                    }, 100);
-                }
-            });
-        });
+  setupMultipleChoiceHandlers(correctIndex) {
+    let selectedAnswer = null
+    let hasSubmitted = false
 
-        document.getElementById('submitAnswer').addEventListener('click', () => {
-            if (selectedAnswer === null || hasSubmitted) return;
-            
-            hasSubmitted = true;
-            const isCorrect = selectedAnswer === correctIndex;
-            
-            // Disable all options after submission
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.style.pointerEvents = 'none';
-                btn.style.opacity = '0.7';
-            });
-            
-            // Highlight the selected option
-            const selectedBtn = document.querySelector(`[data-index="${selectedAnswer}"]`);
-            if (selectedBtn) {
-                selectedBtn.style.opacity = '1';
-                selectedBtn.style.background = isCorrect ? '#d4edda' : '#f8d7da';
-                selectedBtn.style.borderColor = isCorrect ? '#28a745' : '#dc3545';
-            }
-            
-            updateSubmitButton();
-            
-            // Small delay before submitting to show feedback
-            setTimeout(() => {
-                this.submitResult({
-                    gameType: 'multiple_choice',
-                    answer: selectedAnswer,
-                    correct: isCorrect,
-                    score: isCorrect ? 10 : -10
-                });
-            }, 500);
-        });
-        
-        // Initial button state
-        updateSubmitButton();
-    },
+    const updateSubmitButton = () => {
+      const submitBtn = document.getElementById('submitAnswer')
+      if (selectedAnswer !== null && !hasSubmitted) {
+        submitBtn.disabled = false
+        const selectedOption = String.fromCharCode(65 + selectedAnswer)
+        submitBtn.textContent = `提交答案 (選擇 ${selectedOption})`
+      } else if (hasSubmitted) {
+        submitBtn.disabled = true
+        submitBtn.textContent = '已提交答案'
+      } else {
+        submitBtn.disabled = true
+        submitBtn.textContent = '請選擇一個答案'
+      }
+    }
 
-    loadDragDrop(gameData) {
-        // Use server-provided workflow data
-        const workflow = {
-            title: gameData.data.title || "流程排序",
-            items: gameData.data.correctOrder || [],
-            shuffled: gameData.data.shuffledItems || []
-        };
-        
-        this.gameContainer.innerHTML = `
+    document.querySelectorAll('.option-btn').forEach((btn, index) => {
+      btn.addEventListener('click', () => {
+        if (hasSubmitted) return // Prevent changes after submission
+
+        // Remove previous selection
+        document.querySelectorAll('.option-btn').forEach((b) => b.classList.remove('selected'))
+
+        // Select current option
+        btn.classList.add('selected')
+        selectedAnswer = index
+
+        // Provide immediate feedback
+        btn.style.animation = 'none'
+        setTimeout(() => {
+          btn.style.animation = ''
+        }, 10)
+
+        updateSubmitButton()
+      })
+
+      // Add touch feedback for mobile
+      btn.addEventListener('touchstart', () => {
+        if (!hasSubmitted) {
+          btn.style.transform = 'translateY(-1px) scale(0.98)'
+        }
+      })
+
+      btn.addEventListener('touchend', () => {
+        if (!hasSubmitted) {
+          setTimeout(() => {
+            btn.style.transform = ''
+          }, 100)
+        }
+      })
+    })
+
+    document.getElementById('submitAnswer').addEventListener('click', () => {
+      if (selectedAnswer === null || hasSubmitted) return
+
+      hasSubmitted = true
+      const isCorrect = selectedAnswer === correctIndex
+
+      // Disable all options after submission
+      document.querySelectorAll('.option-btn').forEach((btn) => {
+        btn.style.pointerEvents = 'none'
+        btn.style.opacity = '0.7'
+      })
+
+      // Highlight the selected option
+      const selectedBtn = document.querySelector(`[data-index="${selectedAnswer}"]`)
+      if (selectedBtn) {
+        selectedBtn.style.opacity = '1'
+        selectedBtn.style.background = isCorrect ? '#d4edda' : '#f8d7da'
+        selectedBtn.style.borderColor = isCorrect ? '#28a745' : '#dc3545'
+      }
+
+      updateSubmitButton()
+
+      // Small delay before submitting to show feedback
+      setTimeout(() => {
+        this.submitResult({
+          gameType: 'multiple_choice',
+          answer: selectedAnswer,
+          correct: isCorrect,
+          score: isCorrect ? 10 : -10,
+        })
+      }, 500)
+    })
+
+    // Initial button state
+    updateSubmitButton()
+  },
+
+  loadDragDrop(gameData) {
+    // Use server-provided workflow data
+    const workflow = {
+      title: gameData.data.title || '流程排序',
+      items: gameData.data.correctOrder || [],
+      shuffled: gameData.data.shuffledItems || [],
+    }
+
+    this.gameContainer.innerHTML = `
             <div class="mini-game drag-drop">
                 <style>
                     .drag-drop {
@@ -577,11 +581,15 @@ window.MiniGames = {
                             📦 可選項目
                         </div>
                         <div class="drag-items" id="dragItems">
-                            ${workflow.shuffled.map((item, index) => `
+                            ${workflow.shuffled
+                              .map(
+                                (item, index) => `
                                 <div class="drag-item" draggable="true" data-item="${item}" data-index="${index}">
                                     ${item}
                                 </div>
-                            `).join('')}
+                            `
+                              )
+                              .join('')}
                         </div>
                     </div>
                     <div class="target-section">
@@ -602,276 +610,286 @@ window.MiniGames = {
                     📤 提交順序
                 </button>
             </div>
-        `;
+        `
 
-        this.setupDragDropHandlers(workflow.items);
-        this.startTimer(45);
-    },
+    this.setupDragDropHandlers(workflow.items)
+    this.startTimer(45)
+  },
 
-    setupDragDropHandlers(correctOrder) {
-        const dragItems = document.querySelectorAll('.drag-item');
-        const dropZone = document.getElementById('dropZone');
-        this.droppedItems = []; // Make it accessible to removeItem
-        let draggedElement = null;
-        let dragStartPosition = null;
+  setupDragDropHandlers(correctOrder) {
+    const dragItems = document.querySelectorAll('.drag-item')
+    const dropZone = document.getElementById('dropZone')
+    this.droppedItems = [] // Make it accessible to removeItem
+    let draggedElement = null
+    let dragStartPosition = null
 
-        // Helper function to get clean item text
-        const getCleanItemText = (element) => {
-            if (element.dataset.item) return element.dataset.item;
-            return element.textContent.replace(/^(\d+\.)+\s*/, '').replace('×', '').trim();
-        };
+    // Helper function to get clean item text
+    const getCleanItemText = (element) => {
+      if (element.dataset.item) return element.dataset.item
+      return element.textContent
+        .replace(/^(\d+\.)+\s*/, '')
+        .replace('×', '')
+        .trim()
+    }
 
-        // Helper function to find insertion position
-        const getInsertPosition = (e, container) => {
-            const afterElement = getDragAfterElement(container, e.clientY);
-            if (afterElement == null) {
-                return this.droppedItems.length;
-            } else {
-                return parseInt(afterElement.dataset.position);
-            }
-        };
+    // Helper function to find insertion position
+    const getInsertPosition = (e, container) => {
+      const afterElement = getDragAfterElement(container, e.clientY)
+      if (afterElement == null) {
+        return this.droppedItems.length
+      } else {
+        return parseInt(afterElement.dataset.position)
+      }
+    }
 
-        // Helper function to determine where to insert based on Y position
-        const getDragAfterElement = (container, y) => {
-            const draggableElements = [...container.querySelectorAll('.dropped-item:not(.dragging)')];
-            
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        };
+    // Helper function to determine where to insert based on Y position
+    const getDragAfterElement = (container, y) => {
+      const draggableElements = [...container.querySelectorAll('.dropped-item:not(.dragging)')]
 
-        // Setup drag handlers for source items
-        dragItems.forEach(item => {
-            item.addEventListener('dragstart', (e) => {
-                draggedElement = e.target;
-                dragStartPosition = 'source';
-                e.dataTransfer.setData('text/plain', e.target.dataset.item);
-                e.target.style.opacity = '0.5';
-            });
+      return draggableElements.reduce(
+        (closest, child) => {
+          const box = child.getBoundingClientRect()
+          const offset = y - box.top - box.height / 2
 
-            item.addEventListener('dragend', (e) => {
-                e.target.style.opacity = '1';
-                draggedElement = null;
-                dragStartPosition = null;
-            });
+          if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child }
+          } else {
+            return closest
+          }
+        },
+        { offset: Number.NEGATIVE_INFINITY }
+      ).element
+    }
 
-            // Touch support for mobile - fallback to click
-            item.addEventListener('click', () => {
-                if (this.droppedItems.length < correctOrder.length) {
-                    const itemText = item.dataset.item;
-                    if (!this.droppedItems.includes(itemText)) {
-                        this.droppedItems.push(itemText);
-                        this.updateDropZone(this.droppedItems);
-                        item.style.opacity = '0.5';
-                        item.style.pointerEvents = 'none';
-                    }
-                }
-            });
-        });
+    // Setup drag handlers for source items
+    dragItems.forEach((item) => {
+      item.addEventListener('dragstart', (e) => {
+        draggedElement = e.target
+        dragStartPosition = 'source'
+        e.dataTransfer.setData('text/plain', e.target.dataset.item)
+        e.target.style.opacity = '0.5'
+      })
 
-        // Setup drop zone handlers
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            
-            // Visual feedback for insertion position
-            const afterElement = getDragAfterElement(dropZone, e.clientY);
-            const draggables = dropZone.querySelectorAll('.dropped-item');
-            
-            // Remove existing indicators
-            draggables.forEach(item => item.classList.remove('drag-over'));
-            
-            // Add indicator
-            if (afterElement == null) {
-                // Insert at end
-                const lastItem = draggables[draggables.length - 1];
-                if (lastItem) lastItem.classList.add('drag-over');
-            } else {
-                afterElement.classList.add('drag-over');
-            }
-        });
+      item.addEventListener('dragend', (e) => {
+        e.target.style.opacity = '1'
+        draggedElement = null
+        dragStartPosition = null
+      })
 
-        dropZone.addEventListener('dragleave', (e) => {
-            // Remove visual feedback when leaving drop zone
-            const draggables = dropZone.querySelectorAll('.dropped-item');
-            draggables.forEach(item => item.classList.remove('drag-over'));
-        });
+      // Touch support for mobile - fallback to click
+      item.addEventListener('click', () => {
+        if (this.droppedItems.length < correctOrder.length) {
+          const itemText = item.dataset.item
+          if (!this.droppedItems.includes(itemText)) {
+            this.droppedItems.push(itemText)
+            this.updateDropZone(this.droppedItems)
+            item.style.opacity = '0.5'
+            item.style.pointerEvents = 'none'
+          }
+        }
+      })
+    })
 
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            
-            // Remove visual feedback
-            const draggables = dropZone.querySelectorAll('.dropped-item');
-            draggables.forEach(item => item.classList.remove('drag-over'));
-            
-            const itemText = e.dataTransfer.getData('text/plain');
-            
-            if (dragStartPosition === 'source') {
-                // Dragging from source items
-                if (!this.droppedItems.includes(itemText) && this.droppedItems.length < correctOrder.length) {
-                    const insertPos = getInsertPosition(e, dropZone);
-                    this.droppedItems.splice(insertPos, 0, itemText);
-                    this.updateDropZone(this.droppedItems);
-                    
-                    // Hide the dragged item
-                    const draggedItem = document.querySelector(`[data-item="${itemText}"]`);
-                    if (draggedItem) {
-                        draggedItem.style.opacity = '0.5';
-                        draggedItem.style.pointerEvents = 'none';
-                    }
-                }
-            } else if (dragStartPosition === 'dropzone') {
-                // Reordering within drop zone
-                const oldIndex = this.droppedItems.indexOf(itemText);
-                const newIndex = getInsertPosition(e, dropZone);
-                
-                if (oldIndex !== -1 && newIndex !== oldIndex) {
-                    // Remove from old position
-                    this.droppedItems.splice(oldIndex, 1);
-                    // Insert at new position (adjust for removal)
-                    const adjustedNewIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
-                    this.droppedItems.splice(adjustedNewIndex, 0, itemText);
-                    this.updateDropZone(this.droppedItems);
-                }
-            }
-        });
+    // Setup drop zone handlers
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault()
 
-        // Progress tracking and submit button management
-        const updateProgress = () => {
-            const orderCount = document.getElementById('orderCount');
-            const submitBtn = document.getElementById('submitOrder');
-            if (orderCount) orderCount.textContent = this.droppedItems.length;
-            
-            if (submitBtn) {
-                if (this.droppedItems.length === correctOrder.length) {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = '📤 提交順序';
-                } else {
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = `需要排序 ${correctOrder.length - this.droppedItems.length} 個項目`;
-                }
-            }
-        };
+      // Visual feedback for insertion position
+      const afterElement = getDragAfterElement(dropZone, e.clientY)
+      const draggables = dropZone.querySelectorAll('.dropped-item')
 
-        // Initial progress update
-        updateProgress();
+      // Remove existing indicators
+      draggables.forEach((item) => item.classList.remove('drag-over'))
 
-        // Override the updateDropZone to include progress updates
-        const originalUpdateDropZone = this.updateDropZone.bind(this);
-        this.updateDropZone = (items) => {
-            originalUpdateDropZone(items);
-            updateProgress();
-        };
+      // Add indicator
+      if (afterElement == null) {
+        // Insert at end
+        const lastItem = draggables[draggables.length - 1]
+        if (lastItem) lastItem.classList.add('drag-over')
+      } else {
+        afterElement.classList.add('drag-over')
+      }
+    })
 
-        document.getElementById('submitOrder').addEventListener('click', () => {
-            if (this.droppedItems.length !== correctOrder.length) {
-                alert(`請完成所有 ${correctOrder.length} 個項目的排序！`);
-                return;
-            }
+    dropZone.addEventListener('dragleave', (e) => {
+      // Remove visual feedback when leaving drop zone
+      const draggables = dropZone.querySelectorAll('.dropped-item')
+      draggables.forEach((item) => item.classList.remove('drag-over'))
+    })
 
-            const isCorrect = JSON.stringify(this.droppedItems) === JSON.stringify(correctOrder);
-            const partialCorrect = this.droppedItems.filter((item, index) => item === correctOrder[index]).length;
-            const score = isCorrect ? 10 : (partialCorrect >= correctOrder.length / 2 ? 5 : -10);
-            
-            this.submitResult({
-                gameType: 'drag_drop',
-                answer: this.droppedItems,
-                correct: isCorrect,
-                score: score
-            });
-        });
-    },
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault()
 
-    updateDropZone(items) {
-        const dropZone = document.getElementById('dropZone');
-        
-        if (items.length === 0) {
-            dropZone.innerHTML = `
+      // Remove visual feedback
+      const draggables = dropZone.querySelectorAll('.dropped-item')
+      draggables.forEach((item) => item.classList.remove('drag-over'))
+
+      const itemText = e.dataTransfer.getData('text/plain')
+
+      if (dragStartPosition === 'source') {
+        // Dragging from source items
+        if (!this.droppedItems.includes(itemText) && this.droppedItems.length < correctOrder.length) {
+          const insertPos = getInsertPosition(e, dropZone)
+          this.droppedItems.splice(insertPos, 0, itemText)
+          this.updateDropZone(this.droppedItems)
+
+          // Hide the dragged item
+          const draggedItem = document.querySelector(`[data-item="${itemText}"]`)
+          if (draggedItem) {
+            draggedItem.style.opacity = '0.5'
+            draggedItem.style.pointerEvents = 'none'
+          }
+        }
+      } else if (dragStartPosition === 'dropzone') {
+        // Reordering within drop zone
+        const oldIndex = this.droppedItems.indexOf(itemText)
+        const newIndex = getInsertPosition(e, dropZone)
+
+        if (oldIndex !== -1 && newIndex !== oldIndex) {
+          // Remove from old position
+          this.droppedItems.splice(oldIndex, 1)
+          // Insert at new position (adjust for removal)
+          const adjustedNewIndex = newIndex > oldIndex ? newIndex - 1 : newIndex
+          this.droppedItems.splice(adjustedNewIndex, 0, itemText)
+          this.updateDropZone(this.droppedItems)
+        }
+      }
+    })
+
+    // Progress tracking and submit button management
+    const updateProgress = () => {
+      const orderCount = document.getElementById('orderCount')
+      const submitBtn = document.getElementById('submitOrder')
+      if (orderCount) orderCount.textContent = this.droppedItems.length
+
+      if (submitBtn) {
+        if (this.droppedItems.length === correctOrder.length) {
+          submitBtn.disabled = false
+          submitBtn.textContent = '📤 提交順序'
+        } else {
+          submitBtn.disabled = true
+          submitBtn.textContent = `需要排序 ${correctOrder.length - this.droppedItems.length} 個項目`
+        }
+      }
+    }
+
+    // Initial progress update
+    updateProgress()
+
+    // Override the updateDropZone to include progress updates
+    const originalUpdateDropZone = this.updateDropZone.bind(this)
+    this.updateDropZone = (items) => {
+      originalUpdateDropZone(items)
+      updateProgress()
+    }
+
+    document.getElementById('submitOrder').addEventListener('click', () => {
+      if (this.droppedItems.length !== correctOrder.length) {
+        alert(`請完成所有 ${correctOrder.length} 個項目的排序！`)
+        return
+      }
+
+      const isCorrect = JSON.stringify(this.droppedItems) === JSON.stringify(correctOrder)
+      const partialCorrect = this.droppedItems.filter((item, index) => item === correctOrder[index]).length
+      const score = isCorrect ? 10 : partialCorrect >= correctOrder.length / 2 ? 5 : -10
+
+      this.submitResult({
+        gameType: 'drag_drop',
+        answer: this.droppedItems,
+        correct: isCorrect,
+        score: score,
+      })
+    })
+  },
+
+  updateDropZone(items) {
+    const dropZone = document.getElementById('dropZone')
+
+    if (items.length === 0) {
+      dropZone.innerHTML = `
                 <div class="drop-zone-empty">
                     拖拽項目到此處進行排序
                 </div>
-            `;
-        } else {
-            dropZone.innerHTML = items.map((item, index) => `
+            `
+    } else {
+      dropZone.innerHTML = items
+        .map(
+          (item, index) => `
                 <div class="dropped-item" data-position="${index}" draggable="true" data-item="${item}">
                     <span class="drag-handle">⋮⋮</span>
                     <span class="item-text">${index + 1}. ${item}</span>
                     <button class="remove-btn" data-remove-index="${index}">×</button>
                 </div>
-            `).join('');
+            `
+        )
+        .join('')
+    }
+
+    // Setup drag handlers for dropped items (for reordering)
+    const droppedItems = dropZone.querySelectorAll('.dropped-item')
+    droppedItems.forEach((item) => {
+      item.addEventListener('dragstart', (e) => {
+        e.target.classList.add('dragging')
+        this.draggedElement = e.target
+        this.dragStartPosition = 'dropzone'
+        e.dataTransfer.setData('text/plain', e.target.dataset.item)
+        e.target.style.opacity = '0.5'
+      })
+
+      item.addEventListener('dragend', (e) => {
+        e.target.classList.remove('dragging')
+        e.target.style.opacity = '1'
+        this.draggedElement = null
+        this.dragStartPosition = null
+      })
+    })
+
+    // Setup remove button handlers
+    const removeButtons = dropZone.querySelectorAll('.remove-btn')
+    removeButtons.forEach((button) => {
+      button.addEventListener('click', (e) => {
+        e.stopPropagation() // Prevent drag events
+        const index = parseInt(button.dataset.removeIndex)
+        this.removeItem(index)
+      })
+    })
+  },
+
+  removeItem(index) {
+    // Use stored droppedItems array
+    if (this.droppedItems && this.droppedItems.length > index) {
+      const itemText = this.droppedItems[index]
+
+      // Re-enable the item in the original drag items area (not the drop zone)
+      const dragItemsContainer = document.querySelector('.drag-items')
+      if (dragItemsContainer) {
+        const originalItem = dragItemsContainer.querySelector(`[data-item="${itemText}"]`)
+        if (originalItem && originalItem.classList.contains('drag-item')) {
+          originalItem.style.opacity = '1'
+          originalItem.style.pointerEvents = 'auto'
         }
-        
-        // Setup drag handlers for dropped items (for reordering)
-        const droppedItems = dropZone.querySelectorAll('.dropped-item');
-        droppedItems.forEach(item => {
-            item.addEventListener('dragstart', (e) => {
-                e.target.classList.add('dragging');
-                this.draggedElement = e.target;
-                this.dragStartPosition = 'dropzone';
-                e.dataTransfer.setData('text/plain', e.target.dataset.item);
-                e.target.style.opacity = '0.5';
-            });
+      }
 
-            item.addEventListener('dragend', (e) => {
-                e.target.classList.remove('dragging');
-                e.target.style.opacity = '1';
-                this.draggedElement = null;
-                this.dragStartPosition = null;
-            });
-        });
+      // Remove from dropped items array
+      this.droppedItems.splice(index, 1)
+      this.updateDropZone(this.droppedItems)
+    }
+  },
 
-        // Setup remove button handlers
-        const removeButtons = dropZone.querySelectorAll('.remove-btn');
-        removeButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent drag events
-                const index = parseInt(button.dataset.removeIndex);
-                this.removeItem(index);
-            });
-        });
-    },
+  loadFormatMatching(gameData) {
+    // Use actual pairs from server or fallback
+    const pairs = gameData.data?.pairs || [
+      { left: 'HTML', right: '網頁結構' },
+      { left: 'CSS', right: '樣式設計' },
+      { left: 'JavaScript', right: '互動功能' },
+      { left: 'Node.js', right: '後端服務' },
+    ]
 
-    removeItem(index) {
-        // Use stored droppedItems array
-        if (this.droppedItems && this.droppedItems.length > index) {
-            const itemText = this.droppedItems[index];
-            
-            // Re-enable the item in the original drag items area (not the drop zone)
-            const dragItemsContainer = document.querySelector('.drag-items');
-            if (dragItemsContainer) {
-                const originalItem = dragItemsContainer.querySelector(`[data-item="${itemText}"]`);
-                if (originalItem && originalItem.classList.contains('drag-item')) {
-                    originalItem.style.opacity = '1';
-                    originalItem.style.pointerEvents = 'auto';
-                }
-            }
-            
-            // Remove from dropped items array
-            this.droppedItems.splice(index, 1);
-            this.updateDropZone(this.droppedItems);
-        }
-    },
+    // Shuffle both left and right items for better UX
+    const shuffledLeft = [...pairs].sort(() => Math.random() - 0.5)
+    const shuffledRight = [...pairs].sort(() => Math.random() - 0.5)
 
-    loadFormatMatching(gameData) {
-        // Use actual pairs from server or fallback
-        const pairs = gameData.data?.pairs || [
-            { left: "HTML", right: "網頁結構" },
-            { left: "CSS", right: "樣式設計" },
-            { left: "JavaScript", right: "互動功能" },
-            { left: "Node.js", right: "後端服務" }
-        ];
-
-        // Shuffle both left and right items for better UX
-        const shuffledLeft = [...pairs].sort(() => Math.random() - 0.5);
-        const shuffledRight = [...pairs].sort(() => Math.random() - 0.5);
-
-        this.gameContainer.innerHTML = `
+    this.gameContainer.innerHTML = `
             <div class="mini-game format-matching">
                 <style>
                     .format-matching {
@@ -1019,18 +1037,26 @@ window.MiniGames = {
                 </div>
                 <div class="matching-container">
                     <div class="left-column">
-                        ${shuffledLeft.map((pair, index) => `
+                        ${shuffledLeft
+                          .map(
+                            (pair, index) => `
                             <div class="match-item left" data-value="${pair.left}" data-index="${index}">
                                 ${pair.left}
                             </div>
-                        `).join('')}
+                        `
+                          )
+                          .join('')}
                     </div>
                     <div class="right-column">
-                        ${shuffledRight.map((pair, index) => `
+                        ${shuffledRight
+                          .map(
+                            (pair, index) => `
                             <div class="match-item right" data-value="${pair.right}" data-left="${pair.left}">
                                 ${pair.right}
                             </div>
-                        `).join('')}
+                        `
+                          )
+                          .join('')}
                     </div>
                 </div>
                 <div class="timer-display">
@@ -1045,109 +1071,106 @@ window.MiniGames = {
                     </button>
                 </div>
             </div>
-        `;
+        `
 
-        this.setupMatchingHandlers(pairs);
-        this.startTimer(45);
-    },
+    this.setupMatchingHandlers(pairs)
+    this.startTimer(45)
+  },
 
-    setupMatchingHandlers(correctPairs) {
-        let selectedLeft = null;
-        let matches = [];
+  setupMatchingHandlers(correctPairs) {
+    let selectedLeft = null
+    let matches = []
 
-        const updateMatchCount = () => {
-            document.getElementById('matchCount').textContent = matches.length;
-            const submitBtn = document.getElementById('submitMatches');
-            if (matches.length === correctPairs.length) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '提交配對';
-            } else {
-                submitBtn.disabled = true;
-                submitBtn.textContent = `需要配對 ${correctPairs.length - matches.length} 組`;
-            }
-        };
+    const updateMatchCount = () => {
+      document.getElementById('matchCount').textContent = matches.length
+      const submitBtn = document.getElementById('submitMatches')
+      if (matches.length === correctPairs.length) {
+        submitBtn.disabled = false
+        submitBtn.textContent = '提交配對'
+      } else {
+        submitBtn.disabled = true
+        submitBtn.textContent = `需要配對 ${correctPairs.length - matches.length} 組`
+      }
+    }
 
-        const clearAllMatches = () => {
-            matches = [];
-            selectedLeft = null;
-            document.querySelectorAll('.match-item').forEach(item => {
-                item.classList.remove('selected', 'matched');
-            });
-            updateMatchCount();
-        };
+    const clearAllMatches = () => {
+      matches = []
+      selectedLeft = null
+      document.querySelectorAll('.match-item').forEach((item) => {
+        item.classList.remove('selected', 'matched')
+      })
+      updateMatchCount()
+    }
 
-        document.querySelectorAll('.match-item').forEach(item => {
-            item.addEventListener('click', () => {
-                // Don't allow interaction with already matched items
-                if (item.classList.contains('matched')) return;
+    document.querySelectorAll('.match-item').forEach((item) => {
+      item.addEventListener('click', () => {
+        // Don't allow interaction with already matched items
+        if (item.classList.contains('matched')) return
 
-                if (item.classList.contains('left')) {
-                    // Select left item
-                    document.querySelectorAll('.left').forEach(l => l.classList.remove('selected'));
-                    item.classList.add('selected');
-                    selectedLeft = item;
-                } else if (item.classList.contains('right') && selectedLeft) {
-                    // Match with right item
-                    const leftValue = selectedLeft.dataset.value;
-                    const rightValue = item.dataset.value;
-                    
-                    matches.push({ left: leftValue, right: rightValue });
-                    
-                    // Mark as matched
-                    selectedLeft.classList.add('matched');
-                    item.classList.add('matched');
-                    selectedLeft.classList.remove('selected');
-                    
-                    selectedLeft = null;
-                    updateMatchCount();
-                }
-            });
-        });
+        if (item.classList.contains('left')) {
+          // Select left item
+          document.querySelectorAll('.left').forEach((l) => l.classList.remove('selected'))
+          item.classList.add('selected')
+          selectedLeft = item
+        } else if (item.classList.contains('right') && selectedLeft) {
+          // Match with right item
+          const leftValue = selectedLeft.dataset.value
+          const rightValue = item.dataset.value
 
-        // Clear matches button
-        document.getElementById('clearMatches').addEventListener('click', clearAllMatches);
+          matches.push({ left: leftValue, right: rightValue })
 
-        // Submit button
-        document.getElementById('submitMatches').addEventListener('click', () => {
-            if (matches.length !== correctPairs.length) {
-                alert(`請完成所有 ${correctPairs.length} 組配對後再提交！`);
-                return;
-            }
+          // Mark as matched
+          selectedLeft.classList.add('matched')
+          item.classList.add('matched')
+          selectedLeft.classList.remove('selected')
 
-            let correctCount = 0;
-            matches.forEach(match => {
-                const correctPair = correctPairs.find(p => p.left === match.left);
-                if (correctPair && correctPair.right === match.right) {
-                    correctCount++;
-                }
-            });
+          selectedLeft = null
+          updateMatchCount()
+        }
+      })
+    })
 
-            const isCorrect = correctCount === correctPairs.length;
-            const score = correctCount >= correctPairs.length / 2 ? 
-                (isCorrect ? 10 : 5) : -10;
+    // Clear matches button
+    document.getElementById('clearMatches').addEventListener('click', clearAllMatches)
 
-            this.submitResult({
-                gameType: 'format_matching',
-                answer: matches,
-                correct: isCorrect,
-                score: score
-            });
-        });
+    // Submit button
+    document.getElementById('submitMatches').addEventListener('click', () => {
+      if (matches.length !== correctPairs.length) {
+        alert(`請完成所有 ${correctPairs.length} 組配對後再提交！`)
+        return
+      }
 
-        // Initial state
-        updateMatchCount();
-    },
+      let correctCount = 0
+      matches.forEach((match) => {
+        const correctPair = correctPairs.find((p) => p.left === match.left)
+        if (correctPair && correctPair.right === match.right) {
+          correctCount++
+        }
+      })
 
-    loadTeamPairing(gameData) {
-        // Use actual team pairing data from server or fallback
-        const taskData = gameData.data || {};
-        const taskTitle = taskData.title || "設計一個完美的工作日";
-        const taskDescription = taskData.description || "請按優先順序排列以下活動（隊伍共同決定）：";
-        const activities = taskData.items || [
-            "團隊會議", "專案開發", "客戶溝通", "學習成長", "休息放鬆"
-        ];
+      const isCorrect = correctCount === correctPairs.length
+      const score = correctCount >= correctPairs.length / 2 ? (isCorrect ? 10 : 5) : -10
 
-        this.gameContainer.innerHTML = `
+      this.submitResult({
+        gameType: 'format_matching',
+        answer: matches,
+        correct: isCorrect,
+        score: score,
+      })
+    })
+
+    // Initial state
+    updateMatchCount()
+  },
+
+  loadTeamPairing(gameData) {
+    // Use actual team pairing data from server or fallback
+    const taskData = gameData.data || {}
+    const taskTitle = taskData.title || '設計一個完美的工作日'
+    const taskDescription = taskData.description || '請按優先順序排列以下活動（隊伍共同決定）：'
+    const activities = taskData.items || ['團隊會議', '專案開發', '客戶溝通', '學習成長', '休息放鬆']
+
+    this.gameContainer.innerHTML = `
             <div class="mini-game team-pairing">
                 <style>
                     .team-pairing {
@@ -1315,11 +1338,15 @@ window.MiniGames = {
                     <h4>任務：${taskTitle}</h4>
                     <p>${taskDescription}</p>
                     <div class="priority-list" id="priorityList">
-                        ${activities.map(activity => `
+                        ${activities
+                          .map(
+                            (activity) => `
                             <div class="priority-item" data-item="${activity}">
                                 <span>📅 ${activity}</span>
                             </div>
-                        `).join('')}
+                        `
+                          )
+                          .join('')}
                     </div>
                 </div>
                 <div class="timer-display">
@@ -1329,89 +1356,89 @@ window.MiniGames = {
                     請至少選擇 3 個項目
                 </button>
             </div>
-        `;
+        `
 
-        this.setupTeamPairingHandlers();
-        this.startTimer(60);
-    },
+    this.setupTeamPairingHandlers()
+    this.startTimer(60)
+  },
 
-    setupTeamPairingHandlers() {
-        const priorityList = document.getElementById('priorityList');
-        let currentOrder = [];
+  setupTeamPairingHandlers() {
+    const priorityList = document.getElementById('priorityList')
+    let currentOrder = []
 
-        const updateSubmitButton = () => {
-            const submitBtn = document.getElementById('submitPriority');
-            if (currentOrder.length >= 3) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = `提交排序 (已選擇 ${currentOrder.length} 項)`;
-            } else {
-                submitBtn.disabled = true;
-                submitBtn.textContent = `請至少選擇 3 個項目 (目前 ${currentOrder.length} 項)`;
-            }
-        };
+    const updateSubmitButton = () => {
+      const submitBtn = document.getElementById('submitPriority')
+      if (currentOrder.length >= 3) {
+        submitBtn.disabled = false
+        submitBtn.textContent = `提交排序 (已選擇 ${currentOrder.length} 項)`
+      } else {
+        submitBtn.disabled = true
+        submitBtn.textContent = `請至少選擇 3 個項目 (目前 ${currentOrder.length} 項)`
+      }
+    }
 
-        const updateOrderNumbers = () => {
-            // Remove all existing order numbers
-            document.querySelectorAll('.order-number').forEach(el => el.remove());
-            
-            // Add order numbers to selected items in correct order
-            currentOrder.forEach((itemName, index) => {
-                const item = document.querySelector(`[data-item="${itemName}"]`);
-                if (item) {
-                    const orderNumber = document.createElement('span');
-                    orderNumber.className = 'order-number';
-                    orderNumber.textContent = index + 1;
-                    item.appendChild(orderNumber);
-                }
-            });
-        };
+    const updateOrderNumbers = () => {
+      // Remove all existing order numbers
+      document.querySelectorAll('.order-number').forEach((el) => el.remove())
 
-        // Make items clickable to reorder
-        document.querySelectorAll('.priority-item').forEach((item, index) => {
-            item.addEventListener('click', () => {
-                const itemName = item.dataset.item;
-                
-                if (currentOrder.includes(itemName)) {
-                    // Remove from order
-                    currentOrder = currentOrder.filter(i => i !== itemName);
-                    item.classList.remove('selected');
-                    updateOrderNumbers();
-                } else {
-                    // Add to order
-                    currentOrder.push(itemName);
-                    item.classList.add('selected');
-                    updateOrderNumbers();
-                }
-                
-                updateSubmitButton();
-            });
-        });
+      // Add order numbers to selected items in correct order
+      currentOrder.forEach((itemName, index) => {
+        const item = document.querySelector(`[data-item="${itemName}"]`)
+        if (item) {
+          const orderNumber = document.createElement('span')
+          orderNumber.className = 'order-number'
+          orderNumber.textContent = index + 1
+          item.appendChild(orderNumber)
+        }
+      })
+    }
 
-        document.getElementById('submitPriority').addEventListener('click', () => {
-            if (currentOrder.length < 3) {
-                alert('請至少選擇 3 個項目後再提交！');
-                return;
-            }
-            
-            // For team pairing, success is based on participation
-            const score = currentOrder.length >= 3 ? 10 : 5;
-            
-            this.submitResult({
-                gameType: 'team_pairing',
-                answer: currentOrder,
-                correct: true,
-                score: score
-            });
-        });
+    // Make items clickable to reorder
+    document.querySelectorAll('.priority-item').forEach((item, index) => {
+      item.addEventListener('click', () => {
+        const itemName = item.dataset.item
 
-        // Initial button state
-        updateSubmitButton();
-    },
+        if (currentOrder.includes(itemName)) {
+          // Remove from order
+          currentOrder = currentOrder.filter((i) => i !== itemName)
+          item.classList.remove('selected')
+          updateOrderNumbers()
+        } else {
+          // Add to order
+          currentOrder.push(itemName)
+          item.classList.add('selected')
+          updateOrderNumbers()
+        }
 
-    loadTrueOrFalse(gameData) {
-        const question = gameData.data;
-        
-        this.gameContainer.innerHTML = `
+        updateSubmitButton()
+      })
+    })
+
+    document.getElementById('submitPriority').addEventListener('click', () => {
+      if (currentOrder.length < 3) {
+        alert('請至少選擇 3 個項目後再提交！')
+        return
+      }
+
+      // For team pairing, success is based on participation
+      const score = currentOrder.length >= 3 ? 10 : 5
+
+      this.submitResult({
+        gameType: 'team_pairing',
+        answer: currentOrder,
+        correct: true,
+        score: score,
+      })
+    })
+
+    // Initial button state
+    updateSubmitButton()
+  },
+
+  loadTrueOrFalse(gameData) {
+    const question = gameData.data
+
+    this.gameContainer.innerHTML = `
             <div class="mini-game true-or-false">
                 <h3>✅❌ 是非題</h3>
                 <div class="question-text">
@@ -1431,11 +1458,11 @@ window.MiniGames = {
                     剩餘時間: <span id="miniGameTimer">${Math.floor((gameData.timeLimit || 20000) / 1000)}</span> 秒
                 </div>
             </div>
-        `;
+        `
 
-        // Add CSS styles
-        const style = document.createElement('style');
-        style.textContent = `
+    // Add CSS styles
+    const style = document.createElement('style')
+    style.textContent = `
             .mini-game.true-or-false {
                 text-align: center;
                 padding: 20px;
@@ -1492,45 +1519,45 @@ window.MiniGames = {
                 opacity: 0.5;
                 cursor: not-allowed;
             }
-        `;
-        document.head.appendChild(style);
+        `
+    document.head.appendChild(style)
 
-        let answered = false;
+    let answered = false
 
-        // True button handler
-        document.getElementById('trueBtn').addEventListener('click', () => {
-            if (!answered) {
-                answered = true;
-                document.getElementById('trueBtn').style.background = '#27ae60';
-                document.getElementById('trueBtn').style.color = 'white';
-                document.getElementById('falseBtn').disabled = true;
-                this.submitResult({
-                    gameType: 'true_or_false',
-                    answer: true
-                });
-            }
-        });
+    // True button handler
+    document.getElementById('trueBtn').addEventListener('click', () => {
+      if (!answered) {
+        answered = true
+        document.getElementById('trueBtn').style.background = '#27ae60'
+        document.getElementById('trueBtn').style.color = 'white'
+        document.getElementById('falseBtn').disabled = true
+        this.submitResult({
+          gameType: 'true_or_false',
+          answer: true,
+        })
+      }
+    })
 
-        // False button handler
-        document.getElementById('falseBtn').addEventListener('click', () => {
-            if (!answered) {
-                answered = true;
-                document.getElementById('falseBtn').style.background = '#e74c3c';
-                document.getElementById('falseBtn').style.color = 'white';
-                document.getElementById('trueBtn').disabled = true;
-                this.submitResult({
-                    gameType: 'true_or_false',
-                    answer: false
-                });
-            }
-        });
+    // False button handler
+    document.getElementById('falseBtn').addEventListener('click', () => {
+      if (!answered) {
+        answered = true
+        document.getElementById('falseBtn').style.background = '#e74c3c'
+        document.getElementById('falseBtn').style.color = 'white'
+        document.getElementById('trueBtn').disabled = true
+        this.submitResult({
+          gameType: 'true_or_false',
+          answer: false,
+        })
+      }
+    })
 
-        // Start the timer
-        this.startTimer(Math.floor((gameData.timeLimit || 20000) / 1000));
-    },
+    // Start the timer
+    this.startTimer(Math.floor((gameData.timeLimit || 20000) / 1000))
+  },
 
-    loadDefaultGame(gameData) {
-        this.gameContainer.innerHTML = `
+  loadDefaultGame(gameData) {
+    this.gameContainer.innerHTML = `
             <div class="mini-game default">
                 <h3>🎯 特殊事件</h3>
                 <p>您遇到了特殊情況！</p>
@@ -1542,111 +1569,113 @@ window.MiniGames = {
                     繼續遊戲
                 </button>
             </div>
-        `;
+        `
 
-        document.getElementById('continueGame').addEventListener('click', () => {
-            this.submitResult({
-                gameType: 'default',
-                score: 0
-            });
-        });
-    },
+    document.getElementById('continueGame').addEventListener('click', () => {
+      this.submitResult({
+        gameType: 'default',
+        score: 0,
+      })
+    })
+  },
 
-    startTimer(seconds) {
-        const timerEl = document.getElementById('miniGameTimer');
-        if (!timerEl) return;
+  startTimer(seconds) {
+    const timerEl = document.getElementById('miniGameTimer')
+    if (!timerEl) return
 
-        // Clear any existing timer first
-        this.stopTimer();
+    // Clear any existing timer first
+    this.stopTimer()
 
-        // Validate seconds parameter
-        if (typeof seconds !== 'number' || seconds <= 0) {
-            console.warn('Invalid timer seconds:', seconds);
-            return;
-        }
+    // Validate seconds parameter
+    if (typeof seconds !== 'number' || seconds <= 0) {
+      console.warn('Invalid timer seconds:', seconds)
+      return
+    }
 
-        let timeLeft = seconds;
-        
-        this.currentTimer = setInterval(() => {
-            timeLeft--;
-            if (timerEl && timerEl.parentNode) {
-                timerEl.textContent = timeLeft;
-            } else {
-                // Element was removed, stop timer
-                this.stopTimer();
-                return;
-            }
-            
-            if (timeLeft <= 0) {
-                this.stopTimer();
-                this.timeUp();
-            }
-        }, 1000);
-    },
+    let timeLeft = seconds
 
-    stopTimer() {
-        if (this.currentTimer) {
-            clearInterval(this.currentTimer);
-            this.currentTimer = null;
-        }
-    },
+    this.currentTimer = setInterval(() => {
+      timeLeft--
+      if (timerEl && timerEl.parentNode) {
+        timerEl.textContent = timeLeft
+      } else {
+        // Element was removed, stop timer
+        this.stopTimer()
+        return
+      }
 
-    timeUp() {
-        // Auto-submit with timeout result
-        this.submitResult({
-            gameType: this.currentGame?.eventType || 'timeout',
-            timeout: true,
-            score: -5
-        });
-    },
+      if (timeLeft <= 0) {
+        this.stopTimer()
+        this.timeUp()
+      }
+    }, 1000)
+  },
 
-    submitResult(result) {
-        // Stop timer when submitting result
-        this.stopTimer();
+  stopTimer() {
+    if (this.currentTimer) {
+      clearInterval(this.currentTimer)
+      this.currentTimer = null
+    }
+  },
 
-        // Only submit if we have valid connection and team
-        if (this.socket && this.teamId && this.currentGame) {
-            console.log(`Submitting mini-game result for team ${this.teamId}:`, result);
-            this.socket.emit('mini_game_submit', {
-                teamId: this.teamId,
-                playerId: this.playerId,
-                ...result
-            });
-            
-            // Show result feedback
-            this.showResult(result);
-        } else {
-            console.warn('Cannot submit result: missing socket, teamId, or currentGame');
-            // Show error message instead
-            this.showResult({
-                score: 0,
-                feedback: "無法提交結果，請重新整理頁面"
-            });
-        }
-    },
+  timeUp() {
+    // Auto-submit with timeout result
+    this.submitResult({
+      gameType: this.currentGame?.eventType || 'timeout',
+      timeout: true,
+      score: -5,
+    })
+  },
 
-    showResult(result) {
-        const isError = result.eventType === 'no_active_game' || result.feedback?.includes('無法提交');
-        
-        this.gameContainer.innerHTML = `
+  submitResult(result) {
+    // Stop timer when submitting result
+    this.stopTimer()
+
+    // Only submit if we have valid connection and team
+    if (this.socket && this.teamId && this.currentGame) {
+      console.log(`Submitting mini-game result for team ${this.teamId}:`, result)
+      this.socket.emit('mini_game_submit', {
+        teamId: this.teamId,
+        playerId: this.playerId,
+        ...result,
+      })
+
+      // Show result feedback
+      this.showResult(result)
+    } else {
+      console.warn('Cannot submit result: missing socket, teamId, or currentGame')
+      // Show error message instead
+      this.showResult({
+        score: 0,
+        feedback: '無法提交結果，請重新整理頁面',
+      })
+    }
+  },
+
+  showResult(result) {
+    const isError = result.eventType === 'no_active_game' || result.feedback?.includes('無法提交')
+
+    this.gameContainer.innerHTML = `
             <div class="mini-game-result">
                 <h3>📊 ${isError ? '提示' : '結果'}</h3>
                 <div class="result-display">
-                    ${!isError ? `
+                    ${
+                      !isError
+                        ? `
                         <div class="score-change ${result.score > 0 ? 'positive' : 'negative'}">
                             ${result.score > 0 ? '+' : ''}${result.score} 分
                         </div>
-                    ` : ''}
+                    `
+                        : ''
+                    }
                     <div class="result-message">
-                        ${result.feedback || 
-                          (result.score > 0 ? '太棒了！' : 
-                           result.score === 0 ? '還不錯！' : '下次會更好！')}
+                        ${result.feedback || (result.score > 0 ? '太棒了！' : result.score === 0 ? '還不錯！' : '下次會更好！')}
                     </div>
                 </div>
                 <div class="waiting-next">
                     ${isError ? '🔄 請等待您的隊伍回合...' : '⏳ 等待下一回合...'}
                 </div>
             </div>
-        `;
-    }
-};
+        `
+  },
+}

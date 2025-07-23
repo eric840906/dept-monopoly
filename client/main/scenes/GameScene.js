@@ -14,7 +14,7 @@ class GameScene extends Phaser.Scene {
     // Create colored rectangles for different tile types
     this.createTileTextures()
     this.createTokenTextures()
-    
+
     // Preload team images
     this.preloadTeamImages()
   }
@@ -117,10 +117,10 @@ class GameScene extends Phaser.Scene {
         { id: 'team_C', image: '/images/teams/team_C.png' },
         { id: 'team_D', image: '/images/teams/team_D.png' },
         { id: 'team_E', image: '/images/teams/team_E.png' },
-        { id: 'team_F', image: '/images/teams/team_F.png' }
+        { id: 'team_F', image: '/images/teams/team_F.png' },
       ]
 
-      teamImages.forEach(team => {
+      teamImages.forEach((team) => {
         if (team.image) {
           this.load.image(team.id, team.image)
         }
@@ -279,14 +279,14 @@ class GameScene extends Phaser.Scene {
         const offsetX = (index % 2) * 20 - 10
         const offsetY = Math.floor(index / 2) * 20 - 10
 
-        let tokenImage;
-        
+        let tokenImage
+
         // Use PNG image if available, otherwise fallback to colored circle and emoji
         if (team.image && this.textures.exists(team.id)) {
           // Create team PNG image only (no background circle needed)
           tokenImage = this.add.image(tileData.x + offsetX, tileData.y + offsetY, team.id)
           tokenImage.setDisplaySize(32, 32) // Full size since no background
-          
+
           this.teamTokens[team.id] = {
             token: tokenImage, // Use the image as the main token
             team: team,
@@ -376,7 +376,7 @@ class GameScene extends Phaser.Scene {
       // Create team PNG image only (no background circle needed)
       const tokenImage = this.add.image(tileData.x + offsetX, tileData.y + offsetY, team.id)
       tokenImage.setDisplaySize(32, 32) // Full size since no background
-      
+
       this.teamTokens[team.id] = {
         token: tokenImage, // Use the image as the main token
         team: team,
@@ -413,7 +413,7 @@ class GameScene extends Phaser.Scene {
     // Animate token movement
     const targets = [token.token]
     if (token.emoji) targets.push(token.emoji)
-    
+
     this.tweens.add({
       targets: targets,
       x: tileData.x + offsetX,
@@ -505,64 +505,64 @@ class GameScene extends Phaser.Scene {
   createAnimatedDiceRoll(finalDice, total, onComplete = null) {
     // Create container for dice roll display
     const diceContainer = this.add.container(this.centerX, this.centerY - 50)
-    
+
     // Create background panel
     const background = this.add.rectangle(0, 0, 300, 100, 0x2c3e50, 0.9)
     background.setStrokeStyle(3, 0x3498db)
     diceContainer.add(background)
-    
+
     // Create two dice sprites
     const dice1 = this.createDiceSprite(-60, 0, 1)
     const dice2 = this.createDiceSprite(60, 0, 1)
     diceContainer.add(dice1)
     diceContainer.add(dice2)
-    
+
     // Add title text
     const titleText = this.add.text(0, -35, '🎲 擲骰子', {
       fontSize: '16px',
       fontFamily: 'Arial',
       color: '#ffffff',
-      align: 'center'
+      align: 'center',
     })
     titleText.setOrigin(0.5)
     diceContainer.add(titleText)
-    
+
     // Add total text (initially hidden)
     const totalText = this.add.text(0, 35, `總和: ${total}`, {
       fontSize: '18px',
       fontFamily: 'Arial',
       color: '#f39c12',
-      align: 'center'
+      align: 'center',
     })
     totalText.setOrigin(0.5)
     totalText.setAlpha(0)
     diceContainer.add(totalText)
-    
+
     // Start rolling animation
     this.animateDiceRoll(dice1, dice2, finalDice, totalText, diceContainer, onComplete)
   }
-  
+
   createDiceSprite(x, y, value) {
     // Create dice background
     const diceContainer = this.add.container(x, y)
-    
+
     const diceBg = this.add.rectangle(0, 0, 40, 40, 0xffffff, 1)
     diceBg.setStrokeStyle(2, 0x2c3e50)
     diceContainer.add(diceBg)
-    
+
     // Create dots based on value
     const dots = this.createDiceDots(value)
-    dots.forEach(dot => diceContainer.add(dot))
-    
+    dots.forEach((dot) => diceContainer.add(dot))
+
     return diceContainer
   }
-  
+
   createDiceDots(value) {
     const dots = []
     const dotSize = 4
     const dotColor = 0x2c3e50
-    
-    switch(value) {
+
+    switch (value) {
       case 1:
         dots.push(this.add.circle(0, 0, dotSize, dotColor))
         break
@@ -597,28 +597,28 @@ class GameScene extends Phaser.Scene {
         dots.push(this.add.circle(8, 10, dotSize, dotColor))
         break
     }
-    
+
     return dots
   }
-  
+
   updateDiceValue(diceSprite, value) {
     // Clear existing dots
     const dotsToRemove = diceSprite.list.slice(1) // Keep background, remove dots
-    dotsToRemove.forEach(dot => {
+    dotsToRemove.forEach((dot) => {
       diceSprite.remove(dot)
       dot.destroy()
     })
-    
+
     // Add new dots
     const newDots = this.createDiceDots(value)
-    newDots.forEach(dot => diceSprite.add(dot))
+    newDots.forEach((dot) => diceSprite.add(dot))
   }
-  
+
   animateDiceRoll(dice1, dice2, finalValues, totalText, container, onComplete = null) {
     let rollCount = 0
     const maxRolls = 15 // Number of random values to show
     const rollInterval = 100 // ms between rolls
-    
+
     // Add bouncing animation to dice
     this.tweens.add({
       targets: [dice1, dice2],
@@ -627,34 +627,34 @@ class GameScene extends Phaser.Scene {
       duration: rollInterval,
       yoyo: true,
       repeat: maxRolls - 1,
-      ease: 'Power2'
+      ease: 'Power2',
     })
-    
+
     // Add rotation animation
     this.tweens.add({
       targets: [dice1, dice2],
       rotation: Math.PI * 2,
       duration: rollInterval * maxRolls,
-      ease: 'Linear'
+      ease: 'Linear',
     })
-    
+
     const rollTimer = this.time.addEvent({
       delay: rollInterval,
       callback: () => {
         rollCount++
-        
+
         // Generate random dice values during rolling
         const randomValue1 = Phaser.Math.Between(1, 6)
         const randomValue2 = Phaser.Math.Between(1, 6)
-        
+
         this.updateDiceValue(dice1, randomValue1)
         this.updateDiceValue(dice2, randomValue2)
-        
+
         if (rollCount >= maxRolls) {
           // Show final values
           this.updateDiceValue(dice1, finalValues[0])
           this.updateDiceValue(dice2, finalValues[1])
-          
+
           // Show total with fade in
           this.tweens.add({
             targets: totalText,
@@ -664,22 +664,22 @@ class GameScene extends Phaser.Scene {
             onComplete: () => {
               // Add celebration effect
               this.addDiceRollCelebration(container)
-              
+
               // Wait a bit after showing result, then call completion callback
               this.time.delayedCall(800, () => {
                 if (onComplete) {
                   onComplete()
                 }
               })
-            }
+            },
           })
-          
+
           rollTimer.destroy()
         }
       },
-      loop: true
+      loop: true,
     })
-    
+
     // Auto-remove the entire display after showing result
     this.time.delayedCall(4000, () => {
       this.tweens.add({
@@ -690,22 +690,17 @@ class GameScene extends Phaser.Scene {
         ease: 'Power2',
         onComplete: () => {
           container.destroy()
-        }
+        },
       })
     })
   }
-  
+
   addDiceRollCelebration(container) {
     // Add sparkle effect around dice
     for (let i = 0; i < 8; i++) {
-      const sparkle = this.add.circle(
-        Phaser.Math.Between(-100, 100),
-        Phaser.Math.Between(-40, 40),
-        3,
-        0xf1c40f
-      )
+      const sparkle = this.add.circle(Phaser.Math.Between(-100, 100), Phaser.Math.Between(-40, 40), 3, 0xf1c40f)
       container.add(sparkle)
-      
+
       this.tweens.add({
         targets: sparkle,
         alpha: 0,
@@ -714,7 +709,7 @@ class GameScene extends Phaser.Scene {
         duration: 800,
         delay: i * 50,
         ease: 'Power2',
-        onComplete: () => sparkle.destroy()
+        onComplete: () => sparkle.destroy(),
       })
     }
   }
@@ -808,8 +803,14 @@ class GameScene extends Phaser.Scene {
     const notification = this.add.rectangle(this.centerX, 100, 600, 80, 0x3498db, 0.9)
     notification.setStrokeStyle(3, 0x2980b9)
 
-    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`;
-    const notificationText = this.add.text(this.centerX, 100, `⚡ ${team.emoji} ${teamDisplay} 觸發事件！\n${this.getEventName(eventType)}`, {
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
+    // Add team image
+    const teamImage = this.add.image(this.centerX - 120, 100, team.id || 'team_default')
+    teamImage.setDisplaySize(40, 40)
+    teamImage.setOrigin(0.5)
+    teamImage.setAlpha(0)
+
+    const notificationText = this.add.text(this.centerX, 100, `⚡ ${teamDisplay} 觸發事件！\n${this.getEventName(eventType)}`, {
       fontSize: '20px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -823,7 +824,7 @@ class GameScene extends Phaser.Scene {
     notificationText.setAlpha(0)
 
     this.tweens.add({
-      targets: [notification, notificationText],
+      targets: [notification, notificationText, teamImage],
       alpha: 1,
       duration: 500,
       ease: 'Power2',
@@ -832,13 +833,14 @@ class GameScene extends Phaser.Scene {
     // Auto-hide after 3 seconds
     this.time.delayedCall(3000, () => {
       this.tweens.add({
-        targets: [notification, notificationText],
+        targets: [notification, notificationText, teamImage],
         alpha: 0,
         duration: 500,
         ease: 'Power2',
         onComplete: () => {
           notification.destroy()
           notificationText.destroy()
+          teamImage.destroy()
         },
       })
     })
@@ -859,8 +861,14 @@ class GameScene extends Phaser.Scene {
 
     const captainDisplay = captainName ? `🎯 隊長：${captainName}` : '等待隊長指定'
 
-    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`;
-    const bannerText = this.add.text(this.centerX, this.centerY, `🎮 小遊戲準備中...\n${team.emoji} ${teamDisplay}\n${this.getEventName(eventType)}\n${captainDisplay}\n等待介面載入完成`, {
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
+
+    // Add team image to banner
+    const bannerTeamImage = this.add.image(this.centerX - 150, this.centerY - 20, team.id || 'team_default')
+    bannerTeamImage.setDisplaySize(40, 40)
+    bannerTeamImage.setOrigin(0.5)
+
+    const bannerText = this.add.text(this.centerX, this.centerY, `🎮 小遊戲準備中...\n${teamDisplay}\n${this.getEventName(eventType)}\n${captainDisplay}\n等待介面載入完成`, {
       fontSize: '16px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -871,7 +879,7 @@ class GameScene extends Phaser.Scene {
 
     // Pulse animation
     this.tweens.add({
-      targets: [banner, bannerText],
+      targets: [banner, bannerText, bannerTeamImage],
       scaleX: 1.1,
       scaleY: 1.1,
       duration: 800,
@@ -881,7 +889,7 @@ class GameScene extends Phaser.Scene {
     })
 
     // Store reference for cleanup and update
-    this.currentMiniGameBanner = { banner, bannerText, teamId, eventType, timeLimit }
+    this.currentMiniGameBanner = { banner, bannerText, bannerTeamImage, teamId, eventType, timeLimit }
   }
 
   handleMiniGameTimerStart(data) {
@@ -921,15 +929,34 @@ class GameScene extends Phaser.Scene {
     background.setStrokeStyle(4, 0x3498db)
     container.add(background)
 
-    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`;
-    const headerText = this.add.text(0, -100, `${team.emoji} ${teamDisplay} - 小遊戲進行中`, {
-      fontSize: '24px',
-      fontFamily: 'Arial',
-      color: '#ffffff',
-      align: 'center',
-    })
-    headerText.setOrigin(0.5)
-    container.add(headerText)
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
+
+    if (team.image && this.textures.exists(team.id)) {
+      // Create fallback header with team image
+      const teamImage = this.add.image(-60, -100, team.id)
+      teamImage.setDisplaySize(24, 24)
+      teamImage.setOrigin(0.5)
+      container.add(teamImage)
+
+      const headerText = this.add.text(0, -100, `${teamDisplay} - 小遊戲進行中`, {
+        fontSize: '24px',
+        fontFamily: 'Arial',
+        color: '#ffffff',
+        align: 'center',
+      })
+      headerText.setOrigin(0.5)
+      container.add(headerText)
+    } else {
+      // Fallback to emoji
+      const headerText = this.add.text(0, -100, `${team.emoji} ${teamDisplay} - 小遊戲進行中`, {
+        fontSize: '24px',
+        fontFamily: 'Arial',
+        color: '#ffffff',
+        align: 'center',
+      })
+      headerText.setOrigin(0.5)
+      container.add(headerText)
+    }
 
     const statusText = this.add.text(0, -50, '🎮 遊戲界面載入中...', {
       fontSize: '18px',
@@ -960,9 +987,16 @@ class GameScene extends Phaser.Scene {
     background.setStrokeStyle(4, 0x3498db)
     container.add(background)
 
-    // Add team header
-    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`;
-    const teamHeader = this.add.text(0, -280, `${team.emoji} ${teamDisplay} - ${this.getEventName(gameData.eventType)}`, {
+    // Add team header with image
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
+
+    // Add team image to header
+    const headerTeamImage = this.add.image(-120, -280, team.id || 'team_default')
+    headerTeamImage.setDisplaySize(40, 40)
+    headerTeamImage.setOrigin(0.5)
+    container.add(headerTeamImage)
+
+    const teamHeader = this.add.text(0, -280, `${teamDisplay} - ${this.getEventName(gameData.eventType)}`, {
       fontSize: '24px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -1022,14 +1056,14 @@ class GameScene extends Phaser.Scene {
       question = {
         question: question,
         options: ['創新', '誠信', '團隊合作', '客戶至上'],
-        correct: 1
+        correct: 1,
       }
     } else if (!question || typeof question !== 'object') {
       // Fallback if no question data
       question = {
         question: '公司最重要的價值觀是什麼？',
         options: ['創新', '誠信', '團隊合作', '客戶至上'],
-        correct: 1
+        correct: 1,
       }
     }
 
@@ -1295,44 +1329,46 @@ class GameScene extends Phaser.Scene {
     questionText.setOrigin(0.5)
     container.add(questionText)
 
-    // Create True button
-    const trueButton = this.add.rectangle(-80, 20, 120, 60, 0x27ae60)
-    trueButton.setStrokeStyle(2, 0x2ecc71)
+    // Create True button - larger size for better emoji display
+    const trueButton = this.add.rectangle(-100, 5, 160, 80, 0x27ae60)
+    trueButton.setStrokeStyle(3, 0x2ecc71)
     container.add(trueButton)
 
-    const trueEmoji = this.add.text(-80, 0, question.trueEmoji || '⭕', {
-      fontSize: '24px',
+    const trueEmoji = this.add.text(-100, -5, question.trueEmoji || '⭕', {
+      fontSize: '32px',
       fontFamily: 'Arial',
     })
     trueEmoji.setOrigin(0.5)
     container.add(trueEmoji)
 
-    const trueLabel = this.add.text(-80, 30, '正確', {
-      fontSize: '14px',
+    const trueLabel = this.add.text(-100, 35, '正確', {
+      fontSize: '16px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
+      fontStyle: 'bold',
     })
     trueLabel.setOrigin(0.5)
     container.add(trueLabel)
 
-    // Create False button
-    const falseButton = this.add.rectangle(80, 20, 120, 60, 0xe74c3c)
-    falseButton.setStrokeStyle(2, 0xc0392b)
+    // Create False button - larger size for better emoji display
+    const falseButton = this.add.rectangle(100, 5, 160, 80, 0xe74c3c)
+    falseButton.setStrokeStyle(3, 0xc0392b)
     container.add(falseButton)
 
-    const falseEmoji = this.add.text(80, 0, question.falseEmoji || '❌', {
-      fontSize: '24px',
+    const falseEmoji = this.add.text(100, -5, question.falseEmoji || '❌', {
+      fontSize: '32px',
       fontFamily: 'Arial',
     })
     falseEmoji.setOrigin(0.5)
     container.add(falseEmoji)
 
-    const falseLabel = this.add.text(80, 30, '錯誤', {
-      fontSize: '14px',
+    const falseLabel = this.add.text(100, 35, '錯誤', {
+      fontSize: '16px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
+      fontStyle: 'bold',
     })
     falseLabel.setOrigin(0.5)
     container.add(falseLabel)
@@ -1434,8 +1470,14 @@ class GameScene extends Phaser.Scene {
     const resultBanner = this.add.rectangle(this.centerX, this.centerY - 50, 400, 100, color, 0.9)
     resultBanner.setStrokeStyle(3, success ? 0x27ae60 : 0xc0392b)
 
-    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`;
-    const resultText = this.add.text(this.centerX, this.centerY - 50, `${success ? '✅' : '❌'} ${team.emoji} ${teamDisplay}\n${feedback}\n${scoreText} 分`, {
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
+
+    // Add team image to result modal
+    const resultTeamImage = this.add.image(this.centerX - 80, this.centerY - 80, team.id || 'team_default')
+    resultTeamImage.setDisplaySize(15, 15) // Very small size
+    resultTeamImage.setOrigin(0.5)
+
+    const resultText = this.add.text(this.centerX, this.centerY - 50, `${success ? '✅' : '❌'} ${teamDisplay}\n${feedback}\n${scoreText} 分`, {
       fontSize: '16px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -1447,9 +1489,10 @@ class GameScene extends Phaser.Scene {
     // Animate result
     resultBanner.setScale(0)
     resultText.setScale(0)
+    resultTeamImage.setScale(0)
 
     this.tweens.add({
-      targets: [resultBanner, resultText],
+      targets: [resultBanner, resultText, resultTeamImage],
       scaleX: 1,
       scaleY: 1,
       duration: 500,
@@ -1459,7 +1502,7 @@ class GameScene extends Phaser.Scene {
     // Auto-hide after 4 seconds
     this.time.delayedCall(4000, () => {
       this.tweens.add({
-        targets: [resultBanner, resultText],
+        targets: [resultBanner, resultText, resultTeamImage],
         alpha: 0,
         scaleX: 0.8,
         scaleY: 0.8,
@@ -1468,6 +1511,7 @@ class GameScene extends Phaser.Scene {
         onComplete: () => {
           resultBanner.destroy()
           resultText.destroy()
+          resultTeamImage.destroy()
         },
       })
     })
@@ -1512,8 +1556,14 @@ class GameScene extends Phaser.Scene {
     const scoreText = chanceCard.scoreChange > 0 ? `+${chanceCard.scoreChange}` : `${chanceCard.scoreChange}`
     const positionText = chanceCard.effect === 'reset_to_start' ? '\n📍 回到起點！' : ''
 
-    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`;
-    const cardText = this.add.text(this.centerX, this.centerY, `🃏 ${team.emoji} ${teamDisplay} 抽到機會卡！\n\n${chanceCard.title}\n${chanceCard.description}\n\n💰 分數變化: ${scoreText}${positionText}`, {
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
+
+    // Add team image to chance card modal
+    const chanceTeamImage = this.add.image(this.centerX - 120, this.centerY - 80, team.id || 'team_default')
+    chanceTeamImage.setScale(0.05)
+    chanceTeamImage.setOrigin(0.5)
+
+    const cardText = this.add.text(this.centerX, this.centerY, `🃏 ${teamDisplay} 抽到機會卡！\n\n${chanceCard.title}\n${chanceCard.description}\n\n💰 分數變化: ${scoreText}${positionText}`, {
       fontSize: '16px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -1526,9 +1576,10 @@ class GameScene extends Phaser.Scene {
     // Dramatic entrance animation
     cardBanner.setScale(0)
     cardText.setScale(0)
+    chanceTeamImage.setScale(0)
 
     this.tweens.add({
-      targets: [cardBanner, cardText],
+      targets: [cardBanner, cardText, chanceTeamImage],
       scaleX: 1,
       scaleY: 1,
       duration: 800,
@@ -1538,7 +1589,7 @@ class GameScene extends Phaser.Scene {
     // Auto-hide after 4 seconds
     this.time.delayedCall(4000, () => {
       this.tweens.add({
-        targets: [cardBanner, cardText],
+        targets: [cardBanner, cardText, chanceTeamImage],
         alpha: 0,
         scaleX: 0.8,
         scaleY: 0.8,
@@ -1547,6 +1598,7 @@ class GameScene extends Phaser.Scene {
         onComplete: () => {
           cardBanner.destroy()
           cardText.destroy()
+          chanceTeamImage.destroy()
         },
       })
     })
@@ -1554,13 +1606,13 @@ class GameScene extends Phaser.Scene {
 
   hideMiniGameBanner() {
     if (this.currentMiniGameBanner) {
-      const { banner, bannerText } = this.currentMiniGameBanner
+      const { banner, bannerText, bannerTeamImage } = this.currentMiniGameBanner
 
       // Stop any existing tweens on these objects first
-      this.tweens.killTweensOf([banner, bannerText])
+      this.tweens.killTweensOf([banner, bannerText, bannerTeamImage].filter(Boolean))
 
       this.tweens.add({
-        targets: [banner, bannerText],
+        targets: [banner, bannerText, bannerTeamImage].filter(Boolean),
         alpha: 0,
         scaleX: 0.8,
         scaleY: 0.8,
@@ -1568,6 +1620,7 @@ class GameScene extends Phaser.Scene {
         ease: 'Power2',
         onComplete: () => {
           if (banner) banner.destroy()
+          if (bannerTeamImage) bannerTeamImage.destroy()
           if (bannerText) bannerText.destroy()
         },
       })

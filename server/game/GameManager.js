@@ -573,7 +573,11 @@ class GameManager {
       
       this.io.emit('mini_game_timer_start', { 
         teamId,
-        gameData: gameData || null
+        gameData: gameData ? {
+          eventType: gameData.eventType,
+          timeLimit: gameData.timeLimit,
+          data: gameData.data
+        } : null
       });
       console.log(`Mini-game timer started for team ${teamId}, emitted mini_game_timer_start event`);
     } else {

@@ -52,10 +52,10 @@ class MiniGameProcessor {
   generateMultipleChoiceQuiz() {
     const questions = [
       {
-        question: '在團隊協作中，最重要的是什麼？',
-        options: ['個人能力', '溝通交流', '工作速度', '技術水平'],
-        correct: 1,
-        explanation: '溝通交流是團隊協作的基礎',
+        question: '請問 OneAD 集團裡有幾個 UI/UX 設計師？',
+        options: ['8', '3', '1', '5'],
+        correct: 2,
+        explanation: '答案是1個，你現在知道了',
       },
       {
         question: '專案管理的核心原則是？',
@@ -95,25 +95,25 @@ class MiniGameProcessor {
   generateDragDropWorkflow() {
     const workflows = [
       {
-        title: '軟體開發流程',
-        correctOrder: ['需求分析', '系統設計', '編碼實現', '測試驗證', '部署上線', '維護優化'],
-        description: '請按照軟體開發的正確順序排列',
+        title: '格式開發流程',
+        correctOrder: ['技術可行性討論', 'UI/UX 設計', 'Kick off 產品', '排程開發', '裝置環境測試', '媒體投放測試'],
+        description: '請按格式開發的正確順序排列',
       },
       {
-        title: '專案管理流程',
-        correctOrder: ['項目啟動', '需求收集', '計劃制定', '執行監控', '結案總結'],
-        description: '請按照專案管理的標準流程排列',
+        title: '第 3 方追蹤碼部署流程',
+        correctOrder: ['kanban 接收需求', '檢視部署方案', '執行部署與檢查'],
+        description: '請按照第 3 方追蹤碼部署的流程排列',
       },
-      {
-        title: '產品設計流程',
-        correctOrder: ['市場調研', '用戶分析', '原型設計', '測試驗證', '迭代優化', '產品發布'],
-        description: '請按照產品設計的完整流程排列',
-      },
-      {
-        title: '問題解決流程',
-        correctOrder: ['問題識別', '原因分析', '方案制定', '方案執行', '效果評估'],
-        description: '請按照問題解決的科學方法排列',
-      },
+      //   {
+      //     title: '產品設計流程',
+      //     correctOrder: ['市場調研', '用戶分析', '原型設計', '測試驗證', '迭代優化', '產品發布'],
+      //     description: '請按照產品設計的完整流程排列',
+      //   },
+      //   {
+      //     title: '問題解決流程',
+      //     correctOrder: ['問題識別', '原因分析', '方案制定', '方案執行', '效果評估'],
+      //     description: '請按照問題解決的科學方法排列',
+      //   },
     ]
 
     const selectedWorkflow = workflows[Math.floor(Math.random() * workflows.length)]
@@ -198,10 +198,10 @@ class MiniGameProcessor {
   generateTeamPairing() {
     const collaborationTasks = [
       {
-        title: '設計完美工作日',
-        description: '請團隊共同討論並排列理想工作日的活動優先順序',
-        items: ['團隊晨會', '專注工作時間', '跨部門協作', '學習成長', '創意發想', '休息交流', '總結反思'],
-        correctOrder: ['團隊晨會', '專注工作時間', '跨部門協作', '創意發想', '學習成長', '休息交流', '總結反思'],
+        title: '格式開發流程',
+        description: '請排出正確的順序',
+        items: ['裝置環境測試', 'UI/UX 設計', '技術可行性討論', '排程開發', 'Kick off 產品', '媒體投放測試', '總結反思'],
+        correctOrder: ['技術可行性討論', 'UI/UX 設計', 'Kick off 產品', '排程開發', '裝置環境測試', '媒體投放測試'],
       },
       {
         title: '制定團隊價值觀',
@@ -243,22 +243,36 @@ class MiniGameProcessor {
         falseEmoji: '❌',
       },
       {
-        question: '業務可直接找 MTO 提需求',
+        question: '可直接找 MTO 提亂七八糟的需求',
         answer: false,
-        explanation: '就算這單1億也不會分給 MTO 半毛，請按照正常流程',
+        explanation: '請按照正常流程',
         trueEmoji: '⭕',
         falseEmoji: '❌',
       },
       {
-        question: '媒體網站壞掉可以直接找 MTO 修',
+        question: 'VAST 支援 CCT',
         answer: false,
-        explanation: '請找媒體處理，確認為廣告造成的再來找 MTO',
+        explanation: '',
         trueEmoji: '⭕',
         falseEmoji: '❌',
       },
       {
         question: '客戶的需求永遠是正確的',
         answer: false,
+        explanation: '客戶的需求需要被理解和分析，有時需要專業建議來引導到更好的解決方案',
+        trueEmoji: '⭕',
+        falseEmoji: '❌',
+      },
+      {
+        question: 'VPAID 支援 CCT',
+        answer: true,
+        explanation: '客戶的需求需要被理解和分析，有時需要專業建議來引導到更好的解決方案',
+        trueEmoji: '⭕',
+        falseEmoji: '❌',
+      },
+      {
+        question: 'SIMID 支援 CCT',
+        answer: true,
         explanation: '客戶的需求需要被理解和分析，有時需要專業建議來引導到更好的解決方案',
         trueEmoji: '⭕',
         falseEmoji: '❌',
