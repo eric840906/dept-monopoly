@@ -11,6 +11,21 @@ class GameScene extends Phaser.Scene {
   }
 
   preload() {
+    // Load background image with error handling
+    this.load.image('background', '/images/assets/background.png')
+    
+    // Add load error handlers
+    this.load.on('filecomplete-image-background', () => {
+      console.log('Background image loaded successfully!')
+    })
+    
+    this.load.on('loaderror', (file) => {
+      console.error('Failed to load file:', file.src)
+      if (file.key === 'background') {
+        console.error('Background image failed to load. Check if the file exists at: assets/background.png')
+      }
+    })
+    
     // Create colored rectangles for different tile types
     this.createTileTextures()
     this.createTokenTextures()
@@ -32,8 +47,17 @@ class GameScene extends Phaser.Scene {
       this.board = data.board
     }
 
-    // Background
-    this.add.rectangle(width / 2, height / 2, width, height, 0x34495e)
+    // Background image with fallback
+    try {
+      const background = this.add.image(width / 2, height / 2, 'background')
+      // Scale the background to fit the screen
+      background.setDisplaySize(width, height)
+      console.log('Background image applied successfully!')
+    } catch (error) {
+      console.error('Failed to create background image, using fallback color:', error)
+      // Fallback to solid color background
+      this.add.rectangle(width / 2, height / 2, width, height, 0xf0f0f0)
+    }
 
     // Create the board
     this.createBoard()
