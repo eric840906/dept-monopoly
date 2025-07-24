@@ -162,6 +162,14 @@ class MobileGameApp {
       }
     })
 
+    this.socket.on('destiny_card_drawn', (data) => {
+      console.log('Destiny card drawn:', data)
+      // Only show if it's for our team
+      if (this.teamData && data.teamId === this.teamData.id) {
+        this.showDestinyCardResult(data)
+      }
+    })
+
     this.socket.on('game_end', (data) => {
       console.log('Game ended:', data)
       this.showGameEnd(data)
@@ -1213,6 +1221,163 @@ class MobileGameApp {
         </div>
         <button class="close-btn" onclick="this.parentElement.parentElement.remove()">
           確認
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Auto-close after 5 seconds
+    setTimeout(() => {
+      if (overlay.parentElement) {
+        overlay.remove();
+      }
+    }, 5000);
+  }
+
+  showDestinyCardResult(data) {
+    const { destinyCard, newScore, newPosition } = data;
+    
+    // Determine card color based on type (all destiny cards are negative)
+    let cardColor, bgGradient;
+    switch (destinyCard.type) {
+      case 'curse':
+        cardColor = '#8b0000';
+        bgGradient = 'linear-gradient(135deg, #8b0000 0%, #5c0000 100%)';
+        break;
+      case 'storm':
+        cardColor = '#4a4a4a';
+        bgGradient = 'linear-gradient(135deg, #4a4a4a 0%, #2f2f2f 100%)';
+        break;
+      case 'financial':
+        cardColor = '#b22222';
+        bgGradient = 'linear-gradient(135deg, #b22222 0%, #8b1a1a 100%)';
+        break;
+      case 'reputation':
+        cardColor = '#dc143c';
+        bgGradient = 'linear-gradient(135deg, #dc143c 0%, #b71c1c 100%)';
+        break;
+      case 'technical':
+        cardColor = '#800080';
+        bgGradient = 'linear-gradient(135deg, #800080 0%, #4b0082 100%)';
+        break;
+      case 'competition':
+        cardColor = '#8b4513';
+        bgGradient = 'linear-gradient(135deg, #8b4513 0%, #654321 100%)';
+        break;
+      case 'regulatory':
+        cardColor = '#696969';
+        bgGradient = 'linear-gradient(135deg, #696969 0%, #2f4f4f 100%)';
+        break;
+      case 'economic':
+        cardColor = '#556b2f';
+        bgGradient = 'linear-gradient(135deg, #556b2f 0%, #2f4f2f 100%)';
+        break;
+      default:
+        cardColor = '#8b0000';
+        bgGradient = 'linear-gradient(135deg, #8b0000 0%, #5c0000 100%)';
+    }
+
+    const scoreText = `${destinyCard.scoreChange}`;
+    const positionText = destinyCard.effect === 'reset_to_start' ? '📍 回到起點！' :
+                        destinyCard.effect === 'move_back' ? `📍 後退 ${Math.abs(destinyCard.positionChange || 0)} 格！` : '';
+
+    // Show destiny card in a modal-like overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      animation: fadeIn 0.3s ease-out;
+    `;
+
+    overlay.innerHTML = `
+      <style>
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes destinySlideIn {
+          from { 
+            transform: scale(0.8) translateY(50px); 
+            opacity: 0; 
+          }
+          to { 
+            transform: scale(1) translateY(0); 
+            opacity: 1; 
+          }
+        }
+        .destiny-card {
+          background: ${bgGradient};
+          padding: 25px;
+          border-radius: 15px;
+          max-width: 350px;
+          width: 90%;
+          color: white;
+          text-align: center;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.7), 0 0 20px rgba(255,0,0,0.3);
+          animation: destinySlideIn 0.5s ease-out;
+          border: 3px solid rgba(255,0,0,0.3);
+        }
+        .destiny-title {
+          font-size: 18px;
+          font-weight: bold;
+          margin-bottom: 15px;
+          color: #fff;
+          text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .destiny-description {
+          font-size: 14px;
+          line-height: 1.5;
+          margin-bottom: 20px;
+          color: rgba(255,255,255,0.9);
+        }
+        .destiny-effects {
+          background: rgba(0,0,0,0.3);
+          padding: 15px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          border: 1px solid rgba(255,0,0,0.2);
+        }
+        .score-change {
+          font-size: 20px;
+          font-weight: bold;
+          color: #ff4444;
+        }
+        .close-btn {
+          background: rgba(255,255,255,0.2);
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 25px;
+          font-size: 16px;
+          cursor: pointer;
+          transition: background 0.3s;
+        }
+        .close-btn:hover {
+          background: rgba(255,255,255,0.3);
+        }
+      </style>
+      
+      <div class="destiny-card">
+        <div class="destiny-title">💀 ${destinyCard.title}</div>
+        <div class="destiny-description">${destinyCard.description}</div>
+        <div class="destiny-effects">
+          <div class="score-change">💸 ${scoreText} 分</div>
+          ${positionText ? `<div style="margin-top: 8px; color: #ff6b6b;">${positionText}</div>` : ''}
+          <div style="margin-top: 10px; font-size: 14px; color: rgba(255,255,255,0.8);">
+            新分數: ${newScore}
+          </div>
+        </div>
+        <button class="close-btn" onclick="this.parentElement.parentElement.remove()">
+          接受命運
         </button>
       </div>
     `;

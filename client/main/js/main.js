@@ -99,6 +99,13 @@ class GameApp {
       }
     })
 
+    this.socket.on('destiny_card_drawn', (data) => {
+      console.log('Destiny card drawn:', data)
+      if (this.game && this.game.scene.getScene('GameScene')) {
+        this.game.scene.getScene('GameScene').handleDestinyCard(data)
+      }
+    })
+
     this.socket.on('score_update', (data) => {
       console.log('Score updated:', data)
       this.updateScoreBoard()

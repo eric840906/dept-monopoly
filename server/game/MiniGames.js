@@ -63,23 +63,59 @@ class MiniGameProcessor {
         // No image for this question
       },
       {
-        question: '以下 Studio 圖片示意是那個格式 ？',
+        question: '以下 Studio 圖片示意是那個格式？',
         options: ['MIB Flash', 'MIB Flash Location', 'MIB Location', 'MIB Location Video'],
         correct: 1,
-        explanation: '共同的價值觀念是企業文化的核心',
+        explanation: '哈哈，這是 MIB Flash Location 啦！',
         image: '/images/quiz/mib_flash_location_door_video.svg', // Optional image
       },
       {
-        question: '創新思維的特點是？',
-        options: ['循規蹈矩', '跳躍思考', '按部就班', '謹慎保守'],
-        correct: 1,
-        explanation: '創新需要打破常規，跳躍思考',
+        question: '媒體部署 OneAD Player SDK 有哪些方式？',
+        options: ['直接部署', '透過 GAM 部署', '媒體 Server 部署', '以上皆是'],
+        correct: 3,
+        explanation: '哈哈，三種都行啦！',
       },
       {
-        question: '客戶服務的黃金法則是？',
-        options: ['快速回應', '耐心傾聽', '專業建議', '超越期待'],
+        question: 'MTO 不會跟哪部門直接合作？',
+        options: ['AOE', 'BAO', 'Sales', 'Creative Center'],
+        correct: 2,
+        explanation: '你現在知道了吧',
+      },
+      {
+        question: 'One-Pixel 的用意是什麼？',
+        options: ['一份文件', '一張圖片', '一個紀錄', '一種使命'],
+        correct: 2,
+        explanation: '你現在知道了吧',
+      },
+      {
+        question: '新格式是？',
+        options: ['MTO 的一廂情願', 'PM, 創意, MTO 的協作成果', '自我實現的產物', '為了美化媒體網站'],
+        correct: 1,
+        explanation: '答案是「PM, 創意, MTO 的協作成果」，你現在知道了吧',
+      },
+      {
+        question: '下列何者不是 MTO 工作內容？',
+        options: ['開發新格式 ', '媒體客製化', '檢查追蹤碼', '廣告追蹤碼埋設'],
         correct: 3,
-        explanation: '超越客戶期待是優質服務的最高標準',
+        explanation: '答案是「廣告追蹤碼埋設」，你現在知道了吧',
+      },
+      {
+        question: '誰是 MTO 最資深員工？',
+        options: ['Eric', 'Sam', 'Tobey', 'Baird'],
+        correct: 1,
+        explanation: '答案是「Sam」，你現在知道了吧',
+      },
+      {
+        question: 'MTO 平日最愛系統？',
+        options: ['ODM', 'Studio', 'ERP', '以上皆是'],
+        correct: 3,
+        explanation: '答案是「以上皆是」，你現在知道了吧',
+      },
+      {
+        question: '以下同事誰沒待過 MTO？',
+        options: ['Zack', 'Ryan', 'Zone', 'Rocco'],
+        correct: 3,
+        explanation: '答案是「Rocco」，你現在知道了吧',
       },
     ]
 

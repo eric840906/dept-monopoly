@@ -62,6 +62,9 @@ class GameManager {
       if (i % 6 === 0) {
         // Every 6th tile is a chance tile
         board.push(createTile(i, TileType.CHANCE));
+      } else if ((i - 9) % 6 === 0 && i >= 9) {
+        // Every 6th tile starting from tile 9 is a destiny tile (9, 15, 21, etc.)
+        board.push(createTile(i, TileType.DESTINY));
       } else {
         // All other tiles are event tiles
         const eventType = this.generateRandomEvent();
@@ -88,63 +91,10 @@ class GameManager {
 
   generateChanceCard() {
     const chanceCards = [
-      // Very Bad Events
-      {
-        title: "🚨 專案重大失敗",
-        description: "你們的核心專案出現致命錯誤，客戶取消合約，公司損失慘重。",
-        effect: "reset_to_start",
-        scoreChange: -99, // Set to 1 (100 base - 99)
-        type: "disaster"
-      },
-      {
-        title: "💔 團隊解散危機",
-        description: "團隊內部嚴重衝突，多名核心成員提出離職，專案陷入停滯。",
-        effect: "reset_to_start",
-        scoreChange: -90,
-        type: "disaster"
-      },
-      
-      // Bad Events
-      {
-        title: "🐛 系統當機事件",
-        description: "伺服器當機導致服務中斷，需要緊急修復並賠償客戶損失。",
-        effect: "score_only",
-        scoreChange: -30,
-        type: "bad"
-      },
-      {
-        title: "📉 季度業績不佳",
-        description: "本季度營收未達標，需要重新檢討策略和資源分配。",
-        effect: "score_only",
-        scoreChange: -25,
-        type: "bad"
-      },
-      {
-        title: "⚠️ 安全漏洞發現",
-        description: "系統發現安全漏洞，需要立即修補並加強防護措施。",
-        effect: "score_only",
-        scoreChange: -20,
-        type: "bad"
-      },
-      {
-        title: "😰 關鍵員工離職",
-        description: "重要的技術主管離職，團隊需要時間重新組織和培訓。",
-        effect: "score_only",
-        scoreChange: -15,
-        type: "bad"
-      },
-      
       // Neutral Events
       {
-        title: "🔄 例行系統維護",
-        description: "進行定期系統維護，暫時影響部分服務但確保長期穩定。",
-        effect: "score_only",
-        scoreChange: -5,
-        type: "neutral"
-      },
-      {
-        title: "📋 合規檢查",
-        description: "配合監管單位進行例行檢查，流程順利但消耗一些資源。",
+        title: "😀 新格式大賣",
+        description: "獲得口頭嘉獎，團隊士氣大增。",
         effect: "score_only",
         scoreChange: 0,
         type: "neutral"
@@ -152,38 +102,17 @@ class GameManager {
       
       // Good Events
       {
-        title: "💡 創新突破",
-        description: "團隊研發出創新解決方案，獲得業界認可和媒體報導。",
-        effect: "score_only",
-        scoreChange: 20,
-        type: "good"
-      },
-      {
-        title: "🤝 新合作夥伴",
-        description: "成功與知名企業建立戰略合作關係，開拓新的市場機會。",
-        effect: "score_only",
-        scoreChange: 25,
-        type: "good"
-      },
-      {
-        title: "🏆 獲得產業獎項",
-        description: "產品獲得重要產業獎項，大幅提升公司品牌形象和市場地位。",
+        title: "🔧 新工具製作完成",
+        description: "完成新工具開發，改善部分工作流程，效率 + 87%。",
         effect: "score_only",
         scoreChange: 30,
-        type: "good"
-      },
-      {
-        title: "📈 市場佔有率提升",
-        description: "成功搶佔競爭對手市場份額，營收大幅成長。",
-        effect: "score_only",
-        scoreChange: 35,
         type: "good"
       },
       
       // Very Good Events
       {
-        title: "🚀 IPO成功上市",
-        description: "公司成功公開上市，估值暴漲，團隊獲得豐厚股票收益！",
+        title: "🚀 完成新的 CI/CD 流程",
+        description: "佈署效率大幅提升，團隊工作更順暢！",
         effect: "score_only",
         scoreChange: 50,
         type: "excellent"
@@ -194,10 +123,75 @@ class GameManager {
         effect: "score_only",
         scoreChange: 45,
         type: "excellent"
+      },
+      {
+        title: "🌟 國際市場突破",
+        description: "成功進軍國際市場，產品在海外大獲成功！",
+        effect: "score_only",
+        scoreChange: 42,
+        type: "excellent"
+      },
+      {
+        title: "🎊 技術突破獲利",
+        description: "核心技術獲得專利，授權收入帶來巨大利潤！",
+        effect: "score_only",
+        scoreChange: 38,
+        type: "excellent"
       }
     ];
 
     return chanceCards[Math.floor(Math.random() * chanceCards.length)];
+  }
+
+  generateDestinyCard() {
+    const destinyCards = [
+      // Disaster Events (from chance cards) - reset to start
+      {
+        title: "👍 新格式修改規格",
+        description: "因神秘力量，新格式在開發過程中修改規格，導致大量時間和資源浪費",
+        effect: "reset_to_start",
+        scoreChange: -90,
+        type: "disaster"
+      },
+      // Bad Events (from chance cards)
+      {
+        title: "🌋 媒體網頁 CTR 異常啦！MTO 快想想辦法啊！",
+        description: "緊急分配資源處理。",
+        effect: "score_penalty",
+        scoreChange: -30,
+        type: "bad"
+      },
+      {
+        title: "📉 季度業績不佳",
+        description: "你問為什麼這要扣 MTO 分？ 問就是 ONETEAM 要有難同當",
+        effect: "score_penalty",
+        scoreChange: -25,
+        type: "bad"
+      },
+      {
+        title: "⚠️ 格式漏洞發現",
+        description: "內部人員巡檢發現問題，立即修復，群組內一片祥和。",
+        effect: "score_penalty",
+        scoreChange: -10,
+        type: "bad"
+      },
+      {
+        title: "🤐 關鍵員工離職",
+        description: "天無不散筵席，團隊需要時間重新組織和培訓。",
+        effect: "score_penalty",
+        scoreChange: -10,
+        type: "bad"
+      },
+      {
+        title: "🔧 設備補助",
+        description: "但看了一下設備補助的錢什麼都買不了，打消了這個念頭",
+        effect: "score_penalty",
+        scoreChange: -5,
+        type: "bad"
+      },
+    ];
+
+    return destinyCards[Math.floor(Math.random() * destinyCards.length)];
   }
 
   addPlayer(playerId, nickname, department) {
@@ -517,6 +511,58 @@ class GameManager {
     }, 4000); // 4 second delay to show the chance card effect
   }
 
+  triggerDestinyCard(teamId, tile) {
+    const team = this.gameState.teams.find(t => t.id === teamId);
+    if (!team) return;
+
+    const destinyCard = this.generateDestinyCard();
+    
+    console.log(`Team ${teamId} drew destiny card: ${destinyCard.title}`);
+
+    // Apply the negative effect
+    if (destinyCard.effect === "reset_to_start") {
+      // Reset team position to start
+      team.position = 0;
+      // Apply score change (will set score very low)
+      team.score = Math.max(1, team.score + destinyCard.scoreChange);
+    } else if (destinyCard.effect === "score_penalty") {
+      // Apply score reduction
+      team.score = Math.max(0, team.score + destinyCard.scoreChange);
+    } else if (destinyCard.effect === "move_back") {
+      // Move team backwards and apply score penalty
+      const newPosition = Math.max(0, team.position + destinyCard.positionChange);
+      team.position = newPosition;
+      team.score = Math.max(0, team.score + destinyCard.scoreChange);
+    }
+
+    // Broadcast the destiny card result
+    this.io.emit('destiny_card_drawn', {
+      teamId,
+      destinyCard,
+      newScore: team.score,
+      newPosition: team.position
+    });
+
+    // Update score with explanation
+    this.io.emit(SOCKET_EVENTS.SCORE_UPDATE, {
+      teamId,
+      newScore: team.score,
+      pointsChanged: destinyCard.scoreChange,
+      reason: destinyCard.title
+    });
+
+    // Broadcast updated game state
+    this.broadcastGameState();
+
+    // End turn after destiny card effect
+    setTimeout(() => {
+      if (this.gameState.phase === GamePhase.IN_PROGRESS && 
+          this.gameState.currentTurnTeamId === teamId) {
+        this.endTurn();
+      }
+    }, 4000); // 4 second delay to show the destiny card effect
+  }
+
   rotateCaptain(teamId) {
     const team = this.gameState.teams.find(t => t.id === teamId);
     if (!team || team.members.length === 0) {
@@ -555,6 +601,8 @@ class GameManager {
       this.triggerEvent(teamId, landedTile);
     } else if (landedTile.type === TileType.CHANCE) {
       this.triggerChanceCard(teamId, landedTile);
+    } else if (landedTile.type === TileType.DESTINY) {
+      this.triggerDestinyCard(teamId, landedTile);
     } else {
       this.endTurn();
     }

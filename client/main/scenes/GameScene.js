@@ -89,6 +89,14 @@ class GameScene extends Phaser.Scene {
     graphics.strokeRect(0, 0, tileWidth, tileHeight)
     graphics.generateTexture('start-tile', tileWidth, tileHeight)
 
+    // Destiny tile (dark red - negative effects)
+    graphics.clear()
+    graphics.fillStyle(0xc0392b)
+    graphics.fillRect(0, 0, tileWidth, tileHeight)
+    graphics.lineStyle(2, 0xa93226)
+    graphics.strokeRect(0, 0, tileWidth, tileHeight)
+    graphics.generateTexture('destiny-tile', tileWidth, tileHeight)
+
     graphics.destroy()
   }
 
@@ -180,6 +188,9 @@ class GameScene extends Phaser.Scene {
         case 'chance':
           texture = 'chance-tile'
           break
+        case 'destiny':
+          texture = 'destiny-tile'
+          break
         default:
           texture = 'safe-tile'
       }
@@ -202,7 +213,7 @@ class GameScene extends Phaser.Scene {
 
       // Add tile name below (for important tiles)
       if (tile.type === 'start') {
-        const tileName = this.add.text(x, y + 35, '起點', {
+        const tileName = this.add.text(x, y + 15, '起點', {
           fontSize: '10px',
           fontFamily: 'Arial',
           color: '#ffffff',
@@ -210,7 +221,15 @@ class GameScene extends Phaser.Scene {
         })
         tileName.setOrigin(0.5)
       } else if (tile.type === 'chance') {
-        const tileName = this.add.text(x, y + 35, '機會', {
+        const tileName = this.add.text(x, y + 15, '機會', {
+          fontSize: '10px',
+          fontFamily: 'Arial',
+          color: '#ffffff',
+          align: 'center',
+        })
+        tileName.setOrigin(0.5)
+      } else if (tile.type === 'destiny') {
+        const tileName = this.add.text(x, y + 15, '命運', {
           fontSize: '10px',
           fontFamily: 'Arial',
           color: '#ffffff',
@@ -514,6 +533,14 @@ class GameScene extends Phaser.Scene {
 
     // Show chance card on main screen
     this.showChanceCard(teamId, chanceCard, newScore, newPosition)
+  }
+
+  handleDestinyCard(data) {
+    const { teamId, destinyCard, newScore, newPosition } = data
+    console.log(`Destiny card drawn by team ${teamId}:`, destinyCard)
+
+    // Show destiny card on main screen
+    this.showDestinyCard(teamId, destinyCard, newScore, newPosition)
   }
 
   showDiceRoll(dice, total, onComplete = null) {
@@ -1578,6 +1605,102 @@ class GameScene extends Phaser.Scene {
           cardBanner.destroy()
           cardText.destroy()
           chanceTeamImage.destroy()
+        },
+      })
+    })
+  }
+
+  showDestinyCard(teamId, destinyCard, newScore, newPosition) {
+    const team = this.gameState?.teams.find((t) => t.id === teamId)
+    if (!team) return
+
+    // Determine dark colors for destiny cards (all negative)
+    let bgColor, borderColor
+    switch (destinyCard.type) {
+      case 'disaster':
+        bgColor = 0x8b0000
+        borderColor = 0x5c0000
+        break
+      case 'bad':
+        bgColor = 0xc0392b
+        borderColor = 0xa93226
+        break
+      case 'curse':
+        bgColor = 0x4a0e4e
+        borderColor = 0x2e0932
+        break
+      case 'storm':
+        bgColor = 0x34495e
+        borderColor = 0x2c3e50
+        break
+      case 'competition':
+        bgColor = 0x8b4513
+        borderColor = 0x654321
+        break
+      case 'economic':
+        bgColor = 0x556b2f
+        borderColor = 0x2f4f2f
+        break
+      default:
+        bgColor = 0x8b0000
+        borderColor = 0x5c0000
+    }
+
+    // Create destiny card display with darker, more ominous styling
+    const cardBanner = this.add.rectangle(this.centerX, this.centerY, 600, 200, bgColor, 0.95)
+    cardBanner.setStrokeStyle(4, borderColor)
+
+    const scoreText = `${destinyCard.scoreChange}`
+    const positionText = destinyCard.effect === 'reset_to_start' ? '\n📍 回到起點！' :
+                        destinyCard.effect === 'move_back' ? `\n📍 後退 ${Math.abs(destinyCard.positionChange || 0)} 格！` : ''
+
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
+
+    // Add team image to destiny card modal
+    const destinyTeamImage = this.add.image(this.centerX - 120, this.centerY - 80, team.id || 'team_default')
+    destinyTeamImage.setScale(0.05)
+    destinyTeamImage.setOrigin(0.5)
+    destinyTeamImage.setTint(0x888888) // Darken the team image for destiny effect
+
+    const cardText = this.add.text(this.centerX, this.centerY, `💀 ${teamDisplay} 抽到命運卡！\n\n${destinyCard.title}\n${destinyCard.description}\n\n💸 分數變化: ${scoreText}${positionText}`, {
+      fontSize: '16px',
+      fontFamily: 'Arial',
+      color: '#ffffff',
+      align: 'center',
+      lineSpacing: 8,
+      wordWrap: { width: 550 },
+    })
+    cardText.setOrigin(0.5)
+
+    // Dramatic entrance animation with shake effect
+    cardBanner.setScale(0)
+    cardText.setScale(0)
+    destinyTeamImage.setScale(0)
+
+    this.tweens.add({
+      targets: [cardBanner, cardText, destinyTeamImage],
+      scaleX: 1,
+      scaleY: 1,
+      duration: 800,
+      ease: 'Back.easeOut',
+    })
+
+    // Add screen shake effect for dramatic impact
+    this.cameras.main.shake(200, 0.01)
+
+    // Auto-hide after 4 seconds
+    this.time.delayedCall(4000, () => {
+      this.tweens.add({
+        targets: [cardBanner, cardText, destinyTeamImage],
+        alpha: 0,
+        scaleX: 0.8,
+        scaleY: 0.8,
+        duration: 500,
+        ease: 'Power2',
+        onComplete: () => {
+          cardBanner.destroy()
+          cardText.destroy()
+          destinyTeamImage.destroy()
         },
       })
     })

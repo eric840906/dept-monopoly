@@ -27,7 +27,8 @@ const TileType = {
   EVENT: 'event',
   SAFE: 'safe',
   START: 'start',
-  CHANCE: 'chance'
+  CHANCE: 'chance',
+  DESTINY: 'destiny'
 };
 
 // Factory functions for creating data structures
@@ -89,6 +90,7 @@ function createTile(index, type, event = null) {
     name: type === TileType.START ? '起點' : 
           type === TileType.SAFE ? `安全格 ${index}` : 
           type === TileType.CHANCE ? `機會格 ${index}` :
+          type === TileType.DESTINY ? `命運格 ${index}` :
           `事件格 ${index}`
   };
 }
