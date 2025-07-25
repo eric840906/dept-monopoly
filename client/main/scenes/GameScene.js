@@ -13,19 +13,19 @@ class GameScene extends Phaser.Scene {
   preload() {
     // Load background image with error handling
     this.load.image('background', '/images/assets/background.png')
-    
+
     // Add load error handlers
     this.load.on('filecomplete-image-background', () => {
       console.log('Background image loaded successfully!')
     })
-    
+
     this.load.on('loaderror', (file) => {
       console.error('Failed to load file:', file.src)
       if (file.key === 'background') {
         console.error('Background image failed to load. Check if the file exists at: assets/background.png')
       }
     })
-    
+
     // Create colored rectangles for different tile types
     this.createTileTextures()
     this.createTokenTextures()
@@ -91,17 +91,17 @@ class GameScene extends Phaser.Scene {
 
     // Event tile (orange)
     graphics.clear()
-    graphics.fillStyle(0xe67e22)
+    graphics.fillStyle(0xadd68a)
     graphics.fillRect(0, 0, tileWidth, tileHeight)
-    graphics.lineStyle(2, 0xd35400)
+    graphics.lineStyle(2, 0xadd68a)
     graphics.strokeRect(0, 0, tileWidth, tileHeight)
     graphics.generateTexture('event-tile', tileWidth, tileHeight)
 
-    // Chance tile (purple)
+    // Chance tile (transparent)
     graphics.clear()
-    graphics.fillStyle(0x9b59b6)
+    graphics.fillStyle(0x000000, 0)
     graphics.fillRect(0, 0, tileWidth, tileHeight)
-    graphics.lineStyle(2, 0x8e44ad)
+    graphics.lineStyle(2, 0x9b59b6, 0.5)
     graphics.strokeRect(0, 0, tileWidth, tileHeight)
     graphics.generateTexture('chance-tile', tileWidth, tileHeight)
 
@@ -113,11 +113,11 @@ class GameScene extends Phaser.Scene {
     graphics.strokeRect(0, 0, tileWidth, tileHeight)
     graphics.generateTexture('start-tile', tileWidth, tileHeight)
 
-    // Destiny tile (dark red - negative effects)
+    // Destiny tile (transparent)
     graphics.clear()
-    graphics.fillStyle(0xc0392b)
+    graphics.fillStyle(0x000000, 0)
     graphics.fillRect(0, 0, tileWidth, tileHeight)
-    graphics.lineStyle(2, 0xa93226)
+    graphics.lineStyle(2, 0xe74c3c, 0.5)
     graphics.strokeRect(0, 0, tileWidth, tileHeight)
     graphics.generateTexture('destiny-tile', tileWidth, tileHeight)
 
@@ -1675,8 +1675,7 @@ class GameScene extends Phaser.Scene {
     cardBanner.setStrokeStyle(4, borderColor)
 
     const scoreText = `${destinyCard.scoreChange}`
-    const positionText = destinyCard.effect === 'reset_to_start' ? '\n📍 回到起點！' :
-                        destinyCard.effect === 'move_back' ? `\n📍 後退 ${Math.abs(destinyCard.positionChange || 0)} 格！` : ''
+    const positionText = destinyCard.effect === 'reset_to_start' ? '\n📍 回到起點！' : destinyCard.effect === 'move_back' ? `\n📍 後退 ${Math.abs(destinyCard.positionChange || 0)} 格！` : ''
 
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
