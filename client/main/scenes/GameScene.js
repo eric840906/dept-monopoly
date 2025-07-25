@@ -1348,13 +1348,26 @@ class GameScene extends Phaser.Scene {
   renderTrueOrFalse(container, gameData) {
     const question = gameData.data
 
-    // Question text
-    const questionText = this.add.text(0, -120, question.question, {
+    // Safari-safe text handling - ensure question text is properly processed
+    let questionTextContent = question.question || '請選擇正確或錯誤';
+    
+    // Convert to string and handle any special characters that Safari might not render
+    if (typeof questionTextContent !== 'string') {
+      questionTextContent = String(questionTextContent);
+    }
+    
+    // Clean up any problematic characters for Safari
+    questionTextContent = questionTextContent.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Question text with Safari-compatible styling
+    const questionText = this.add.text(0, -120, questionTextContent, {
       fontSize: '18px',
-      fontFamily: 'Arial',
+      fontFamily: 'Arial, sans-serif',
       color: '#ffffff',
       align: 'center',
       wordWrap: { width: 400 },
+      lineSpacing: 4,
+      padding: { x: 10, y: 5 }
     })
     questionText.setOrigin(0.5)
     container.add(questionText)
@@ -1364,9 +1377,12 @@ class GameScene extends Phaser.Scene {
     trueButton.setStrokeStyle(3, 0x2ecc71)
     container.add(trueButton)
 
-    const trueEmoji = this.add.text(-100, -5, question.trueEmoji || '⭕', {
+    // Safari-compatible emoji rendering
+    const trueEmojiText = question.trueEmoji || '⭕';
+    const trueEmoji = this.add.text(-100, -5, trueEmojiText, {
       fontSize: '32px',
-      fontFamily: 'Arial',
+      fontFamily: 'Arial, Apple Color Emoji, sans-serif',
+      color: '#ffffff'
     })
     trueEmoji.setOrigin(0.5)
     container.add(trueEmoji)
@@ -1386,9 +1402,12 @@ class GameScene extends Phaser.Scene {
     falseButton.setStrokeStyle(3, 0xc0392b)
     container.add(falseButton)
 
-    const falseEmoji = this.add.text(100, -5, question.falseEmoji || '❌', {
+    // Safari-compatible emoji rendering
+    const falseEmojiText = question.falseEmoji || '❌';
+    const falseEmoji = this.add.text(100, -5, falseEmojiText, {
       fontSize: '32px',
-      fontFamily: 'Arial',
+      fontFamily: 'Arial, Apple Color Emoji, sans-serif',
+      color: '#ffffff'
     })
     falseEmoji.setOrigin(0.5)
     container.add(falseEmoji)
