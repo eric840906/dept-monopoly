@@ -1007,20 +1007,21 @@ class MobileGameApp {
     if (window.MiniGames) {
       const miniGameContent = document.getElementById('miniGameContent')
       
-      if (isCaptain) {
-        // Captain gets interactive mini-game interface
-        window.MiniGames.load(data, miniGameContent, this.socket, this.teamData.id, this.playerData.id, () => {
+      // ALL team members now see the quiz interface, but with different interaction levels
+      window.MiniGames.load(data, miniGameContent, this.socket, this.teamData.id, this.playerData.id, () => {
+        // Only captain needs to notify server to start timer
+        if (isCaptain) {
           console.log('Captain mini-game UI ready, notifying server to start timer')
           this.socket.emit('mini_game_ready', { teamId: this.teamData.id })
-        })
-      } else {
-        // Non-captain gets advisor interface
-        this.showAdvisorInterface(data, miniGameContent);
-        // Advisors don't need to notify server - only captain does
-      }
+        } else {
+          console.log('Advisor mini-game UI ready, captain will start the timer')
+        }
+      }, isCaptain) // Pass captain status to MiniGames
     } else {
-      // Fallback: if MiniGames not available, start timer immediately
-      this.socket.emit('mini_game_ready', { teamId: this.teamData.id })
+      // Fallback: if MiniGames not available, start timer immediately (only for captain)
+      if (isCaptain) {
+        this.socket.emit('mini_game_ready', { teamId: this.teamData.id })
+      }
     }
   }
 

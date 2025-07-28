@@ -35,6 +35,12 @@ class GameScene extends Phaser.Scene {
 
     // Preload quiz images
     this.preloadQuizImages()
+
+    // Preload tile images
+    this.preloadTileImages()
+
+    // Preload result images
+    this.preloadResultImages()
   }
 
   create(data) {
@@ -101,7 +107,7 @@ class GameScene extends Phaser.Scene {
     graphics.clear()
     graphics.fillStyle(0x000000, 0)
     graphics.fillRect(0, 0, tileWidth, tileHeight)
-    graphics.lineStyle(2, 0x9b59b6, 0.5)
+    graphics.lineStyle(2, 0x000000, 0)
     graphics.strokeRect(0, 0, tileWidth, tileHeight)
     graphics.generateTexture('chance-tile', tileWidth, tileHeight)
 
@@ -117,7 +123,7 @@ class GameScene extends Phaser.Scene {
     graphics.clear()
     graphics.fillStyle(0x000000, 0)
     graphics.fillRect(0, 0, tileWidth, tileHeight)
-    graphics.lineStyle(2, 0xe74c3c, 0.5)
+    graphics.lineStyle(2, 0x000000, 0)
     graphics.strokeRect(0, 0, tileWidth, tileHeight)
     graphics.generateTexture('destiny-tile', tileWidth, tileHeight)
 
@@ -170,6 +176,10 @@ class GameScene extends Phaser.Scene {
     try {
       const quizImages = [
         { key: 'mib_flash_location_door_video', path: '/images/quiz/mib_flash_location_door_video.svg' },
+        { key: 'quiz_bg_chi', path: '/images/quiz/quiz_image_chi.png' },
+        { key: 'quiz_bg_ha', path: '/images/quiz/quiz_image_ha.png' },
+        { key: 'quiz_bg_us1', path: '/images/quiz/quiz_image_us.png' },
+        { key: 'quiz_bg_us2', path: '/images/quiz/quiz_image_us2.png' },
         // Add more quiz images here as needed
       ]
 
@@ -178,6 +188,40 @@ class GameScene extends Phaser.Scene {
       })
     } catch (error) {
       console.log('Could not preload quiz images:', error)
+    }
+  }
+
+  preloadTileImages() {
+    // Preload quiz images to avoid loading delays during mini-games
+    try {
+      const quizImages = [
+        { key: 'chanceImg', path: '/images/special/chance.png' },
+        { key: 'destinyImg', path: '/images/special/destiny.png' },
+        // Add more quiz images here as needed
+      ]
+
+      quizImages.forEach((img) => {
+        this.load.image(img.key, img.path)
+      })
+    } catch (error) {
+      console.log('Could not preload tile images:', error)
+    }
+  }
+
+  preloadResultImages() {
+    // Preload quiz images to avoid loading delays during mini-games
+    try {
+      const quizImages = [
+        { key: 'resultBadImg', path: '/images/special/sad_ha.png' },
+        { key: 'resultBadImg2', path: '/images/special/sad_ha2.png' },
+        // Add more quiz images here as needed
+      ]
+
+      quizImages.forEach((img) => {
+        this.load.image(img.key, img.path)
+      })
+    } catch (error) {
+      console.log('Could not preload result images:', error)
     }
   }
 
@@ -227,9 +271,9 @@ class GameScene extends Phaser.Scene {
       let tileNumber = null
       if (index !== 0) {
         tileNumber = this.add.text(x, y, index.toString(), {
-          fontSize: '12px',
+          fontSize: '18px',
           fontFamily: 'Arial',
-          color: '#ffffff',
+          color: '#505050',
           align: 'center',
         })
         tileNumber.setOrigin(0.5)
@@ -238,28 +282,20 @@ class GameScene extends Phaser.Scene {
       // Add tile name below (for important tiles)
       if (tile.type === 'start') {
         const tileName = this.add.text(x, y + 15, '起點', {
-          fontSize: '10px',
+          fontSize: '18px',
           fontFamily: 'Arial',
           color: '#ffffff',
           align: 'center',
         })
         tileName.setOrigin(0.5)
       } else if (tile.type === 'chance') {
-        const tileName = this.add.text(x, y + 15, '機會', {
-          fontSize: '10px',
-          fontFamily: 'Arial',
-          color: '#ffffff',
-          align: 'center',
-        })
-        tileName.setOrigin(0.5)
+        const chanceImage = this.add.image(x, y, 'chanceImg')
+        chanceImage.setDisplaySize(60, 60)
+        chanceImage.setOrigin(0.5)
       } else if (tile.type === 'destiny') {
-        const tileName = this.add.text(x, y + 15, '命運', {
-          fontSize: '10px',
-          fontFamily: 'Arial',
-          color: '#ffffff',
-          align: 'center',
-        })
-        tileName.setOrigin(0.5)
+        const chanceImage = this.add.image(x, y, 'destinyImg')
+        chanceImage.setDisplaySize(60, 60)
+        chanceImage.setOrigin(0.5)
       }
 
       this.boardTiles.push({
@@ -273,16 +309,16 @@ class GameScene extends Phaser.Scene {
     })
 
     // Add center logo/title
-    const centerBg = this.add.rectangle(this.centerX, this.centerY, 400, 400, 0x2c3e50, 0.8)
-    centerBg.setStrokeStyle(3, 0x34495e)
-    const centerText = this.add.text(this.centerX, this.centerY, '🎯\nMTO\n體驗營', {
-      fontSize: '24px',
-      fontFamily: 'Arial',
-      color: '#ffffff',
-      align: 'center',
-      lineSpacing: 5,
-    })
-    centerText.setOrigin(0.5)
+    // const centerBg = this.add.rectangle(this.centerX, this.centerY, 400, 400, 0x2c3e50, 0.8)
+    // centerBg.setStrokeStyle(3, 0x34495e)
+    // const centerText = this.add.text(this.centerX, this.centerY, '🎯\nMTO\n體驗營', {
+    //   fontSize: '24px',
+    //   fontFamily: 'Arial',
+    //   color: '#ffffff',
+    //   align: 'center',
+    //   lineSpacing: 5,
+    // })
+    // centerText.setOrigin(0.5)
   }
 
   calculateSquareTilePosition(index, totalTiles, boardWidth, boardHeight, tileSize) {
@@ -1052,8 +1088,8 @@ class GameScene extends Phaser.Scene {
     // Create main container for mini-game
     const container = this.add.container(this.centerX, this.centerY)
 
-    // Add background
-    const background = this.add.rectangle(0, 0, 800, 600, 0x2c3e50, 0.95)
+    // Add background - larger container to accommodate bigger image
+    const background = this.add.rectangle(0, 0, 1600, 850, 0x2c3e50, 0.95)
     background.setStrokeStyle(4, 0x3498db)
     container.add(background)
 
@@ -1061,12 +1097,12 @@ class GameScene extends Phaser.Scene {
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
     // Add team image to header
-    const headerTeamImage = this.add.image(-120, -280, team.id || 'team_default')
-    headerTeamImage.setDisplaySize(40, 40)
-    headerTeamImage.setOrigin(0.5)
-    container.add(headerTeamImage)
+    // const headerTeamImage = this.add.image(-140, -360, team.id || 'team_default')
+    // headerTeamImage.setDisplaySize(40, 40)
+    // headerTeamImage.setOrigin(0.5)
+    // container.add(headerTeamImage)
 
-    const teamHeader = this.add.text(0, -280, `${teamDisplay} - ${this.getEventName(gameData.eventType)}`, {
+    const teamHeader = this.add.text(0, -360, `${this.getEventName(gameData.eventType)}`, {
       fontSize: '24px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -1076,7 +1112,7 @@ class GameScene extends Phaser.Scene {
     container.add(teamHeader)
 
     // Add timer display
-    const timerText = this.add.text(0, -240, `⏱️ 時間: ${Math.ceil(gameData.timeLimit / 1000)} 秒`, {
+    const timerText = this.add.text(0, -400, `⏱️ 時間: ${Math.ceil(gameData.timeLimit / 1000)} 秒`, {
       fontSize: '18px',
       fontFamily: 'Arial',
       color: '#e74c3c',
@@ -1115,6 +1151,9 @@ class GameScene extends Phaser.Scene {
   }
 
   renderMultipleChoiceQuiz(container, gameData) {
+    const us = this.add.image(500, 290, 'quiz_bg_us2')
+    us.setScale(1.25)
+    container.add(us)
     // Use actual question data from server or fallback - same as mobile implementation
     let question = gameData.data
 
@@ -1139,12 +1178,12 @@ class GameScene extends Phaser.Scene {
       question.options = ['創新', '誠信', '團隊合作', '客戶至上']
     }
 
-    const questionText = this.add.text(0, -200, question.question, {
-      fontSize: '20px',
+    const questionText = this.add.text(0, -320, question.question, {
+      fontSize: '24px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
-      wordWrap: { width: 600 },
+      wordWrap: { width: 700 },
     })
     questionText.setOrigin(0.5)
     container.add(questionText)
@@ -1159,9 +1198,35 @@ class GameScene extends Phaser.Scene {
         if (this.textures.exists(imageKey)) {
           const questionImage = this.add.image(0, -150, imageKey)
           questionImage.setOrigin(0.5)
-          questionImage.setDisplaySize(192, 108) // 16:9 ratio (192÷108 = 1.78)
+
+          // Calculate proper aspect ratio scaling to maintain image proportions
+          const texture = this.textures.get(imageKey)
+          const originalWidth = texture.source[0].width
+          const originalHeight = texture.source[0].height
+          const maxWidth = 240 // Maximum width for the quiz image
+          const maxHeight = 135 // Maximum height (16:9 ratio reference)
+
+          // Calculate scale to fit within bounds while maintaining aspect ratio
+          const scaleX = maxWidth / originalWidth
+          const scaleY = maxHeight / originalHeight
+          const scale = Math.min(scaleX, scaleY) // Use smaller scale to fit within bounds
+
+          // Increase target size but avoid excessive scaling that causes blur
+          const desiredDisplayWidth = 400 // Target display width
+          const desiredDisplayHeight = 300 // Target display height
+
+          // Calculate scale for desired size while maintaining aspect ratio
+          const desiredScaleX = desiredDisplayWidth / originalWidth
+          const desiredScaleY = desiredDisplayHeight / originalHeight
+          const desiredScale = Math.min(desiredScaleX, desiredScaleY)
+
+          // Limit scaling to avoid blur - don't scale up more than 1.5x original size
+          const finalScale = Math.min(desiredScale, 1.5)
+          questionImage.setScale(finalScale)
           container.add(questionImage)
-          imageYOffset = 60 // Adjusted offset for new size
+          // Calculate dynamic offset based on actual scaled image height
+          const scaledHeight = originalHeight * finalScale
+          imageYOffset = Math.max(120, scaledHeight * 0.6) // Dynamic offset based on image size
         }
       } catch (error) {
         console.warn('Could not load quiz image:', question.image, error)
@@ -1169,25 +1234,27 @@ class GameScene extends Phaser.Scene {
     }
 
     // Display options (adjusted position based on image presence)
-    const optionsStartY = imageYOffset > 0 ? -20 : -50
+    const optionsStartY = imageYOffset > 0 ? 50 : 0
     question.options.forEach((option, index) => {
-      const optionText = this.add.text(0, optionsStartY + index * 60, `${String.fromCharCode(65 + index)}. ${option}`, {
+      const yPosition = optionsStartY + index * 70
+      const optionText = this.add.text(0, yPosition, `${String.fromCharCode(65 + index)}. ${option}`, {
         fontSize: '18px',
         fontFamily: 'Arial',
         color: '#bdc3c7',
         align: 'center',
+        wordWrap: { width: 500 },
       })
       optionText.setOrigin(0.5)
       container.add(optionText)
 
       // Add option background
-      const optionBg = this.add.rectangle(0, -50 + index * 60, 400, 40, 0x34495e, 0.7)
+      const optionBg = this.add.rectangle(0, yPosition, 520, 50, 0x34495e, 0.7)
       optionBg.setStrokeStyle(2, 0x7f8c8d)
       container.add(optionBg)
       container.sendToBack(optionBg)
     })
 
-    const instructionText = this.add.text(0, 200, '👆 隊伍正在選擇答案...', {
+    const instructionText = this.add.text(0, 320, '👆 隊伍正在選擇答案...', {
       fontSize: '16px',
       fontFamily: 'Arial',
       color: '#f39c12',
@@ -1198,6 +1265,9 @@ class GameScene extends Phaser.Scene {
   }
 
   renderDragDropWorkflow(container, gameData) {
+    const us = this.add.image(500, 295, 'quiz_bg_us1')
+    us.setScale(1.25)
+    container.add(us)
     const title = this.add.text(0, -150, gameData.data?.title || '🔄 流程排序', {
       fontSize: '20px',
       fontFamily: 'Arial',
@@ -1234,7 +1304,7 @@ class GameScene extends Phaser.Scene {
       container.add(itemText)
     })
 
-    const instructionText = this.add.text(0, 150, '🔄 隊伍正在排列順序...', {
+    const instructionText = this.add.text(0, 180, '🔄 隊伍正在排列順序...', {
       fontSize: '16px',
       fontFamily: 'Arial',
       color: '#f39c12',
@@ -1245,9 +1315,12 @@ class GameScene extends Phaser.Scene {
   }
 
   renderFormatMatching(container, gameData) {
+    const chi = this.add.image(500, 300, 'quiz_bg_chi')
+    chi.setScale(1.25)
+    container.add(chi)
     const matchingData = gameData.data || {}
-    const title = this.add.text(0, -150, `🔗 ${matchingData.title || '配對遊戲'}`, {
-      fontSize: '20px',
+    const title = this.add.text(0, -250, `🔗 ${matchingData.title || '連連看'}`, {
+      fontSize: '24px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -1255,8 +1328,8 @@ class GameScene extends Phaser.Scene {
     title.setOrigin(0.5)
     container.add(title)
 
-    const description = this.add.text(0, -110, '請將左側和右側的項目正確配對：', {
-      fontSize: '16px',
+    const description = this.add.text(0, -210, '請將左側和右側的項目正確配對：', {
+      fontSize: '18px',
       fontFamily: 'Arial',
       color: '#bdc3c7',
       align: 'center',
@@ -1277,11 +1350,11 @@ class GameScene extends Phaser.Scene {
 
     // Left column
     leftItems.forEach((item, index) => {
-      const itemBg = this.add.rectangle(-200, -50 + index * 60, 180, 40, 0x3498db, 0.8)
+      const itemBg = this.add.rectangle(-400, -150 + index * 80, 180, 40, 0x3498db, 0.8)
       container.add(itemBg)
 
-      const itemText = this.add.text(-200, -50 + index * 60, item, {
-        fontSize: '16px',
+      const itemText = this.add.text(-400, -150 + index * 80, item, {
+        fontSize: '18px',
         fontFamily: 'Arial',
         color: '#ffffff',
         align: 'center',
@@ -1293,11 +1366,11 @@ class GameScene extends Phaser.Scene {
     // Right column (shuffled for display)
     const shuffledRight = [...rightItems].sort(() => Math.random() - 0.5)
     shuffledRight.forEach((item, index) => {
-      const itemBg = this.add.rectangle(200, -50 + index * 60, 180, 40, 0xe67e22, 0.8)
+      const itemBg = this.add.rectangle(400, -150 + index * 80, 180, 40, 0xe67e22, 0.8)
       container.add(itemBg)
 
-      const itemText = this.add.text(200, -50 + index * 60, item, {
-        fontSize: '16px',
+      const itemText = this.add.text(400, -150 + index * 80, item, {
+        fontSize: '18px',
         fontFamily: 'Arial',
         color: '#ffffff',
         align: 'center',
@@ -1306,7 +1379,7 @@ class GameScene extends Phaser.Scene {
       container.add(itemText)
     })
 
-    const instructionText = this.add.text(0, 150, '🔗 隊伍正在進行配對...', {
+    const instructionText = this.add.text(0, 250, '🔗 隊伍正在進行配對...', {
       fontSize: '16px',
       fontFamily: 'Arial',
       color: '#f39c12',
@@ -1347,48 +1420,50 @@ class GameScene extends Phaser.Scene {
 
   renderTrueOrFalse(container, gameData) {
     const question = gameData.data
-
+    const ha = this.add.image(500, 300, 'quiz_bg_ha')
+    ha.setScale(1.25)
+    container.add(ha)
     // Safari-safe text handling - ensure question text is properly processed
-    let questionTextContent = question.question || '請選擇正確或錯誤';
-    
+    let questionTextContent = question.question || '請選擇正確或錯誤'
+
     // Convert to string and handle any special characters that Safari might not render
     if (typeof questionTextContent !== 'string') {
-      questionTextContent = String(questionTextContent);
+      questionTextContent = String(questionTextContent)
     }
-    
-    // Clean up any problematic characters for Safari
-    questionTextContent = questionTextContent.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-    // Question text with Safari-compatible styling
-    const questionText = this.add.text(0, -120, questionTextContent, {
-      fontSize: '18px',
+    // Clean up any problematic characters for Safari
+    questionTextContent = questionTextContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+    // Question text with Safari-compatible styling - scaled up for larger container
+    const questionText = this.add.text(0, -200, questionTextContent, {
+      fontSize: '36px',
       fontFamily: 'Arial, sans-serif',
       color: '#ffffff',
       align: 'center',
-      wordWrap: { width: 400 },
-      lineSpacing: 4,
-      padding: { x: 10, y: 5 }
+      wordWrap: { width: 800 },
+      lineSpacing: 8,
+      padding: { x: 20, y: 10 },
     })
     questionText.setOrigin(0.5)
     container.add(questionText)
 
-    // Create True button - larger size for better emoji display
-    const trueButton = this.add.rectangle(-100, 5, 160, 80, 0x27ae60)
-    trueButton.setStrokeStyle(3, 0x2ecc71)
+    // Create True button - much larger size for the enlarged container
+    const trueButton = this.add.rectangle(-200, 50, 240, 200, 0x27ae60)
+    trueButton.setStrokeStyle(6, 0x2ecc71)
     container.add(trueButton)
 
-    // Safari-compatible emoji rendering
-    const trueEmojiText = question.trueEmoji || '⭕';
-    const trueEmoji = this.add.text(-100, -5, trueEmojiText, {
-      fontSize: '32px',
+    // Safari-compatible emoji rendering - larger emoji
+    const trueEmojiText = question.trueEmoji || '⭕'
+    const trueEmoji = this.add.text(-200, 20, trueEmojiText, {
+      fontSize: '64px',
       fontFamily: 'Arial, Apple Color Emoji, sans-serif',
-      color: '#ffffff'
+      color: '#ffffff',
     })
     trueEmoji.setOrigin(0.5)
     container.add(trueEmoji)
 
-    const trueLabel = this.add.text(-100, 35, '正確', {
-      fontSize: '16px',
+    const trueLabel = this.add.text(-200, 100, '正確', {
+      fontSize: '32px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -1397,23 +1472,23 @@ class GameScene extends Phaser.Scene {
     trueLabel.setOrigin(0.5)
     container.add(trueLabel)
 
-    // Create False button - larger size for better emoji display
-    const falseButton = this.add.rectangle(100, 5, 160, 80, 0xe74c3c)
-    falseButton.setStrokeStyle(3, 0xc0392b)
+    // Create False button - much larger size for the enlarged container
+    const falseButton = this.add.rectangle(200, 50, 240, 200, 0xe74c3c)
+    falseButton.setStrokeStyle(6, 0xc0392b)
     container.add(falseButton)
 
-    // Safari-compatible emoji rendering
-    const falseEmojiText = question.falseEmoji || '❌';
-    const falseEmoji = this.add.text(100, -5, falseEmojiText, {
-      fontSize: '32px',
+    // Safari-compatible emoji rendering - larger emoji
+    const falseEmojiText = question.falseEmoji || '❌'
+    const falseEmoji = this.add.text(200, 20, falseEmojiText, {
+      fontSize: '64px',
       fontFamily: 'Arial, Apple Color Emoji, sans-serif',
-      color: '#ffffff'
+      color: '#ffffff',
     })
     falseEmoji.setOrigin(0.5)
     container.add(falseEmoji)
 
-    const falseLabel = this.add.text(100, 35, '錯誤', {
-      fontSize: '16px',
+    const falseLabel = this.add.text(200, 100, '錯誤', {
+      fontSize: '32px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -1515,23 +1590,23 @@ class GameScene extends Phaser.Scene {
     const color = success ? 0x2ecc71 : 0xe74c3c
     const scoreText = score > 0 ? `+${score}` : `${score}`
 
-    // Create result banner
-    const resultBanner = this.add.rectangle(this.centerX, this.centerY - 50, 400, 100, color, 0.9)
-    resultBanner.setStrokeStyle(3, success ? 0x27ae60 : 0xc0392b)
+    // Create result banner - much larger for the enlarged container
+    const resultBanner = this.add.rectangle(this.centerX, this.centerY - 50, 800, 200, color, 0.9)
+    resultBanner.setStrokeStyle(6, success ? 0x27ae60 : 0xc0392b)
 
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
-    // Add team image to result modal
-    const resultTeamImage = this.add.image(this.centerX - 80, this.centerY - 80, team.id || 'team_default')
-    resultTeamImage.setDisplaySize(15, 15) // Very small size
+    // Add team image to result modal - larger size
+    const resultTeamImage = this.add.image(this.centerX - 160, this.centerY - 80, team.id || 'team_default')
+    resultTeamImage.setDisplaySize(60, 60) // Much larger size
     resultTeamImage.setOrigin(0.5)
 
     const resultText = this.add.text(this.centerX, this.centerY - 50, `${success ? '✅' : '❌'} ${teamDisplay}\n${feedback}\n${scoreText} 分`, {
-      fontSize: '16px',
+      fontSize: '32px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
-      lineSpacing: 5,
+      lineSpacing: 10,
     })
     resultText.setOrigin(0.5)
 
@@ -1598,27 +1673,27 @@ class GameScene extends Phaser.Scene {
         borderColor = 0x2c3e50
     }
 
-    // Create chance card display
-    const cardBanner = this.add.rectangle(this.centerX, this.centerY, 600, 200, bgColor, 0.95)
-    cardBanner.setStrokeStyle(4, borderColor)
+    // Create chance card display - much larger for enlarged container
+    const cardBanner = this.add.rectangle(this.centerX, this.centerY, 1200, 400, bgColor, 0.95)
+    cardBanner.setStrokeStyle(8, borderColor)
 
     const scoreText = chanceCard.scoreChange > 0 ? `+${chanceCard.scoreChange}` : `${chanceCard.scoreChange}`
     const positionText = chanceCard.effect === 'reset_to_start' ? '\n📍 回到起點！' : ''
 
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
-    // Add team image to chance card modal
-    const chanceTeamImage = this.add.image(this.centerX - 120, this.centerY - 80, team.id || 'team_default')
-    chanceTeamImage.setScale(0.05)
+    // Add team image to chance card modal - larger size
+    const chanceTeamImage = this.add.image(this.centerX - 240, this.centerY - 120, team.id || 'team_default')
+    chanceTeamImage.setScale(0.15)
     chanceTeamImage.setOrigin(0.5)
 
     const cardText = this.add.text(this.centerX, this.centerY, `🃏 ${teamDisplay} 抽到機會卡！\n\n${chanceCard.title}\n${chanceCard.description}\n\n💰 分數變化: ${scoreText}${positionText}`, {
-      fontSize: '16px',
+      fontSize: '32px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
-      lineSpacing: 8,
-      wordWrap: { width: 550 },
+      lineSpacing: 16,
+      wordWrap: { width: 1100 },
     })
     cardText.setOrigin(0.5)
 
@@ -1689,28 +1764,28 @@ class GameScene extends Phaser.Scene {
         borderColor = 0x5c0000
     }
 
-    // Create destiny card display with darker, more ominous styling
-    const cardBanner = this.add.rectangle(this.centerX, this.centerY, 600, 200, bgColor, 0.95)
-    cardBanner.setStrokeStyle(4, borderColor)
+    // Create destiny card display with darker, more ominous styling - much larger for enlarged container
+    const cardBanner = this.add.rectangle(this.centerX, this.centerY, 1200, 400, bgColor, 0.95)
+    cardBanner.setStrokeStyle(8, borderColor)
 
     const scoreText = `${destinyCard.scoreChange}`
     const positionText = destinyCard.effect === 'reset_to_start' ? '\n📍 回到起點！' : destinyCard.effect === 'move_back' ? `\n📍 後退 ${Math.abs(destinyCard.positionChange || 0)} 格！` : ''
 
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
-    // Add team image to destiny card modal
-    const destinyTeamImage = this.add.image(this.centerX - 120, this.centerY - 80, team.id || 'team_default')
-    destinyTeamImage.setScale(0.05)
+    // Add team image to destiny card modal - larger size
+    const destinyTeamImage = this.add.image(this.centerX - 240, this.centerY - 120, team.id || 'team_default')
+    destinyTeamImage.setScale(0.15)
     destinyTeamImage.setOrigin(0.5)
     destinyTeamImage.setTint(0x888888) // Darken the team image for destiny effect
 
     const cardText = this.add.text(this.centerX, this.centerY, `💀 ${teamDisplay} 抽到命運卡！\n\n${destinyCard.title}\n${destinyCard.description}\n\n💸 分數變化: ${scoreText}${positionText}`, {
-      fontSize: '16px',
+      fontSize: '32px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
-      lineSpacing: 8,
-      wordWrap: { width: 550 },
+      lineSpacing: 16,
+      wordWrap: { width: 1100 },
     })
     cardText.setOrigin(0.5)
 
@@ -1775,10 +1850,10 @@ class GameScene extends Phaser.Scene {
 
   getEventName(eventType) {
     const eventNames = {
-      multiple_choice_quiz: '📝 選擇題挑戰',
-      drag_drop_workflow: '🔄 流程排序',
-      format_matching: '🔗 配對遊戲',
-      true_or_false: '✅❌ 是非題',
+      multiple_choice_quiz: '選擇題挑戰',
+      drag_drop_workflow: '流程排序',
+      format_matching: '連連看',
+      true_or_false: '是非題',
     }
     return eventNames[eventType] || `🎯 ${eventType}`
   }

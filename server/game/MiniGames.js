@@ -169,7 +169,7 @@ class MiniGameProcessor {
   generateFormatMatching() {
     const matchingSets = [
       {
-        title: '連連看 - MIR 格式',
+        title: 'MIR 格式',
         pairs: [
           { left: 'Page', right: '飛天魔毯' },
           { left: 'Sticky', right: '影音三秒膠' },
@@ -179,7 +179,7 @@ class MiniGameProcessor {
         ],
       },
       {
-        title: '連連看 - MIB 格式',
+        title: 'MIB 格式',
         pairs: [
           { left: 'Flash', right: '快閃焦點' },
           { left: 'Gallery', right: '置底迴廊' },
@@ -189,7 +189,7 @@ class MiniGameProcessor {
         ],
       },
       {
-        title: '連連看 - 其他格式',
+        title: '其他格式',
         pairs: [
           { left: 'Cover', right: '大蓋板' },
           { left: 'Poster', right: '蓋版大海報' },
@@ -197,7 +197,7 @@ class MiniGameProcessor {
         ],
       },
       {
-        title: '連連看 - MTO 成員名字1',
+        title: 'MTO 成員名字 1',
         pairs: [
           { left: 'Sam', right: '張碩吟' },
           { left: 'James', right: '許晨光' },
@@ -207,7 +207,7 @@ class MiniGameProcessor {
         ],
       },
       {
-        title: '連連看 - MTO 成員名字2',
+        title: 'MTO 成員名字 2',
         pairs: [
           { left: 'Jack', right: '鄭仲傑' },
           { left: 'Danson', right: '王奕智' },

@@ -6,7 +6,7 @@ window.MiniGames = {
   socket: null,
   teamId: null,
 
-  load(gameData, container, socket, teamId, playerId, onReadyCallback) {
+  load(gameData, container, socket, teamId, playerId, onReadyCallback, isCaptain = true) {
     // Stop any existing timer first
     this.stopTimer()
 
@@ -16,6 +16,7 @@ window.MiniGames = {
     this.playerId = playerId
     this.currentGame = gameData
     this.onReadyCallback = onReadyCallback
+    this.isCaptain = isCaptain
 
     // Clear container
     container.innerHTML = ''
@@ -257,8 +258,17 @@ window.MiniGames = {
                 </style>
                 <h3>📝 選擇題挑戰</h3>
                 <div class="instructions">
-                    💡 仔細閱讀題目，選擇最合適的答案
+                    ${this.isCaptain ? '💡 仔細閱讀題目，選擇最合適的答案' : '👥 與隊友討論，協助隊長分析選項'}
                 </div>
+                ${
+                  !this.isCaptain
+                    ? `
+                <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px; padding: 12px; margin-bottom: 15px; color: #e65100; text-align: center; font-size: 14px;">
+                    🎯 你是顧問角色 - 可以看題目和選項，但只有隊長能提交答案
+                </div>
+                `
+                    : ''
+                }
                 <div class="question-text">${question.question}</div>
                 ${question.image ? `<img src="${question.image}" alt="Quiz Image" class="question-image" onerror="this.style.display='none'">` : ''}
                 <div class="options-container">
@@ -277,7 +287,7 @@ window.MiniGames = {
                     <span id="miniGameTimer">30</span> 秒
                 </div>
                 <button id="submitAnswer" class="btn btn-primary" disabled>
-                    請選擇一個答案
+                    ${this.isCaptain ? '請選擇一個答案' : '等待隊長決定'}
                 </button>
             </div>
         `
@@ -292,7 +302,16 @@ window.MiniGames = {
 
     const updateSubmitButton = () => {
       const submitBtn = document.getElementById('submitAnswer')
-      if (selectedAnswer !== null && !hasSubmitted) {
+      if (!this.isCaptain) {
+        // Non-captains can see selections but cannot submit
+        submitBtn.disabled = true
+        if (selectedAnswer !== null) {
+          const selectedOption = String.fromCharCode(65 + selectedAnswer)
+          submitBtn.textContent = `已選擇 ${selectedOption} - 等待隊長提交`
+        } else {
+          submitBtn.textContent = '等待隊長決定'
+        }
+      } else if (selectedAnswer !== null && !hasSubmitted) {
         submitBtn.disabled = false
         const selectedOption = String.fromCharCode(65 + selectedAnswer)
         submitBtn.textContent = `提交答案 (選擇 ${selectedOption})`
@@ -342,7 +361,7 @@ window.MiniGames = {
     })
 
     document.getElementById('submitAnswer').addEventListener('click', () => {
-      if (selectedAnswer === null || hasSubmitted) return
+      if (!this.isCaptain || selectedAnswer === null || hasSubmitted) return
 
       hasSubmitted = true
       const isCorrect = selectedAnswer === correctIndex
@@ -590,6 +609,15 @@ window.MiniGames = {
                     }
                 </style>
                 <h3>🔄 ${workflow.title}</h3>
+                ${
+                  !this.isCaptain
+                    ? `
+                <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px; padding: 8px; margin: 8px 0; color: #e65100; text-align: center; font-size: 12px;">
+                    🎯 你是顧問角色 - 可以協助排序，但只有隊長能提交答案
+                </div>
+                `
+                    : ''
+                }
                 <p>${gameData.data.description || '請將以下項目按正確順序排列：'}</p>
                 <div class="progress-indicator">
                     已排序：<span id="orderCount">0</span> / ${workflow.shuffled.length}
@@ -626,7 +654,7 @@ window.MiniGames = {
                     ⏰ <span id="miniGameTimer">45</span> 秒
                 </div>
                 <button id="submitOrder" class="btn btn-primary" disabled>
-                    📤 提交順序
+                    ${this.isCaptain ? '📤 提交順序' : '等待隊長決定'}
                 </button>
             </div>
         `
@@ -782,7 +810,10 @@ window.MiniGames = {
       if (orderCount) orderCount.textContent = this.droppedItems.length
 
       if (submitBtn) {
-        if (this.droppedItems.length === correctOrder.length) {
+        if (!this.isCaptain) {
+          submitBtn.disabled = true
+          submitBtn.textContent = this.droppedItems.length === correctOrder.length ? '排序完成 - 等待隊長提交' : '等待隊長決定'
+        } else if (this.droppedItems.length === correctOrder.length) {
           submitBtn.disabled = false
           submitBtn.textContent = '📤 提交順序'
         } else {
@@ -803,6 +834,8 @@ window.MiniGames = {
     }
 
     document.getElementById('submitOrder').addEventListener('click', () => {
+      if (!this.isCaptain) return
+
       if (this.droppedItems.length !== correctOrder.length) {
         alert(`請完成所有 ${correctOrder.length} 個項目的排序！`)
         return
@@ -1047,7 +1080,16 @@ window.MiniGames = {
                         60% { transform: translateY(-5px) translateX(-50%); }
                     }
                 </style>
-                <h3>🔗 ${gameData.data?.title || '配對遊戲'}</h3>
+                <h3>🔗 ${gameData.data?.title || '連連看'}</h3>
+                ${
+                  !this.isCaptain
+                    ? `
+                <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px; padding: 8px; margin: 8px 0; color: #e65100; text-align: center; font-size: 12px;">
+                    🎯 你是顧問角色 - 可以協助配對，但只有隊長能提交答案
+                </div>
+                `
+                    : ''
+                }
                 <div class="game-instructions">
                     💡 先點選左側藍色項目，再點選右側紫色項目進行配對
                 </div>
@@ -1086,7 +1128,7 @@ window.MiniGames = {
                         🔄 重置配對
                     </button>
                     <button id="submitMatches" class="btn btn-primary" disabled>
-                        📤 提交配對
+                        ${this.isCaptain ? '📤 提交配對' : '等待隊長決定'}
                     </button>
                 </div>
             </div>
@@ -1103,9 +1145,12 @@ window.MiniGames = {
     const updateMatchCount = () => {
       document.getElementById('matchCount').textContent = matches.length
       const submitBtn = document.getElementById('submitMatches')
-      if (matches.length === correctPairs.length) {
+      if (!this.isCaptain) {
+        submitBtn.disabled = true
+        submitBtn.textContent = matches.length === correctPairs.length ? '配對完成 - 等待隊長提交' : '等待隊長決定'
+      } else if (matches.length === correctPairs.length) {
         submitBtn.disabled = false
-        submitBtn.textContent = '提交配對'
+        submitBtn.textContent = '📤 提交配對'
       } else {
         submitBtn.disabled = true
         submitBtn.textContent = `需要配對 ${correctPairs.length - matches.length} 組`
@@ -1154,6 +1199,8 @@ window.MiniGames = {
 
     // Submit button
     document.getElementById('submitMatches').addEventListener('click', () => {
+      if (!this.isCaptain) return
+
       if (matches.length !== correctPairs.length) {
         alert(`請完成所有 ${correctPairs.length} 組配對後再提交！`)
         return
@@ -1182,23 +1229,30 @@ window.MiniGames = {
     updateMatchCount()
   },
 
-
-
   loadTrueOrFalse(gameData) {
     const question = gameData.data
 
     this.gameContainer.innerHTML = `
             <div class="mini-game true-or-false">
                 <h3>✅❌ 是非題</h3>
+                ${
+                  !this.isCaptain
+                    ? `
+                <div class="advisor-note">
+                    🎯 你是顧問角色 - 可以看題目，但只有隊長能提交答案
+                </div>
+                `
+                    : ''
+                }
                 <div class="question-text">
                     <p>${question.question}</p>
                 </div>
                 <div class="answer-buttons">
-                    <button id="trueBtn" class="btn btn-true">
+                    <button id="trueBtn" class="btn btn-true" ${!this.isCaptain ? 'disabled' : ''}>
                         <div class="btn-emoji">${question.trueEmoji || '⭕'}</div>
                         <div class="btn-label">正確</div>
                     </button>
-                    <button id="falseBtn" class="btn btn-false">
+                    <button id="falseBtn" class="btn btn-false" ${!this.isCaptain ? 'disabled' : ''}>
                         <div class="btn-emoji">${question.falseEmoji || '❌'}</div>
                         <div class="btn-label">錯誤</div>
                     </button>
@@ -1268,6 +1322,16 @@ window.MiniGames = {
                 opacity: 0.5;
                 cursor: not-allowed;
             }
+            .advisor-note {
+                background: #fff3e0;
+                border: 2px solid #ff9800;
+                border-radius: 8px;
+                padding: 12px;
+                margin: 15px 0;
+                color: #e65100;
+                text-align: center;
+                font-size: 14px;
+            }
         `
     document.head.appendChild(style)
 
@@ -1275,7 +1339,7 @@ window.MiniGames = {
 
     // True button handler
     document.getElementById('trueBtn').addEventListener('click', () => {
-      if (!answered) {
+      if (!answered && this.isCaptain) {
         answered = true
         document.getElementById('trueBtn').style.background = '#27ae60'
         document.getElementById('trueBtn').style.color = 'white'
@@ -1289,7 +1353,7 @@ window.MiniGames = {
 
     // False button handler
     document.getElementById('falseBtn').addEventListener('click', () => {
-      if (!answered) {
+      if (!answered && this.isCaptain) {
         answered = true
         document.getElementById('falseBtn').style.background = '#e74c3c'
         document.getElementById('falseBtn').style.color = 'white'
