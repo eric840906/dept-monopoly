@@ -1590,16 +1590,26 @@ class GameScene extends Phaser.Scene {
     const color = success ? 0x2ecc71 : 0xe74c3c
     const scoreText = score > 0 ? `+${score}` : `${score}`
 
-    // Create result banner - much larger for the enlarged container
-    const resultBanner = this.add.rectangle(this.centerX, this.centerY - 50, 800, 200, color, 0.9)
+    // Create result banner - much larger to accommodate character images
+    const resultBanner = this.add.rectangle(this.centerX, this.centerY - 50, 1200, 350, color, 0.9)
     resultBanner.setStrokeStyle(6, success ? 0x27ae60 : 0xc0392b)
 
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
     // Add team image to result modal - larger size
-    const resultTeamImage = this.add.image(this.centerX - 160, this.centerY - 80, team.id || 'team_default')
-    resultTeamImage.setDisplaySize(60, 60) // Much larger size
-    resultTeamImage.setOrigin(0.5)
+    // const resultTeamImage = this.add.image(this.centerX - 160, this.centerY - 80, team.id || 'team_default')
+    // resultTeamImage.setDisplaySize(60, 60) // Much larger size
+    // resultTeamImage.setOrigin(0.5)
+
+    // Add random bad result image when losing
+    let badResultImage = null
+    if (!success) {
+      const badImages = ['resultBadImg', 'resultBadImg2']
+      const randomBadImage = badImages[Math.floor(Math.random() * badImages.length)]
+      badResultImage = this.add.image(this.centerX + 200, this.centerY - 50, randomBadImage)
+      badResultImage.setDisplaySize(200, 200) // Much larger to match the sample image size
+      badResultImage.setOrigin(0.5)
+    }
 
     const resultText = this.add.text(this.centerX, this.centerY - 50, `${success ? '✅' : '❌'} ${teamDisplay}\n${feedback}\n${scoreText} 分`, {
       fontSize: '32px',
@@ -1613,10 +1623,14 @@ class GameScene extends Phaser.Scene {
     // Animate result
     resultBanner.setScale(0)
     resultText.setScale(0)
-    resultTeamImage.setScale(0)
+    // resultTeamImage.setScale(0)
+    if (badResultImage) badResultImage.setScale(0)
+
+    const animationTargets = [resultBanner, resultText]
+    if (badResultImage) animationTargets.push(badResultImage)
 
     this.tweens.add({
-      targets: [resultBanner, resultText, resultTeamImage],
+      targets: animationTargets,
       scaleX: 1,
       scaleY: 1,
       duration: 500,
@@ -1626,7 +1640,7 @@ class GameScene extends Phaser.Scene {
     // Auto-hide after 4 seconds
     this.time.delayedCall(4000, () => {
       this.tweens.add({
-        targets: [resultBanner, resultText, resultTeamImage],
+        targets: animationTargets,
         alpha: 0,
         scaleX: 0.8,
         scaleY: 0.8,
@@ -1635,7 +1649,8 @@ class GameScene extends Phaser.Scene {
         onComplete: () => {
           resultBanner.destroy()
           resultText.destroy()
-          resultTeamImage.destroy()
+          // resultTeamImage.destroy()
+          if (badResultImage) badResultImage.destroy()
         },
       })
     })
