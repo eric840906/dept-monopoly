@@ -195,8 +195,12 @@ class GameScene extends Phaser.Scene {
     // Preload quiz images to avoid loading delays during mini-games
     try {
       const quizImages = [
-        { key: 'chanceImg', path: '/images/special/chance.png' },
+        { key: 'chanceImg', path: '/images/special/chance3.png' },
+        { key: 'chanceImg2', path: '/images/special/chance2.png' },
+        { key: 'chanceImg3', path: '/images/special/chance.png' },
         { key: 'destinyImg', path: '/images/special/destiny.png' },
+        { key: 'destinyImg2', path: '/images/special/destiny3.png' },
+        { key: 'destinyImg3', path: '/images/special/destiny4.png' },
         // Add more quiz images here as needed
       ]
 
@@ -232,6 +236,10 @@ class GameScene extends Phaser.Scene {
 
     this.boardTiles = []
     const tileCount = this.board.length
+
+    // Counters to cycle through images in order
+    let destinyImageCounter = 0
+    let chanceImageCounter = 0
 
     // Calculate board dimensions for square layout
     const boardWidth = 600
@@ -291,13 +299,28 @@ class GameScene extends Phaser.Scene {
         })
         tileName.setOrigin(0.5)
       } else if (tile.type === 'chance') {
-        const chanceImage = this.add.image(x, y, 'chanceImg')
-        chanceImage.setDisplaySize(60, 60)
+        // Cycle through chance images in order: chanceImg, chanceImg2, chanceImg3
+        const chanceImages = ['chanceImg', 'chanceImg2', 'chanceImg3']
+        const chanceImageKey = chanceImages[chanceImageCounter % chanceImages.length]
+        chanceImageCounter++
+
+        const chanceImage = this.add.image(x, y, chanceImageKey)
+        // Set different sizes for different chance images
+        if (chanceImageKey === 'chanceImg' || chanceImageKey === 'chanceImg2') {
+          chanceImage.setDisplaySize(60, 60)
+        } else {
+          chanceImage.setDisplaySize(100, 100)
+        }
         chanceImage.setOrigin(0.5)
       } else if (tile.type === 'destiny') {
-        const chanceImage = this.add.image(x, y, 'destinyImg')
-        chanceImage.setDisplaySize(60, 60)
-        chanceImage.setOrigin(0.5)
+        // Cycle through destiny images in order: destinyImg, destinyImg2, destinyImg3
+        const destinyImages = ['destinyImg', 'destinyImg2', 'destinyImg3']
+        const destinyImageKey = destinyImages[destinyImageCounter % destinyImages.length]
+        destinyImageCounter++
+
+        const destinyImage = this.add.image(x, y, destinyImageKey)
+        destinyImage.setDisplaySize(60, 60)
+        destinyImage.setOrigin(0.5)
       }
 
       this.boardTiles.push({
@@ -1708,12 +1731,7 @@ class GameScene extends Phaser.Scene {
 
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
-    // Add team image to chance card modal - larger size
-    const chanceTeamImage = this.add.image(this.centerX - 240, this.centerY - 120, team.id || 'team_default')
-    chanceTeamImage.setScale(0.15)
-    chanceTeamImage.setOrigin(0.5)
-
-    const cardText = this.add.text(this.centerX, this.centerY, `🃏 ${teamDisplay} 抽到機會卡！\n\n${chanceCard.title}\n${chanceCard.description}\n\n💰 分數變化: ${scoreText}${positionText}`, {
+    const cardText = this.add.text(this.centerX, this.centerY, `🃏 ${teamDisplay} 把握機會！\n\n${chanceCard.title}\n${chanceCard.description}\n\n💰 分數變化: ${scoreText}${positionText}`, {
       fontSize: '32px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -1726,10 +1744,9 @@ class GameScene extends Phaser.Scene {
     // Dramatic entrance animation
     cardBanner.setScale(0)
     cardText.setScale(0)
-    chanceTeamImage.setScale(0)
 
     this.tweens.add({
-      targets: [cardBanner, cardText, chanceTeamImage],
+      targets: [cardBanner, cardText],
       scaleX: 1,
       scaleY: 1,
       duration: 800,
@@ -1739,7 +1756,7 @@ class GameScene extends Phaser.Scene {
     // Auto-hide after 4 seconds
     this.time.delayedCall(4000, () => {
       this.tweens.add({
-        targets: [cardBanner, cardText, chanceTeamImage],
+        targets: [cardBanner, cardText],
         alpha: 0,
         scaleX: 0.8,
         scaleY: 0.8,
@@ -1748,7 +1765,6 @@ class GameScene extends Phaser.Scene {
         onComplete: () => {
           cardBanner.destroy()
           cardText.destroy()
-          chanceTeamImage.destroy()
         },
       })
     })
@@ -1799,13 +1815,7 @@ class GameScene extends Phaser.Scene {
 
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
-    // Add team image to destiny card modal - larger size
-    const destinyTeamImage = this.add.image(this.centerX - 240, this.centerY - 120, team.id || 'team_default')
-    destinyTeamImage.setScale(0.15)
-    destinyTeamImage.setOrigin(0.5)
-    destinyTeamImage.setTint(0x888888) // Darken the team image for destiny effect
-
-    const cardText = this.add.text(this.centerX, this.centerY, `💀 ${teamDisplay} 抽到命運卡！\n\n${destinyCard.title}\n${destinyCard.description}\n\n💸 分數變化: ${scoreText}${positionText}`, {
+    const cardText = this.add.text(this.centerX, this.centerY, `💀 ${teamDisplay} 直面命運！\n\n${destinyCard.title}\n${destinyCard.description}\n\n💸 分數變化: ${scoreText}${positionText}`, {
       fontSize: '32px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -1818,10 +1828,9 @@ class GameScene extends Phaser.Scene {
     // Dramatic entrance animation with shake effect
     cardBanner.setScale(0)
     cardText.setScale(0)
-    destinyTeamImage.setScale(0)
 
     this.tweens.add({
-      targets: [cardBanner, cardText, destinyTeamImage],
+      targets: [cardBanner, cardText],
       scaleX: 1,
       scaleY: 1,
       duration: 800,
@@ -1834,7 +1843,7 @@ class GameScene extends Phaser.Scene {
     // Auto-hide after 4 seconds
     this.time.delayedCall(4000, () => {
       this.tweens.add({
-        targets: [cardBanner, cardText, destinyTeamImage],
+        targets: [cardBanner, cardText],
         alpha: 0,
         scaleX: 0.8,
         scaleY: 0.8,
@@ -1843,7 +1852,6 @@ class GameScene extends Phaser.Scene {
         onComplete: () => {
           cardBanner.destroy()
           cardText.destroy()
-          destinyTeamImage.destroy()
         },
       })
     })
