@@ -418,7 +418,6 @@ class MobileGameApp {
     }
 
     abilitiesContainer.innerHTML = Object.entries(abilities)
-      .filter(([key]) => key !== 'reroll')
       .map(
         ([key, value]) => `
                 <div class="ability-item">
@@ -508,11 +507,6 @@ class MobileGameApp {
       teamPositionEl.textContent = this.teamData.position || 0
     }
 
-    // Update reroll count
-    const rerollCountEl = document.getElementById('rerollCount')
-    if (rerollCountEl) {
-      rerollCountEl.textContent = `重擲: ${this.teamData.abilities.reroll || 0}`
-    }
   }
 
   showInterface(interfaceId) {

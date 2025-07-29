@@ -1783,7 +1783,7 @@ class GameScene extends Phaser.Scene {
 
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
-    const cardText = this.add.text(this.centerX, this.centerY, `🃏 ${teamDisplay} 把握機會！\n\n${chanceCard.title}\n${chanceCard.description}\n\n💰 分數變化: ${scoreText}${positionText}`, {
+    const cardText = this.add.text(this.centerX, this.centerY, `🃏 恭喜${teamDisplay}抓住機會！\n\n${chanceCard.title}\n${chanceCard.description}\n\n💰 分數變化: ${scoreText}${positionText}`, {
       fontSize: '32px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -1867,7 +1867,7 @@ class GameScene extends Phaser.Scene {
 
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
-    const cardText = this.add.text(this.centerX, this.centerY, `💀 ${teamDisplay} 直面命運！\n\n${destinyCard.title}\n${destinyCard.description}\n\n💸 分數變化: ${scoreText}${positionText}`, {
+    const cardText = this.add.text(this.centerX, this.centerY, `💀 可憐哪${teamDisplay}！ \n\n${destinyCard.title}\n${destinyCard.description}\n\n💸 分數變化: ${scoreText}${positionText}`, {
       fontSize: '32px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -1942,5 +1942,179 @@ class GameScene extends Phaser.Scene {
       true_or_false: '是非題',
     }
     return eventNames[eventType] || `🎯 ${eventType}`
+  }
+
+  handleGameEnd(data) {
+    console.log('Game ended in GameScene:', data)
+    this.showLeaderboard(data)
+  }
+
+  showLeaderboard(data) {
+    // Create full-screen modal overlay
+    const { width, height } = this.scale
+    const modalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8)
+
+    // Create leaderboard container
+    const leaderboardContainer = this.add.rectangle(this.centerX, this.centerY, 1000, 600, 0xffffff, 0.95)
+    leaderboardContainer.setStrokeStyle(8, 0x3498db)
+
+    // Game end title
+    const gameEndTitle = this.add.text(this.centerX, this.centerY - 250, '🏁 遊戲結束！', {
+      fontSize: '48px',
+      fontFamily: 'Arial',
+      color: '#2c3e50',
+      align: 'center',
+      fontStyle: 'bold',
+    })
+    gameEndTitle.setOrigin(0.5)
+
+    // Winner announcement
+    let winnerText = ''
+    if (data.winner) {
+      const winnerDisplay = data.winner.name || `隊伍 ${data.winner.id.split('_')[1]}`
+      winnerText = `🏆 獲勝隊伍: ${winnerDisplay}`
+    } else {
+      winnerText = '平局結束'
+    }
+
+    const winnerAnnouncement = this.add.text(this.centerX, this.centerY - 180, winnerText, {
+      fontSize: '32px',
+      fontFamily: 'Arial',
+      color: '#e74c3c',
+      align: 'center',
+      fontStyle: 'bold',
+    })
+    winnerAnnouncement.setOrigin(0.5)
+
+    // Leaderboard title
+    const leaderboardTitle = this.add.text(this.centerX, this.centerY - 120, '排行榜', {
+      fontSize: '28px',
+      fontFamily: 'Arial',
+      color: '#2c3e50',
+      align: 'center',
+      fontStyle: 'bold',
+    })
+    leaderboardTitle.setOrigin(0.5)
+
+    // Display final scores
+    if (data.finalScores && data.finalScores.length > 0) {
+      data.finalScores.forEach((team, index) => {
+        const yPosition = this.centerY - 60 + index * 60
+        const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`
+        const teamDisplay = team.name || `隊伍 ${team.teamId.split('_')[1]}`
+
+        // Add team image if available (centered layout)
+        if (team.image) {
+          const teamImage = this.add.image(this.centerX - 120, yPosition, team.teamId || 'team_default')
+          teamImage.setDisplaySize(40, 40)
+          teamImage.setOrigin(0.5)
+
+          if (!this.leaderboardElements) this.leaderboardElements = []
+          this.leaderboardElements.push(teamImage)
+        }
+
+        // Team rank and info (centered to align with image)
+        const teamRankText = this.add.text(this.centerX + 20, yPosition, `${teamDisplay} ${rankEmoji} - ${team.score} 分`, {
+          fontSize: '24px',
+          fontFamily: 'Arial',
+          color: '#2c3e50',
+          align: 'center',
+        })
+        teamRankText.setOrigin(0.5)
+
+        // Store for animation
+        if (!this.leaderboardElements) this.leaderboardElements = []
+        this.leaderboardElements.push(teamRankText)
+      })
+    }
+
+    // Store all elements for animation and cleanup
+    this.leaderboardElements = this.leaderboardElements || []
+    this.leaderboardElements.push(modalOverlay, leaderboardContainer, gameEndTitle, winnerAnnouncement, leaderboardTitle)
+
+    // Initial state for animation
+    modalOverlay.setAlpha(0)
+    leaderboardContainer.setScale(0)
+    gameEndTitle.setScale(0)
+    winnerAnnouncement.setScale(0)
+    leaderboardTitle.setScale(0)
+
+    // Animate modal appearance
+    this.tweens.add({
+      targets: modalOverlay,
+      alpha: 0.8,
+      duration: 300,
+      ease: 'Power2',
+    })
+
+    this.tweens.add({
+      targets: [leaderboardContainer, gameEndTitle, winnerAnnouncement, leaderboardTitle],
+      scaleX: 1,
+      scaleY: 1,
+      duration: 500,
+      ease: 'Back.easeOut',
+      stagger: 100,
+    })
+
+    // Animate team rankings with stagger
+    if (this.leaderboardElements.length > 5) {
+      const teamElements = this.leaderboardElements.slice(5) // Skip the first 5 elements (modal, container, titles)
+      teamElements.forEach((element) => element.setScale(0))
+
+      this.tweens.add({
+        targets: teamElements,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 400,
+        ease: 'Back.easeOut',
+        delay: 600,
+        stagger: 100,
+      })
+    }
+
+    // Click to close (after 3 seconds)
+    this.time.delayedCall(3000, () => {
+      modalOverlay.setInteractive()
+      modalOverlay.on('pointerdown', () => {
+        this.hideLeaderboard()
+      })
+
+      // Add "點擊關閉" text
+      const closeText = this.add.text(this.centerX, this.centerY + 220, '點擊任意處關閉', {
+        fontSize: '18px',
+        fontFamily: 'Arial',
+        color: '#7f8c8d',
+        align: 'center',
+      })
+      closeText.setOrigin(0.5)
+      closeText.setAlpha(0)
+
+      this.leaderboardElements.push(closeText)
+
+      this.tweens.add({
+        targets: closeText,
+        alpha: 1,
+        duration: 300,
+        yoyo: true,
+        repeat: -1,
+      })
+    })
+  }
+
+  hideLeaderboard() {
+    if (this.leaderboardElements) {
+      this.tweens.add({
+        targets: this.leaderboardElements,
+        alpha: 0,
+        scaleX: 0.8,
+        scaleY: 0.8,
+        duration: 300,
+        ease: 'Power2',
+        onComplete: () => {
+          this.leaderboardElements.forEach((element) => element.destroy())
+          this.leaderboardElements = null
+        },
+      })
+    }
   }
 }

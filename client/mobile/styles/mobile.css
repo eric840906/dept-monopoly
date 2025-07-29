@@ -421,14 +421,6 @@ body {
     color: #2c3e50;
 }
 
-.reroll-count {
-    background: #f39c12;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    margin-left: 10px;
-}
 
 /* Drag and Drop Styles */
 .drag-drop {

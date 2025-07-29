@@ -122,6 +122,11 @@ class GameApp {
 
     this.socket.on('game_end', (data) => {
       console.log('Game ended:', data)
+      // Show leaderboard in GameScene if available
+      if (this.game && this.game.scene.getScene('GameScene')) {
+        this.game.scene.getScene('GameScene').handleGameEnd(data)
+      }
+      // Also update the basic HTML display as fallback
       this.showGameEndScreen(data)
     })
 

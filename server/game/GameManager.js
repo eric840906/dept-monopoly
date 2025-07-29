@@ -367,6 +367,16 @@ class GameManager {
   }
 
   rollDice(teamId) {
+    // Check if game has ended
+    if (this.gameState.phase === GamePhase.ENDED) {
+      throw new Error('遊戲已結束，無法擲骰子')
+    }
+
+    // Check if game is in progress
+    if (this.gameState.phase !== GamePhase.IN_PROGRESS) {
+      throw new Error('遊戲尚未開始或已結束')
+    }
+
     if (this.gameState.currentTurnTeamId !== teamId) {
       throw new Error('Not your turn')
     }

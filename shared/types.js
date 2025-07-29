@@ -56,8 +56,7 @@ function createTeam(id, color, emoji) {
       comms: Math.floor(Math.random() * 6) + 1,
       crisis: Math.floor(Math.random() * 6) + 1,
       ops: Math.floor(Math.random() * 6) + 1,
-      luck: Math.floor(Math.random() * 6) + 1,
-      reroll: 3
+      luck: Math.floor(Math.random() * 6) + 1
     },
     score: 100,
     position: 0,
