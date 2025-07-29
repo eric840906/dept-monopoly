@@ -64,9 +64,9 @@ class GameManager {
   }
 
   generateRandomEvent() {
-    // const events = ['multiple_choice_quiz', 'drag_drop_workflow', 'format_matching', 'true_or_false']
+    const events = ['multiple_choice_quiz', 'drag_drop_workflow', 'format_matching', 'true_or_false']
     // const events = ['multiple_choice_quiz']
-    const events = ['drag_drop_workflow']
+    // const events = ['drag_drop_workflow']
     // const events = ['format_matching']
     // const events = ['true_or_false']
     return events[Math.floor(Math.random() * events.length)]
