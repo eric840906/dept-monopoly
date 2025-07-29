@@ -1615,9 +1615,13 @@ class GameScene extends Phaser.Scene {
     const color = success ? 0x2ecc71 : 0xe74c3c
     const scoreText = score > 0 ? `+${score}` : `${score}`
 
-    // Create result banner - much larger to accommodate character images
-    const resultBanner = this.add.rectangle(this.centerX, this.centerY - 50, 1200, 350, color, 0.9)
-    resultBanner.setStrokeStyle(6, success ? 0x27ae60 : 0xc0392b)
+    // Create full-screen modal overlay
+    const { width, height } = this.scale
+    const modalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
+
+    // Create transparent result banner - much larger to accommodate character images
+    const resultBanner = this.add.rectangle(this.centerX, this.centerY - 50, 1200, 350, color, 0)
+    resultBanner.setStrokeStyle(0, success ? 0x27ae60 : 0xc0392b)
 
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
@@ -1626,42 +1630,87 @@ class GameScene extends Phaser.Scene {
     // resultTeamImage.setDisplaySize(60, 60) // Much larger size
     // resultTeamImage.setOrigin(0.5)
 
-    // Add random result image based on success/failure
+    // Add character image positioned to the left
     let resultImage = null
     if (!success) {
       // Add random bad result image when losing
       const badImages = ['resultBadImg', 'resultBadImg2']
       const randomBadImage = badImages[Math.floor(Math.random() * badImages.length)]
-      resultImage = this.add.image(this.centerX + 450, this.centerY, randomBadImage)
+      resultImage = this.add.image(this.centerX - 300, this.centerY, randomBadImage)
       resultImage.setDisplaySize(200, 200)
       resultImage.setOrigin(0.5)
     } else {
       // Add random good result image when winning
       const goodImages = ['resultGoodImg', 'resultGoodImg2']
       const randomGoodImage = goodImages[Math.floor(Math.random() * goodImages.length)]
-      resultImage = this.add.image(this.centerX + 450, this.centerY, randomGoodImage)
+      resultImage = this.add.image(this.centerX - 300, this.centerY, randomGoodImage)
       resultImage.setDisplaySize(200, 200)
       resultImage.setOrigin(0.5)
     }
 
-    const resultText = this.add.text(this.centerX, this.centerY - 50, `${success ? '✅' : '❌'} ${teamDisplay}\n${feedback}\n${scoreText} 分`, {
-      fontSize: '32px',
+    // Create speech bubble background
+    const bubbleColor = 0xffffff
+    const speechBubble = this.add.graphics()
+    speechBubble.fillStyle(bubbleColor, 0.95)
+    speechBubble.lineStyle(4, bubbleColor, 0.95)
+
+    // Draw rounded rectangle for speech bubble
+    const bubbleX = this.centerX + 50
+    const bubbleY = this.centerY - 50
+    const bubbleWidth = 400
+    const bubbleHeight = 150
+    speechBubble.fillRoundedRect(bubbleX - bubbleWidth / 2, bubbleY - bubbleHeight / 2, bubbleWidth, bubbleHeight, 20)
+    speechBubble.strokeRoundedRect(bubbleX - bubbleWidth / 2, bubbleY - bubbleHeight / 2, bubbleWidth, bubbleHeight, 20)
+
+    // Draw speech bubble tail pointing to character
+    speechBubble.beginPath()
+    speechBubble.moveTo(bubbleX - bubbleWidth / 2, bubbleY + 20)
+    speechBubble.lineTo(bubbleX - bubbleWidth / 2 - 30, bubbleY + 40)
+    speechBubble.lineTo(bubbleX - bubbleWidth / 2, bubbleY + 50)
+    speechBubble.closePath()
+    speechBubble.fillPath()
+    speechBubble.strokePath()
+
+    // Add big success/failure text above everything
+    const bigResultText = this.add.text(this.centerX, this.centerY - 200, success ? '成功！' : '失敗！', {
+      fontSize: '72px',
       fontFamily: 'Arial',
-      color: '#ffffff',
+      color: success ? '#2ecc71' : '#e74c3c',
       align: 'center',
-      lineSpacing: 10,
-      wordWrap: { width: 800 }, // Add proper word wrap for better text layout
+      fontStyle: 'bold',
+    })
+    bigResultText.setOrigin(0.5)
+
+    // Speech bubble text without success/failure indicators
+    const resultText = this.add.text(bubbleX, bubbleY, `${teamDisplay}\n${feedback}\n${scoreText} 分`, {
+      fontSize: '28px',
+      fontFamily: 'Arial',
+      color: '#333333',
+      align: 'center',
+      lineSpacing: 8,
+      wordWrap: { width: 350 },
     })
     resultText.setOrigin(0.5)
 
     // Animate result
+    modalOverlay.setAlpha(0)
     resultBanner.setScale(0)
     resultText.setScale(0)
+    speechBubble.setScale(0)
+    bigResultText.setScale(0)
     // resultTeamImage.setScale(0)
     if (resultImage) resultImage.setScale(0)
 
-    const animationTargets = [resultBanner, resultText]
+    const animationTargets = [resultBanner, resultText, speechBubble, bigResultText]
     if (resultImage) animationTargets.push(resultImage)
+
+    // Fade in modal overlay first
+    this.tweens.add({
+      targets: modalOverlay,
+      alpha: 0.7,
+      duration: 300,
+      ease: 'Power2',
+    })
 
     this.tweens.add({
       targets: animationTargets,
@@ -1683,6 +1732,9 @@ class GameScene extends Phaser.Scene {
         onComplete: () => {
           resultBanner.destroy()
           resultText.destroy()
+          speechBubble.destroy()
+          bigResultText.destroy()
+          modalOverlay.destroy()
           // resultTeamImage.destroy()
           if (resultImage) resultImage.destroy()
         },
