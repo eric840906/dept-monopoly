@@ -5,11 +5,28 @@ class HostControls {
     this.gameApp = gameApp
     this.isHost = window.location.search.includes('host=true')
     this.currentGameState = null
+    this.hostToken = gameApp.hostToken // Get token from gameApp
 
     if (this.isHost) {
       this.setupHostInterface()
       this.setupEventDelegation()
     }
+  }
+
+  // Helper method to send host control commands with token
+  sendHostControl(data) {
+    if (!this.gameApp.socket) {
+      console.error('Socket not available')
+      return
+    }
+    
+    // Add token to the request if available
+    const requestData = { ...data }
+    if (this.hostToken) {
+      requestData.token = this.hostToken
+    }
+    
+    this.gameApp.socket.emit('host_control', requestData)
   }
 
   setupHostInterface() {
@@ -53,8 +70,13 @@ class HostControls {
     const hostControls = document.getElementById('hostControls')
     if (!hostControls) return
 
+    // Check if advanced button already exists
+    const existingAdvancedBtn = document.getElementById('advancedControlBtn')
+    if (existingAdvancedBtn) return
+
     // Add advanced control button
     const advancedBtn = document.createElement('button')
+    advancedBtn.id = 'advancedControlBtn'
     advancedBtn.className = 'host-btn'
     advancedBtn.textContent = '⚙️ 進階控制'
     advancedBtn.addEventListener('click', () => this.showAdvancedPanel())
@@ -347,13 +369,13 @@ class HostControls {
       <div class="modal-overlay">
         <div class="modal-content">
           <div class="modal-header">
-            <h3>🏆 隊伍 QR 碼</h3>
+            <h3>🏆 隊伍管理</h3>
             <button class="close-btn" data-action="close-modal">×</button>
           </div>
           <div class="modal-body">
             <div class="teams-info">
               <p style="text-align: center; color: #666; margin-bottom: 20px;">
-                📱 玩家掃描 QR 碼即可加入對應隊伍
+                📱 請將隊伍連結提供給玩家加入對應隊伍
               </p>
             </div>
             
@@ -442,17 +464,11 @@ class HostControls {
       const teamActions = document.createElement('div')
       teamActions.className = 'team-actions'
       
-      const qrBtn = document.createElement('button')
-      qrBtn.className = 'qr-btn'
-      qrBtn.textContent = '📱 QR 碼'
-      qrBtn.addEventListener('click', () => this.showQRCode(team.id, team.joinUrl, team.name))
-      
       const copyBtn = document.createElement('button')
       copyBtn.className = 'copy-btn'
       copyBtn.textContent = '📋 複製連結'
       copyBtn.addEventListener('click', () => this.copyURL(team.joinUrl))
       
-      teamActions.appendChild(qrBtn)
       teamActions.appendChild(copyBtn)
       
       teamItem.appendChild(teamInfo)
@@ -462,87 +478,6 @@ class HostControls {
     })
   }
 
-  showQRCode(teamId, joinUrl, teamName) {
-    // Create QR modal safely without innerHTML
-    const qrModal = document.createElement('div')
-    qrModal.className = 'qr-modal'
-    
-    const modalOverlay = document.createElement('div')
-    modalOverlay.className = 'modal-overlay'
-    
-    const modalContent = document.createElement('div')
-    modalContent.className = 'modal-content qr-content'
-    
-    const modalHeader = document.createElement('div')
-    modalHeader.className = 'modal-header'
-    
-    const title = document.createElement('h3')
-    title.textContent = `📱 ${teamName} QR 碼`
-    
-    const closeBtn = document.createElement('button')
-    closeBtn.className = 'close-btn'
-    closeBtn.textContent = '×'
-    closeBtn.addEventListener('click', () => qrModal.remove())
-    
-    modalHeader.appendChild(title)
-    modalHeader.appendChild(closeBtn)
-    
-    const modalBody = document.createElement('div')
-    modalBody.className = 'modal-body'
-    
-    const qrDisplay = document.createElement('div')
-    qrDisplay.className = 'qr-display'
-    
-    const qrPlaceholder = document.createElement('div')
-    qrPlaceholder.className = 'qr-placeholder'
-    
-    const icon = document.createElement('div')
-    icon.style.cssText = 'font-size: 48px; margin-bottom: 20px;'
-    icon.textContent = '📱'
-    
-    const p1 = document.createElement('p')
-    p1.textContent = 'QR 碼生成功能即將推出'
-    
-    const p2 = document.createElement('p')
-    p2.textContent = '目前請使用以下連結:'
-    
-    const urlDisplay = document.createElement('div')
-    urlDisplay.className = 'url-display'
-    
-    const input = document.createElement('input')
-    input.type = 'text'
-    input.value = joinUrl
-    input.readOnly = true
-    input.addEventListener('click', () => input.select())
-    
-    const copyButton = document.createElement('button')
-    copyButton.textContent = '📋 複製'
-    copyButton.addEventListener('click', () => {
-      navigator.clipboard.writeText(joinUrl).then(() => {
-        alert('已複製到剪貼板!')
-      }).catch(() => {
-        alert('複製失敗，請手動複製')
-      })
-    })
-    
-    urlDisplay.appendChild(input)
-    urlDisplay.appendChild(copyButton)
-    
-    qrPlaceholder.appendChild(icon)
-    qrPlaceholder.appendChild(p1)
-    qrPlaceholder.appendChild(p2)
-    qrPlaceholder.appendChild(urlDisplay)
-    
-    qrDisplay.appendChild(qrPlaceholder)
-    modalBody.appendChild(qrDisplay)
-    
-    modalContent.appendChild(modalHeader)
-    modalContent.appendChild(modalBody)
-    modalOverlay.appendChild(modalContent)
-    qrModal.appendChild(modalOverlay)
-    
-    document.body.appendChild(qrModal)
-  }
 
   copyURL(url) {
     navigator.clipboard.writeText(url).then(() => {
@@ -594,7 +529,7 @@ class HostControls {
   skipTurn() {
     if (confirm('確定要跳過當前回合嗎？')) {
       if (this.gameApp.socket) {
-        this.gameApp.socket.emit('host_control', { action: 'skip_turn' })
+        this.sendHostControl({ action: 'skip_turn' })
       }
     }
   }
@@ -602,7 +537,7 @@ class HostControls {
   endGame() {
     if (confirm('確定要結束遊戲嗎？這將立即結算最終分數。')) {
       if (this.gameApp.socket) {
-        this.gameApp.socket.emit('host_control', { action: 'end_game' })
+        this.sendHostControl({ action: 'end_game' })
       }
     }
   }
@@ -611,7 +546,7 @@ class HostControls {
   updateTurnTime() {
     const newTime = document.getElementById('turnTimeLimit').value
     if (this.gameApp.socket && newTime) {
-      this.gameApp.socket.emit('host_control', {
+      this.sendHostControl({
         action: 'update_turn_time',
         payload: { time: parseInt(newTime) * 1000 },
       })
@@ -621,7 +556,7 @@ class HostControls {
   updateMaxRounds() {
     const newMax = document.getElementById('maxRounds').value
     if (this.gameApp.socket && newMax) {
-      this.gameApp.socket.emit('host_control', {
+      this.sendHostControl({
         action: 'update_max_rounds',
         payload: { rounds: parseInt(newMax) },
       })
@@ -639,7 +574,7 @@ class HostControls {
     }
 
     if (this.gameApp.socket) {
-      this.gameApp.socket.emit('host_control', {
+      this.sendHostControl({
         action: 'adjust_score',
         payload: {
           teamId,
@@ -656,7 +591,7 @@ class HostControls {
 
   moveTeam(teamId, direction) {
     if (this.gameApp.socket) {
-      this.gameApp.socket.emit('host_control', {
+      this.sendHostControl({
         action: 'move_team',
         payload: { teamId, direction },
       })
@@ -665,7 +600,7 @@ class HostControls {
 
   toggleElimination(teamId) {
     if (this.gameApp.socket) {
-      this.gameApp.socket.emit('host_control', {
+      this.sendHostControl({
         action: 'toggle_elimination',
         payload: { teamId },
       })
@@ -674,22 +609,47 @@ class HostControls {
 
   pauseGame() {
     if (this.gameApp.socket) {
-      this.gameApp.socket.emit('host_control', { action: 'pause_game' })
+      this.sendHostControl({ action: 'pause_game' })
     }
   }
 
   resumeGame() {
     if (this.gameApp.socket) {
-      this.gameApp.socket.emit('host_control', { action: 'resume_game' })
+      this.sendHostControl({ action: 'resume_game' })
     }
   }
 
   resetGame() {
     if (confirm('確定要重置遊戲嗎？這將清除所有進度！')) {
       if (this.gameApp.socket) {
-        this.gameApp.socket.emit('host_control', { action: 'reset_game' })
+        this.sendHostControl({ action: 'reset_game' })
       }
     }
+  }
+
+  cleanupModals() {
+    console.log('HostControls: Cleaning up modals')
+
+    // Remove team creation modal
+    const teamModal = document.querySelector('.team-creation-modal')
+    if (teamModal) {
+      teamModal.remove()
+      console.log('HostControls: Removed team creation modal')
+    }
+
+    // Remove advanced controls panel
+    const advancedPanel = document.getElementById('advancedControlsPanel')
+    if (advancedPanel) {
+      advancedPanel.remove()
+      console.log('HostControls: Removed advanced controls panel')
+    }
+
+    // Remove any other host-related modals
+    const hostModals = document.querySelectorAll('.host-modal, [class*="host-modal"]')
+    hostModals.forEach(modal => {
+      modal.remove()
+      console.log('HostControls: Removed host modal:', modal.className)
+    })
   }
 
   update(gameState) {
@@ -951,8 +911,7 @@ class HostControls {
     const styles = document.createElement('style')
     styles.id = 'teamModalStyles'
     styles.textContent = `
-      .team-creation-modal,
-      .qr-modal {
+      .team-creation-modal {
         position: fixed;
         top: 0;
         left: 0;
@@ -973,9 +932,6 @@ class HostControls {
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
       }
 
-      .qr-content {
-        max-width: 400px !important;
-      }
 
       .team-creation-form {
         padding: 20px;
@@ -1076,40 +1032,20 @@ class HostControls {
         gap: 10px;
       }
 
-      .qr-btn, .copy-btn {
+      .copy-btn {
         padding: 8px 12px;
         border: none;
         border-radius: 6px;
         font-size: 12px;
         cursor: pointer;
         transition: background 0.3s;
-      }
-
-      .qr-btn {
-        background: #3498db;
-        color: white;
-      }
-
-      .qr-btn:hover {
-        background: #2980b9;
-      }
-
-      .copy-btn {
         background: #2ecc71;
         color: white;
+        width: 100%;
       }
 
       .copy-btn:hover {
         background: #27ae60;
-      }
-
-      .qr-display {
-        text-align: center;
-        padding: 20px;
-      }
-
-      .qr-placeholder {
-        color: #666;
       }
 
       .url-display {

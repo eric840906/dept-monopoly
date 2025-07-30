@@ -194,11 +194,11 @@ npm run docker:stop
 
 - **主持人令牌**: 使用 `HOST_TOKEN` 環境變數進行授權
 - **安全控制**: 所有主持人操作都需要令牌驗證
-- **速率限制**: 防止操作濫用，每分鐘最多 5 次主控操作
+- **速率限制**: 防止操作濫用，每分鐘最多 30 次主控操作
 
 #### 🎯 基本控制
 
-- **📋 隊伍 QR 碼**: 顯示各隊加入連結和 QR 碼
+- **📋 隊伍管理**: 顯示各隊加入連結和管理功能
 - **🚀 開始遊戲**: 啟動遊戲並開始第一回合
 - **⏭️ 跳過回合**: 強制結束當前回合
 - **🏁 結束遊戲**: 立即結算並顯示排行榜
@@ -215,7 +215,7 @@ npm run docker:stop
 
 #### 🔗 加入遊戲
 
-1. 掃描隊伍 QR 碼或開啟 http://localhost:3000/mobile
+1. 使用主持人提供的隊伍連結或開啟 http://localhost:3000/mobile
 2. 輸入暱稱和部門（輸入驗證，最多 20 字元）
 3. 等待主持人分配隊伍和開始遊戲
 4. 查看隊伍資訊和能力屬性
@@ -406,7 +406,7 @@ const SCORING = {
 ```javascript
 // 速率限制配置
 const RATE_LIMITS = {
-  HOST_CONTROL: { max: 5, windowMs: 60000 }, // 主持人控制
+  HOST_CONTROL: { max: 30, windowMs: 60000 }, // 主持人控制 (每分鐘 30 次)
   PLAYER_JOIN: { max: 3, windowMs: 60000 }, // 玩家加入
   DICE_ROLL: { max: 3, windowMs: 10000 }, // 擲骰子
   MINI_GAME_SUBMIT: { max: 3, windowMs: 10000 }, // 小遊戲提交

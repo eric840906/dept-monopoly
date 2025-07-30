@@ -8,6 +8,8 @@ class MobileGameApp {
     this.gameState = null
     this.teamData = null
     this.targetTeamId = null
+    this.modalCount = 0 // Track active modals
+    this.diceButtonDisabled = false // Track dice button state
 
     this.init()
   }
@@ -51,16 +53,25 @@ class MobileGameApp {
       switch (action) {
         case 'close-overlay':
           // Find the overlay element and remove it
-          const overlay = target.closest('.overlay')
+          const overlay = target.closest('.overlay') || target.closest('.game-modal')
           if (overlay) {
             overlay.remove()
+            // Decrement modal count if it's a game modal
+            if (overlay.classList.contains('game-modal')) {
+              this.modalCount--;
+              this.enableDiceButtonIfReady();
+            }
           } else {
             // Fallback: try to find parent elements
             let parent = target.parentElement
-            while (parent && !parent.classList.contains('overlay')) {
+            while (parent && !parent.classList.contains('overlay') && !parent.classList.contains('game-modal')) {
               parent = parent.parentElement
             }
             if (parent) {
+              if (parent.classList.contains('game-modal')) {
+                this.modalCount--;
+                this.enableDiceButtonIfReady();
+              }
               parent.remove()
             }
           }
@@ -123,8 +134,20 @@ class MobileGameApp {
     // Game state events
     this.socket.on('game_state_update', (gameState) => {
       console.log('Game state updated:', gameState)
+      
+      // Detect game reset (when we go back to lobby phase with no players)
+      const wasReset = this.gameState && 
+                      this.gameState.phase === 'in_progress' && 
+                      gameState.phase === 'lobby' && 
+                      Object.keys(gameState.players).length === 0
+
       this.gameState = gameState
       this.updateGameState()
+      
+      // Clean up modals if game was reset
+      if (wasReset) {
+        this.cleanupModals()
+      }
     })
 
     this.socket.on('teams_updated', (teams) => {
@@ -183,9 +206,15 @@ class MobileGameApp {
       console.log('Mini game result:', data)
       // Only show result if it's for our team
       if (this.teamData && data.teamId === this.teamData.id) {
+        this.modalCount++; // Track mini-game result modal
         if (window.MiniGames) {
           window.MiniGames.showResult(data)
         }
+        // Mini-game results don't auto-close, so enable dice after a delay
+        setTimeout(() => {
+          this.modalCount--;
+          this.enableDiceButtonIfReady();
+        }, 3000); // Give time for players to read the result
       }
     })
 
@@ -227,7 +256,7 @@ class MobileGameApp {
                         `原因: ${error.message}\n\n` +
                         `建議解決方案:\n` +
                         `• 檢查連結是否正確\n` +
-                        `• 重新掃描 QR 碼\n` +
+                        `• 檢查隊伍連結是否正確\n` +
                         `• 詢問主持人最新連結`
         
         this.showError(errorMsg)
@@ -515,14 +544,39 @@ class MobileGameApp {
       this.showInterface('waitingInterface')
     }
     
-    // Disable dice button if team is moving
+    // Update dice button state
+    this.updateDiceButtonState(isMyTurn, isCaptain, isMoving)
+  }
+
+  updateDiceButtonState(isMyTurn, isCaptain, isMoving) {
     const rollBtn = document.getElementById('rollDiceBtn')
-    if (rollBtn && isMyTurn && isCaptain) {
-      rollBtn.disabled = isMoving
+    if (!rollBtn || !isMyTurn || !isCaptain) return
+
+    if (isMoving || this.diceButtonDisabled || this.modalCount > 0) {
+      rollBtn.disabled = true
       if (isMoving) {
         rollBtn.textContent = '移動中...'
+      } else if (this.modalCount > 0) {
+        rollBtn.textContent = '等待確認...'
       } else {
-        rollBtn.textContent = '🎲 擲骰子'
+        rollBtn.textContent = '處理中...'
+      }
+    } else {
+      rollBtn.disabled = false
+      rollBtn.textContent = '🎲 擲骰子'
+    }
+  }
+
+  enableDiceButtonIfReady() {
+    // Only enable dice button if no modals are active and dice is not disabled for other reasons
+    if (this.modalCount <= 0) {
+      this.diceButtonDisabled = false
+      // Refresh the dice button state
+      if (this.gameState && this.teamData) {
+        const isMyTurn = this.gameState.currentTurnTeamId === this.teamData.id
+        const isCaptain = this.teamData.currentCaptainId === this.playerData.id
+        const isMoving = this.teamData.isMoving
+        this.updateDiceButtonState(isMyTurn, isCaptain, isMoving)
       }
     }
   }
@@ -631,14 +685,11 @@ class MobileGameApp {
       // Show animated dice roll
       this.showAnimatedDiceRoll(data.dice, data.total)
 
-      // Reset roll button after animation completes
+      // Disable dice button and schedule re-enable after all modals are dismissed
+      this.diceButtonDisabled = true
       setTimeout(() => {
-        const rollBtn = document.getElementById('rollDiceBtn')
-        if (rollBtn) {
-          rollBtn.disabled = false
-          rollBtn.textContent = '🎲 擲骰子'
-        }
-      }, 4000) // Wait for animation to complete (same timing as main screen)
+        this.enableDiceButtonIfReady()
+      }, 4000) // Wait for dice animation to complete first
     }
 
     // Update team position
@@ -1126,6 +1177,9 @@ class MobileGameApp {
   showChanceCardResult(data) {
     const { chanceCard, newScore, newPosition } = data;
     
+    // Track modal count
+    this.modalCount++;
+    
     // Determine card color based on type
     let cardColor, bgGradient;
     switch (chanceCard.type) {
@@ -1159,6 +1213,7 @@ class MobileGameApp {
 
     // Show chance card in a modal-like overlay
     const overlay = document.createElement('div');
+    overlay.classList.add('game-modal');
     overlay.style.cssText = `
       position: fixed;
       top: 0;
@@ -1261,12 +1316,17 @@ class MobileGameApp {
     setTimeout(() => {
       if (overlay.parentElement) {
         overlay.remove();
+        this.modalCount--;
+        this.enableDiceButtonIfReady();
       }
     }, 5000);
   }
 
   showDestinyCardResult(data) {
     const { destinyCard, newScore, newPosition } = data;
+    
+    // Track modal count
+    this.modalCount++;
     
     // Determine card color based on type (all destiny cards are negative)
     let cardColor, bgGradient;
@@ -1314,6 +1374,7 @@ class MobileGameApp {
 
     // Show destiny card in a modal-like overlay
     const overlay = document.createElement('div');
+    overlay.classList.add('game-modal');
     overlay.style.cssText = `
       position: fixed;
       top: 0;
@@ -1418,6 +1479,8 @@ class MobileGameApp {
     setTimeout(() => {
       if (overlay.parentElement) {
         overlay.remove();
+        this.modalCount--;
+        this.enableDiceButtonIfReady();
       }
     }, 5000);
   }
@@ -1571,6 +1634,32 @@ class MobileGameApp {
 
   retry() {
     window.location.reload()
+  }
+
+  cleanupModals() {
+    console.log('Mobile: Cleaning up modals after game reset')
+
+    // Remove all game modals (chance cards, destiny cards, mini-game results)
+    const gameModals = document.querySelectorAll('.game-modal, .overlay, [class*="modal"]')
+    gameModals.forEach(modal => {
+      modal.remove()
+      console.log('Mobile: Removed modal:', modal.className)
+    })
+
+    // Reset modal count
+    this.modalCount = 0
+
+    // Re-enable dice button if it was disabled due to modals
+    this.enableDiceButtonIfReady()
+
+    // Return to appropriate screen based on player state
+    if (this.playerData && this.teamData) {
+      this.showScreen('lobbyScreen')
+    } else if (this.playerData) {
+      this.showScreen('lobbyScreen')
+    } else {
+      this.showScreen('joinScreen')
+    }
   }
 }
 
