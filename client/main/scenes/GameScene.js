@@ -163,9 +163,10 @@ class GameScene extends Phaser.Scene {
 
       teamImages.forEach((team) => {
         if (team.image) {
-          this.load.image(team.id, team.image)
+          console.log(`🖼️  Loading team image: ${team.id} from ${team.image}`);
+          this.load.image(team.id, team.image);
         }
-      })
+      });
     } catch (error) {
       console.log('Could not preload team images:', error)
     }
@@ -184,7 +185,8 @@ class GameScene extends Phaser.Scene {
       ]
 
       quizImages.forEach((img) => {
-        this.load.image(img.key, img.path)
+        console.log(`🖼️  Loading quiz image: ${img.key} from ${img.path}`);
+        this.load.image(img.key, img.path);
       })
     } catch (error) {
       console.log('Could not preload quiz images:', error)
@@ -192,20 +194,21 @@ class GameScene extends Phaser.Scene {
   }
 
   preloadTileImages() {
-    // Preload quiz images to avoid loading delays during mini-games
+    // Preload tile images to avoid loading delays during mini-games
     try {
-      const quizImages = [
+      const tileImages = [
         { key: 'chanceImg', path: '/images/special/chance3.png' },
         { key: 'chanceImg2', path: '/images/special/chance2.png' },
         { key: 'chanceImg3', path: '/images/special/chance.png' },
         { key: 'destinyImg', path: '/images/special/destiny.png' },
         { key: 'destinyImg2', path: '/images/special/destiny3.png' },
         { key: 'destinyImg3', path: '/images/special/destiny4.png' },
-        // Add more quiz images here as needed
+        // Add more tile images here as needed
       ]
 
-      quizImages.forEach((img) => {
-        this.load.image(img.key, img.path)
+      tileImages.forEach((img) => {
+        console.log(`🖼️  Loading tile image: ${img.key} from ${img.path}`);
+        this.load.image(img.key, img.path);
       })
     } catch (error) {
       console.log('Could not preload tile images:', error)
@@ -213,18 +216,19 @@ class GameScene extends Phaser.Scene {
   }
 
   preloadResultImages() {
-    // Preload quiz images to avoid loading delays during mini-games
+    // Preload result images to avoid loading delays during mini-games
     try {
-      const quizImages = [
+      const resultImages = [
         { key: 'resultBadImg', path: '/images/special/sad_ha1.png' },
         { key: 'resultBadImg2', path: '/images/special/sad_ha2.png' },
         { key: 'resultGoodImg', path: '/images/special/good_res1.png' },
         { key: 'resultGoodImg2', path: '/images/special/good_res2.png' },
-        // Add more quiz images here as needed
+        // Add more result images here as needed
       ]
 
-      quizImages.forEach((img) => {
-        this.load.image(img.key, img.path)
+      resultImages.forEach((img) => {
+        console.log(`🖼️  Loading result image: ${img.key} from ${img.path}`);
+        this.load.image(img.key, img.path);
       })
     } catch (error) {
       console.log('Could not preload result images:', error)
