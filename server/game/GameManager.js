@@ -136,6 +136,13 @@ class GameManager {
         scoreChange: -90,
         type: 'disaster',
       },
+      {
+        title: '🔧 測試機沒電',
+        description: '但充電線都壞光了，工作停擺',
+        effect: 'score_penalty',
+        scoreChange: -50,
+        type: 'bad',
+      },
       // Bad Events (from chance cards)
       {
         title: '🌋 媒體網頁 CTR 異常啦！MTO 快想想辦法啊！',
@@ -146,7 +153,7 @@ class GameManager {
       },
       {
         title: '📉 季度業績不佳',
-        description: '你問為什麼這要扣 MTO 分？ 問就是 ONETEAM 要有難同當',
+        description: '你問為什麼這要扣 MTO 分？ Well, we are ONETEAM ¯\\_(ツ)_/¯',
         effect: 'score_penalty',
         scoreChange: -25,
         type: 'bad',
@@ -810,7 +817,7 @@ class GameManager {
 
     // Sort teams by score in descending order for leaderboard
     const sortedTeams = [...this.gameState.teams].sort((a, b) => b.score - a.score)
-    
+
     this.io.emit(SOCKET_EVENTS.GAME_END, {
       reason,
       winner,
@@ -846,8 +853,9 @@ class GameManager {
     // Generate new board for fresh game
     this.board = this.generateBoard()
 
-    // Clear mini-games
+    // Clear mini-games and reset used questions
     this.miniGameProcessor.activeGames.clear()
+    this.miniGameProcessor.resetUsedQuestions()
 
     console.log('Game reset complete - ready for new players')
     this.broadcastGameState()

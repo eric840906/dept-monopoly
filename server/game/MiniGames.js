@@ -3,10 +3,16 @@ const { GAME_CONFIG } = require('../../shared/constants')
 class MiniGameProcessor {
   constructor() {
     this.activeGames = new Map() // teamId -> gameData
+    this.usedQuestions = new Map() // teamId -> Set of used question IDs
+  }
+
+  resetUsedQuestions() {
+    console.log('Resetting all used questions for all teams')
+    this.usedQuestions.clear()
   }
 
   startMiniGame(teamId, eventType, gameState) {
-    const gameData = this.generateMiniGameData(eventType, gameState)
+    const gameData = this.generateMiniGameData(eventType, gameState, teamId)
     this.activeGames.set(teamId, {
       ...gameData,
       startTime: null, // Will be set when client confirms ready
@@ -32,92 +38,103 @@ class MiniGameProcessor {
     return false
   }
 
-  generateMiniGameData(eventType, gameState) {
+  generateMiniGameData(eventType, gameState, teamId) {
     switch (eventType) {
       case 'multiple_choice_quiz':
-        return this.generateMultipleChoiceQuiz()
+        return this.generateMultipleChoiceQuiz(teamId)
       case 'drag_drop_workflow':
-        return this.generateDragDropWorkflow()
+        return this.generateDragDropWorkflow(teamId)
       case 'format_matching':
-        return this.generateFormatMatching()
+        return this.generateFormatMatching(teamId)
       case 'true_or_false':
-        return this.generateTrueOrFalse()
+        return this.generateTrueOrFalse(teamId)
       default:
         return this.generateDefaultGame(eventType)
     }
   }
 
-  generateMultipleChoiceQuiz() {
+  generateMultipleChoiceQuiz(teamId) {
     const questions = [
       {
+        id: 'mc_q1',
         question: '請問 OneAD 集團裡有幾個 UI/UX 設計師？',
         options: ['8', '3', '1', '5'],
         correct: 2,
         explanation: '',
       },
       {
+        id: 'mc_q2',
         question: '請問 OneAD 集團裡有幾個 QA？',
         options: ['5', '3', '2', '4'],
         correct: 2,
         explanation: '',
       },
       {
+        id: 'mc_q3',
         question: 'IAS 量測目前不支援什麼環境量測？',
         options: ['Desktop', 'Mobile', 'APP', 'Instream'],
         correct: 2,
         explanation: '',
-        // No image for this question
       },
       {
+        id: 'mc_q4',
         question: '以下 Studio 圖片示意是那個格式？',
         options: ['MIB Flash', 'MIB Flash Location', 'MIB Location', 'MIB Location Video'],
         correct: 1,
         explanation: '',
-        image: '/images/quiz/mib_flash_location_door_video.svg', // Optional image
+        image: '/images/quiz/mib_flash_location_door_video.svg',
       },
       {
+        id: 'mc_q5',
         question: '媒體部署 OneAD Player SDK 有哪些方式？',
         options: ['直接部署', '透過 GAM 部署', '媒體 Server 部署', '以上皆是'],
         correct: 3,
         explanation: '',
       },
       {
+        id: 'mc_q6',
         question: 'MTO 不會跟哪部門直接合作？',
         options: ['AOE', 'BAO', 'Sales', 'Creative Center'],
         correct: 2,
         explanation: '',
       },
       {
+        id: 'mc_q7',
         question: 'MTO 全名是什麼？',
         options: ['Marketing Technology Office', 'Media Transmission Optimization', 'Multimedia Tech Operations', 'Media Tech Operation'],
         correct: 3,
         explanation: '',
       },
       {
+        id: 'mc_q8',
         question: '新格式是？',
         options: ['MTO 的一廂情願', 'PM, 創意, MTO 的協作成果', '自我實現的產物', '為了美化媒體網站'],
         correct: 1,
         explanation: '',
       },
       {
+        id: 'mc_q9',
         question: '下列何者不是 MTO 工作內容？',
         options: ['開發新格式 ', '媒體客製化', '檢查追蹤碼', '廣告追蹤碼埋設'],
         correct: 3,
         explanation: '',
       },
       {
+        id: 'mc_q10',
         question: '誰是 MTO 最資深員工？',
         options: ['Eric', 'Sam', 'Tobey', 'Baird'],
         correct: 1,
         explanation: '',
       },
       {
+        id: 'mc_q11',
         question: 'MTO 平日最愛系統？',
         options: ['ODM', 'Studio', 'ERP', '以上皆是'],
         correct: 3,
         explanation: '',
       },
       {
+        id: 'mc_q12',
         question: '以下同事誰沒待過 MTO？',
         options: ['江乾輔', '孟慶泰', '陳坤鐘', '簡福仁 '],
         correct: 3,
@@ -125,7 +142,30 @@ class MiniGameProcessor {
       },
     ]
 
-    const selectedQuestion = questions[Math.floor(Math.random() * questions.length)]
+    // Get or initialize used questions for this team
+    if (!this.usedQuestions.has(teamId)) {
+      this.usedQuestions.set(teamId, new Set())
+    }
+    
+    const usedQuestionIds = this.usedQuestions.get(teamId)
+    
+    // Filter out used questions
+    const availableQuestions = questions.filter(q => !usedQuestionIds.has(q.id))
+    
+    // If all questions have been used, reset the used questions for this team
+    if (availableQuestions.length === 0) {
+      console.log(`Team ${teamId} has seen all multiple choice questions, resetting pool`)
+      usedQuestionIds.clear()
+      availableQuestions.push(...questions)
+    }
+    
+    // Select a random question from available ones
+    const selectedQuestion = availableQuestions[Math.floor(Math.random() * availableQuestions.length)]
+    
+    // Mark this question as used for this team
+    usedQuestionIds.add(selectedQuestion.id)
+    
+    console.log(`Team ${teamId} got multiple choice question: ${selectedQuestion.id}`)
 
     return {
       eventType: 'multiple_choice_quiz',
@@ -232,9 +272,10 @@ class MiniGameProcessor {
     }
   }
 
-  generateTrueOrFalse() {
+  generateTrueOrFalse(teamId) {
     const questions = [
       {
+        id: 'tf_q1',
         question: '在 Figma 中想用 cursor 聊天按滑鼠右鍵就可以了',
         answer: false,
         explanation: '',
@@ -242,6 +283,7 @@ class MiniGameProcessor {
         falseEmoji: '❌',
       },
       {
+        id: 'tf_q2',
         question: 'MTO 全名是 Media Technology Office',
         answer: false,
         explanation: '',
@@ -249,6 +291,7 @@ class MiniGameProcessor {
         falseEmoji: '❌',
       },
       {
+        id: 'tf_q3',
         question: 'MTO 全名是 Multimedia Tech Operations',
         answer: false,
         explanation: '',
@@ -256,6 +299,7 @@ class MiniGameProcessor {
         falseEmoji: '❌',
       },
       {
+        id: 'tf_q4',
         question: 'MTO 全名是 Media Tech Operation',
         answer: true,
         explanation: '',
@@ -263,6 +307,7 @@ class MiniGameProcessor {
         falseEmoji: '❌',
       },
       {
+        id: 'tf_q5',
         question: 'MTO 最常使用的系統測試機是 rd-odm',
         answer: false,
         explanation: '',
@@ -270,6 +315,7 @@ class MiniGameProcessor {
         falseEmoji: '❌',
       },
       {
+        id: 'tf_q6',
         question: '可直接找 MTO 提亂七八糟的需求',
         answer: false,
         explanation: '請按照正常流程',
@@ -277,6 +323,7 @@ class MiniGameProcessor {
         falseEmoji: '❌',
       },
       {
+        id: 'tf_q7',
         question: 'VAST 支援 CCT',
         answer: false,
         explanation: '',
@@ -284,13 +331,15 @@ class MiniGameProcessor {
         falseEmoji: '❌',
       },
       {
+        id: 'tf_q8',
         question: '客戶的需求永遠是正確的',
         answer: false,
-        explanation: '客戶的需求可能需要調整和優化',
+        explanation: '需求可能需要調整和優化',
         trueEmoji: '⭕',
         falseEmoji: '❌',
       },
       {
+        id: 'tf_q9',
         question: 'VPAID 支援 CCT',
         answer: true,
         explanation: '',
@@ -298,6 +347,7 @@ class MiniGameProcessor {
         falseEmoji: '❌',
       },
       {
+        id: 'tf_q10',
         question: 'SIMID 支援 CCT',
         answer: true,
         explanation: '',
@@ -306,7 +356,30 @@ class MiniGameProcessor {
       },
     ]
 
-    const selectedQuestion = questions[Math.floor(Math.random() * questions.length)]
+    // Get or initialize used questions for this team  
+    if (!this.usedQuestions.has(teamId)) {
+      this.usedQuestions.set(teamId, new Set())
+    }
+    
+    const usedQuestionIds = this.usedQuestions.get(teamId)
+    
+    // Filter out used questions
+    const availableQuestions = questions.filter(q => !usedQuestionIds.has(q.id))
+    
+    // If all questions have been used, reset the used questions for this team
+    if (availableQuestions.length === 0) {
+      console.log(`Team ${teamId} has seen all true/false questions, resetting pool`)
+      usedQuestionIds.clear()
+      availableQuestions.push(...questions)
+    }
+    
+    // Select a random question from available ones
+    const selectedQuestion = availableQuestions[Math.floor(Math.random() * availableQuestions.length)]
+    
+    // Mark this question as used for this team
+    usedQuestionIds.add(selectedQuestion.id)
+    
+    console.log(`Team ${teamId} got true/false question: ${selectedQuestion.id}`)
 
     return {
       eventType: 'true_or_false',
