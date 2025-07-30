@@ -7,7 +7,13 @@
     "start": "NODE_ENV=production node server/index.js",
     "dev": "NODE_ENV=development nodemon server/index.js",
     "dev:debug": "NODE_ENV=development DEBUG=* nodemon server/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docker:build": "docker build --platform linux/amd64 -t dept-monopoly:latest .",
+    "docker:run": "docker run -p 3000:3000 --env-file .env.docker dept-monopoly:latest",
+    "docker:deploy": "./docker-deploy.sh",
+    "docker:stop": "docker-compose down",
+    "docker:logs": "docker-compose logs -f dept-monopoly",
+    "docker:health": "curl -f http://localhost:3000/network-info || echo 'Health check failed'"
   },
   "keywords": [
     "game",
