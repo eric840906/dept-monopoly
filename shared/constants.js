@@ -1,7 +1,7 @@
 // Game constants
 
 const GAME_CONFIG = {
-  MAX_PLAYERS: 80,
+  MAX_PLAYERS: 120,
   MIN_TEAMS: 1,
   MAX_TEAMS: 6,
   TURN_TIME_LIMIT: 90000, // 90 seconds in milliseconds
