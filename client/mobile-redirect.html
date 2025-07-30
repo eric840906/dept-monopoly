@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Access Helper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 400px;
+        }
+        .warning {
+            background: rgba(255,193,7,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .link {
+            background: rgba(40,167,69,0.8);
+            color: white;
+            padding: 15px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 10px;
+            font-weight: bold;
+        }
+        .debug-link {
+            background: rgba(108,117,125,0.8);
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            margin: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 MTO 體驗營</h1>
+        <h2>手機連接助手</h2>
+        
+        <div class="warning">
+            ⚠️ <strong>重要提醒</strong><br>
+            請使用 <strong>HTTP</strong> (不是 HTTPS) 連結
+        </div>
+        
+        <p>請點擊下方連結加入遊戲：</p>
+        
+        <div id="links">
+            <!-- Links will be populated by JavaScript -->
+        </div>
+        
+        <hr style="margin: 30px 0; opacity: 0.3;">
+        
+        <h3>除錯工具</h3>
+        <a href="/network-info" class="debug-link">網路資訊</a>
+        <a href="/mobile-debug" class="debug-link">除錯頁面</a>
+    </div>
+
+    <script>
+        // Get current host and generate proper HTTP links
+        const host = window.location.host;
+        const protocol = 'http:'; // Force HTTP
+        
+        const linksContainer = document.getElementById('links');
+        
+        // Main mobile link
+        const mobileLink = document.createElement('a');
+        mobileLink.href = `${protocol}//${host}/mobile`;
+        mobileLink.className = 'link';
+        mobileLink.textContent = '📱 加入遊戲';
+        
+        // Team-specific links (if team parameter exists)
+        const urlParams = new URLSearchParams(window.location.search);
+        const team = urlParams.get('team');
+        
+        if (team) {
+            const teamLink = document.createElement('a');
+            teamLink.href = `${protocol}//${host}/mobile?team=${team}`;
+            teamLink.className = 'link';
+            teamLink.textContent = `👥 加入隊伍 ${team}`;
+            linksContainer.appendChild(teamLink);
+        } else {
+            linksContainer.appendChild(mobileLink);
+        }
+        
+        // Add host info
+        const info = document.createElement('p');
+        info.innerHTML = `<small>目前主機: ${host}<br>協定: ${window.location.protocol}</small>`;
+        info.style.marginTop = '20px';
+        info.style.opacity = '0.8';
+        linksContainer.appendChild(info);
+        
+        // Debug info
+        console.log('Current URL:', window.location.href);
+        console.log('Protocol:', window.location.protocol);
+        console.log('Host:', window.location.host);
+    </script>
+</body>
+</html>
