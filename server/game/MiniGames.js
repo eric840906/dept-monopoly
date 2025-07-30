@@ -53,69 +53,75 @@ class MiniGameProcessor {
         question: '請問 OneAD 集團裡有幾個 UI/UX 設計師？',
         options: ['8', '3', '1', '5'],
         correct: 2,
-        explanation: '答案是1個，你現在知道了',
+        explanation: '',
+      },
+      {
+        question: '請問 OneAD 集團裡有幾個 QA？',
+        options: ['5', '3', '2', '4'],
+        correct: 2,
+        explanation: '',
       },
       {
         question: 'IAS 量測目前不支援什麼環境量測？',
         options: ['Desktop', 'Mobile', 'APP', 'Instream'],
         correct: 2,
-        explanation: 'IAS 量測目前不支援 APP 環境量測',
+        explanation: '',
         // No image for this question
       },
       {
         question: '以下 Studio 圖片示意是那個格式？',
         options: ['MIB Flash', 'MIB Flash Location', 'MIB Location', 'MIB Location Video'],
         correct: 1,
-        explanation: '哈哈，這是 MIB Flash Location 啦！',
+        explanation: '',
         image: '/images/quiz/mib_flash_location_door_video.svg', // Optional image
       },
       {
         question: '媒體部署 OneAD Player SDK 有哪些方式？',
         options: ['直接部署', '透過 GAM 部署', '媒體 Server 部署', '以上皆是'],
         correct: 3,
-        explanation: '哈哈，三種都行啦！',
+        explanation: '',
       },
       {
         question: 'MTO 不會跟哪部門直接合作？',
         options: ['AOE', 'BAO', 'Sales', 'Creative Center'],
         correct: 2,
-        explanation: '你現在知道了吧',
+        explanation: '',
       },
       {
-        question: 'One-Pixel 的用意是什麼？',
-        options: ['一份文件', '一張圖片', '一個紀錄', '一種使命'],
-        correct: 2,
-        explanation: '你現在知道了吧',
+        question: 'MTO 全名是什麼？',
+        options: ['Marketing Technology Office', 'Media Transmission Optimization', 'Multimedia Tech Operations', 'Media Tech Operation'],
+        correct: 3,
+        explanation: '',
       },
       {
         question: '新格式是？',
         options: ['MTO 的一廂情願', 'PM, 創意, MTO 的協作成果', '自我實現的產物', '為了美化媒體網站'],
         correct: 1,
-        explanation: '答案是「PM, 創意, MTO 的協作成果」，你現在知道了吧',
+        explanation: '',
       },
       {
         question: '下列何者不是 MTO 工作內容？',
         options: ['開發新格式 ', '媒體客製化', '檢查追蹤碼', '廣告追蹤碼埋設'],
         correct: 3,
-        explanation: '答案是「廣告追蹤碼埋設」，你現在知道了吧',
+        explanation: '',
       },
       {
         question: '誰是 MTO 最資深員工？',
         options: ['Eric', 'Sam', 'Tobey', 'Baird'],
         correct: 1,
-        explanation: '答案是「Sam」，你現在知道了吧',
+        explanation: '',
       },
       {
         question: 'MTO 平日最愛系統？',
         options: ['ODM', 'Studio', 'ERP', '以上皆是'],
         correct: 3,
-        explanation: '答案是「以上皆是」，你現在知道了吧',
+        explanation: '',
       },
       {
         question: '以下同事誰沒待過 MTO？',
-        options: ['Zack', 'Ryan', 'Zone', 'Rocco'],
+        options: ['江乾輔', '孟慶泰', '陳坤鐘', '簡福仁 '],
         correct: 3,
-        explanation: '答案是「Rocco」，你現在知道了吧',
+        explanation: '',
       },
     ]
 
@@ -132,24 +138,19 @@ class MiniGameProcessor {
     const workflows = [
       {
         title: '格式開發流程',
-        correctOrder: ['技術可行性討論', 'UI/UX 設計', 'Kick off 產品', '排程開發', '裝置環境測試', '媒體投放測試'],
-        description: '請按格式開發的正確順序排列',
+        correctOrder: ['共同討論需求可行性', 'UI/UX 視覺設計', 'Developer 開發', 'QA 團隊測試'],
+        description: '請按正確順序排列',
       },
       {
-        title: '第 3 方追蹤碼部署流程',
+        title: 'OnePixel 部署流程',
         correctOrder: ['kanban 接收需求', '檢視部署方案', '執行部署與檢查'],
-        description: '請按照第 3 方追蹤碼部署的流程排列',
+        description: '請按正確順序排列',
       },
-      //   {
-      //     title: '產品設計流程',
-      //     correctOrder: ['市場調研', '用戶分析', '原型設計', '測試驗證', '迭代優化', '產品發布'],
-      //     description: '請按照產品設計的完整流程排列',
-      //   },
-      //   {
-      //     title: '問題解決流程',
-      //     correctOrder: ['問題識別', '原因分析', '方案制定', '方案執行', '效果評估'],
-      //     description: '請按照問題解決的科學方法排列',
-      //   },
+      {
+        title: '媒體廣告投放異常',
+        correctOrder: ['定義問題', '共同討論解決方案', '排入工作修正', 'QA 團隊測試', '回報修正'],
+        description: '請按照產品設計的完整流程排列',
+      },
     ]
 
     const selectedWorkflow = workflows[Math.floor(Math.random() * workflows.length)]
@@ -241,6 +242,27 @@ class MiniGameProcessor {
         falseEmoji: '❌',
       },
       {
+        question: 'MTO 全名是 Media Technology Office',
+        answer: false,
+        explanation: '',
+        trueEmoji: '⭕',
+        falseEmoji: '❌',
+      },
+      {
+        question: 'MTO 全名是 Multimedia Tech Operations',
+        answer: false,
+        explanation: '',
+        trueEmoji: '⭕',
+        falseEmoji: '❌',
+      },
+      {
+        question: 'MTO 全名是 Media Tech Operation',
+        answer: true,
+        explanation: '',
+        trueEmoji: '⭕',
+        falseEmoji: '❌',
+      },
+      {
         question: 'MTO 最常使用的系統測試機是 rd-odm',
         answer: false,
         explanation: '',
@@ -264,7 +286,7 @@ class MiniGameProcessor {
       {
         question: '客戶的需求永遠是正確的',
         answer: false,
-        explanation: '客戶需求有時需要專業建議來引導到更好的解決方案',
+        explanation: '客戶的需求可能需要調整和優化',
         trueEmoji: '⭕',
         falseEmoji: '❌',
       },
