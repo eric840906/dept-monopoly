@@ -808,10 +808,13 @@ class GameManager {
 
     this.gameState.winner = winner
 
+    // Sort teams by score in descending order for leaderboard
+    const sortedTeams = [...this.gameState.teams].sort((a, b) => b.score - a.score)
+    
     this.io.emit(SOCKET_EVENTS.GAME_END, {
       reason,
       winner,
-      finalScores: this.gameState.teams.map((t) => ({
+      finalScores: sortedTeams.map((t) => ({
         teamId: t.id,
         name: t.name,
         score: t.score,
