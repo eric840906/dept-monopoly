@@ -19,6 +19,7 @@ class MobileGameApp {
     
     this.setupSocket()
     this.setupEventListeners()
+    this.setupEventDelegation()
     this.showScreen('loadingScreen')
 
     // Prevent zoom on double tap
@@ -34,6 +35,40 @@ class MobileGameApp {
       },
       false
     )
+  }
+
+  setupEventDelegation() {
+    // Handle all data-action clicks through event delegation
+    document.addEventListener('click', (event) => {
+      const target = event.target
+      const action = target.getAttribute('data-action')
+      
+      if (!action) return
+      
+      // Prevent default behavior
+      event.preventDefault()
+      
+      switch (action) {
+        case 'close-overlay':
+          // Find the overlay element and remove it
+          const overlay = target.closest('.overlay')
+          if (overlay) {
+            overlay.remove()
+          } else {
+            // Fallback: try to find parent elements
+            let parent = target.parentElement
+            while (parent && !parent.classList.contains('overlay')) {
+              parent = parent.parentElement
+            }
+            if (parent) {
+              parent.remove()
+            }
+          }
+          break
+        default:
+          console.warn('Unknown mobile action:', action)
+      }
+    })
   }
 
   setupSocket() {
@@ -1214,7 +1249,7 @@ class MobileGameApp {
             新分數: ${newScore}
           </div>
         </div>
-        <button class="close-btn" onclick="this.parentElement.parentElement.remove()">
+        <button class="close-btn" data-action="close-overlay">
           確認
         </button>
       </div>
@@ -1371,7 +1406,7 @@ class MobileGameApp {
             新分數: ${newScore}
           </div>
         </div>
-        <button class="close-btn" onclick="this.parentElement.parentElement.remove()">
+        <button class="close-btn" data-action="close-overlay">
           接受命運
         </button>
       </div>

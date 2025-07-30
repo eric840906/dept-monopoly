@@ -8,6 +8,7 @@ class HostControls {
 
     if (this.isHost) {
       this.setupHostInterface()
+      this.setupEventDelegation()
     }
   }
 
@@ -15,7 +16,13 @@ class HostControls {
     // Add host indicator to title
     const gameTitle = document.getElementById('gameTitle')
     if (gameTitle) {
-      gameTitle.innerHTML = '🎯 MTO 體驗營 <span style="color: #f39c12;">[主持人模式]</span>'
+      gameTitle.textContent = '🎯 MTO 體驗營 [主持人模式]'
+      // Apply styling safely
+      const hostSpan = document.createElement('span')
+      hostSpan.style.color = '#f39c12'
+      hostSpan.textContent = '[主持人模式]'
+      gameTitle.innerHTML = '🎯 MTO 體驗營 '
+      gameTitle.appendChild(hostSpan)
     }
 
     // Setup host control handlers
@@ -66,7 +73,7 @@ class HostControls {
                 <div class="panel-content">
                     <div class="panel-header">
                         <h3>⚙️ 進階主持人控制</h3>
-                        <button class="close-btn" onclick="this.closest('.advanced-panel').classList.add('hidden')">×</button>
+                        <button class="close-btn" data-action="close-panel">×</button>
                     </div>
 
                     <div class="panel-section">
@@ -74,12 +81,12 @@ class HostControls {
                         <div class="control-group">
                             <label>回合時間限制 (秒):</label>
                             <input type="number" id="turnTimeLimit" value="90" min="30" max="300">
-                            <button class="apply-btn" onclick="window.gameApp.hostControls.updateTurnTime()">套用</button>
+                            <button class="apply-btn" data-action="update-turn-time">套用</button>
                         </div>
                         <div class="control-group">
                             <label>最大回合數:</label>
                             <input type="number" id="maxRounds" value="15" min="5" max="30">
-                            <button class="apply-btn" onclick="window.gameApp.hostControls.updateMaxRounds()">套用</button>
+                            <button class="apply-btn" data-action="update-max-rounds">套用</button>
                         </div>
                     </div>
 
@@ -98,20 +105,20 @@ class HostControls {
                             </select>
                             <input type="number" id="scoreAdjustment" placeholder="積分變化" step="5">
                             <input type="text" id="adjustmentReason" placeholder="調整原因">
-                            <button class="apply-btn" onclick="window.gameApp.hostControls.adjustScore()">調整積分</button>
+                            <button class="apply-btn" data-action="adjust-score">調整積分</button>
                         </div>
                     </div>
 
                     <div class="panel-section">
                         <h4>遊戲狀態</h4>
                         <div class="control-group">
-                            <button class="action-btn pause-btn" onclick="window.gameApp.hostControls.pauseGame()">
+                            <button class="action-btn pause-btn" data-action="pause-game">
                                 ⏸️ 暫停遊戲
                             </button>
-                            <button class="action-btn resume-btn" onclick="window.gameApp.hostControls.resumeGame()">
+                            <button class="action-btn resume-btn" data-action="resume-game">
                                 ▶️ 繼續遊戲
                             </button>
-                            <button class="action-btn reset-btn" onclick="window.gameApp.hostControls.resetGame()">
+                            <button class="action-btn reset-btn" data-action="reset-game">
                                 🔄 重置遊戲
                             </button>
                         </div>
@@ -129,6 +136,48 @@ class HostControls {
 
     document.body.appendChild(panel)
     this.addPanelStyles()
+  }
+
+  setupEventDelegation() {
+    // Handle all data-action clicks through event delegation
+    document.addEventListener('click', (event) => {
+      const target = event.target
+      const action = target.getAttribute('data-action')
+      
+      if (!action) return
+      
+      // Prevent default behavior
+      event.preventDefault()
+      
+      switch (action) {
+        case 'close-panel':
+          target.closest('.advanced-panel').classList.add('hidden')
+          break
+        case 'close-modal':
+          target.closest('.team-creation-modal').remove()
+          break
+        case 'update-turn-time':
+          this.updateTurnTime()
+          break
+        case 'update-max-rounds':
+          this.updateMaxRounds()
+          break
+        case 'adjust-score':
+          this.adjustScore()
+          break
+        case 'pause-game':
+          this.pauseGame()
+          break
+        case 'resume-game':
+          this.resumeGame()
+          break
+        case 'reset-game':
+          this.resetGame()
+          break
+        default:
+          console.warn('Unknown action:', action)
+      }
+    })
   }
 
   showAdvancedPanel() {
@@ -156,34 +205,88 @@ class HostControls {
     const container = document.getElementById('teamManagement')
     if (!container || !this.currentGameState.teams) return
 
-    container.innerHTML = this.currentGameState.teams
-      .map(
-        (team) => `
-            <div class="team-control" data-team-id="${team.id}">
-                <div class="team-info">
-                    <span class="team-emoji">${team.emoji}</span>
-                    <span class="team-name">${team.name || '隊伍 ' + team.id.split('_')[1]}</span>
-                    <span class="member-count">(${team.members.length} 人)</span>
-                </div>
-                <div class="team-actions">
-                    <button class="mini-btn" onclick="window.gameApp.hostControls.moveTeam('${team.id}', -1)">←</button>
-                    <span class="position">位置: ${team.position || 0}</span>
-                    <button class="mini-btn" onclick="window.gameApp.hostControls.moveTeam('${team.id}', 1)">→</button>
-                    <button class="mini-btn eliminate-btn" onclick="window.gameApp.hostControls.toggleElimination('${team.id}')">
-                        ${team.isEliminated ? '復活' : '淘汰'}
-                    </button>
-                </div>
-            </div>
-        `
-      )
-      .join('')
+    // Clear container first
+    container.innerHTML = ''
+    
+    // Create elements safely without innerHTML
+    this.currentGameState.teams.forEach((team) => {
+      const teamControl = document.createElement('div')
+      teamControl.className = 'team-control'
+      teamControl.dataset.teamId = team.id
+      
+      const teamInfo = document.createElement('div')
+      teamInfo.className = 'team-info'
+      
+      const emoji = document.createElement('span')
+      emoji.className = 'team-emoji'
+      emoji.textContent = team.emoji
+      
+      const name = document.createElement('span')
+      name.className = 'team-name'
+      name.textContent = team.name || '隊伍 ' + team.id.split('_')[1]
+      
+      const memberCount = document.createElement('span')
+      memberCount.className = 'member-count'
+      memberCount.textContent = `(${team.members.length} 人)`
+      
+      teamInfo.appendChild(emoji)
+      teamInfo.appendChild(name)
+      teamInfo.appendChild(memberCount)
+      
+      const teamActions = document.createElement('div')
+      teamActions.className = 'team-actions'
+      
+      const leftBtn = document.createElement('button')
+      leftBtn.className = 'mini-btn'
+      leftBtn.textContent = '←'
+      leftBtn.addEventListener('click', () => this.moveTeam(team.id, -1))
+      
+      const position = document.createElement('span')
+      position.className = 'position'
+      position.textContent = `位置: ${team.position || 0}`
+      
+      const rightBtn = document.createElement('button')
+      rightBtn.className = 'mini-btn'
+      rightBtn.textContent = '→'
+      rightBtn.addEventListener('click', () => this.moveTeam(team.id, 1))
+      
+      const eliminateBtn = document.createElement('button')
+      eliminateBtn.className = 'mini-btn eliminate-btn'
+      eliminateBtn.textContent = team.isEliminated ? '復活' : '淘汰'
+      eliminateBtn.addEventListener('click', () => this.toggleElimination(team.id))
+      
+      teamActions.appendChild(leftBtn)
+      teamActions.appendChild(position)
+      teamActions.appendChild(rightBtn)
+      teamActions.appendChild(eliminateBtn)
+      
+      teamControl.appendChild(teamInfo)
+      teamControl.appendChild(teamActions)
+      
+      container.appendChild(teamControl)
+    })
   }
 
   updateTeamSelector() {
     const selector = document.getElementById('targetTeam')
     if (!selector || !this.currentGameState.teams) return
 
-    selector.innerHTML = '<option value="">選擇隊伍...</option>' + this.currentGameState.teams.map((team) => `<option value="${team.id}">${team.emoji} ${team.name || '隊伍 ' + team.id.split('_')[1]}</option>`).join('')
+    // Clear selector first
+    selector.innerHTML = ''
+    
+    // Add default option
+    const defaultOption = document.createElement('option')
+    defaultOption.value = ''
+    defaultOption.textContent = '選擇隊伍...'
+    selector.appendChild(defaultOption)
+    
+    // Add team options safely
+    this.currentGameState.teams.forEach((team) => {
+      const option = document.createElement('option')
+      option.value = team.id
+      option.textContent = `${team.emoji} ${team.name || '隊伍 ' + team.id.split('_')[1]}`
+      selector.appendChild(option)
+    })
   }
 
   updateGameStats() {
@@ -194,28 +297,32 @@ class HostControls {
     const teamCount = this.currentGameState.teams.length
     const avgTeamSize = teamCount > 0 ? Math.round(playerCount / teamCount) : 0
 
-    container.innerHTML = `
-            <div class="stat-item">
-                <span>總玩家數:</span>
-                <span>${playerCount}</span>
-            </div>
-            <div class="stat-item">
-                <span>隊伍數量:</span>
-                <span>${teamCount}</span>
-            </div>
-            <div class="stat-item">
-                <span>平均隊伍大小:</span>
-                <span>${avgTeamSize} 人</span>
-            </div>
-            <div class="stat-item">
-                <span>當前回合:</span>
-                <span>${this.currentGameState.round || 1}</span>
-            </div>
-            <div class="stat-item">
-                <span>遊戲階段:</span>
-                <span>${this.getPhaseText(this.currentGameState.phase)}</span>
-            </div>
-        `
+    // Clear container first
+    container.innerHTML = ''
+    
+    // Create stat items safely
+    const stats = [
+      { label: '總玩家數:', value: playerCount },
+      { label: '隊伍數量:', value: teamCount },
+      { label: '平均隊伍大小:', value: `${avgTeamSize} 人` },
+      { label: '當前回合:', value: this.currentGameState.round || 1 },
+      { label: '遊戲階段:', value: this.getPhaseText(this.currentGameState.phase) }
+    ]
+    
+    stats.forEach(stat => {
+      const statItem = document.createElement('div')
+      statItem.className = 'stat-item'
+      
+      const label = document.createElement('span')
+      label.textContent = stat.label
+      
+      const value = document.createElement('span')
+      value.textContent = stat.value
+      
+      statItem.appendChild(label)
+      statItem.appendChild(value)
+      container.appendChild(statItem)
+    })
   }
 
   getPhaseText(phase) {
@@ -241,7 +348,7 @@ class HostControls {
         <div class="modal-content">
           <div class="modal-header">
             <h3>🏆 隊伍 QR 碼</h3>
-            <button class="close-btn" onclick="this.closest('.team-creation-modal').remove()">×</button>
+            <button class="close-btn" data-action="close-modal">×</button>
           </div>
           <div class="modal-body">
             <div class="teams-info">
@@ -279,62 +386,161 @@ class HostControls {
       return
     }
     
-    container.innerHTML = this.currentGameState.teams.map(team => `
-      <div class="team-item">
-        <div class="team-info">
-          <div class="team-name">
-            ${team.image ? 
-              `<img src="${team.image}" alt="${team.name}" style="width: 24px; height: 24px; margin-right: 8px; vertical-align: middle;">` :
-              `<span style="color: ${team.color};">${team.emoji}</span>`
-            }
-            <strong>${team.name}</strong>
-            <span class="member-count">(${team.members.length} 人)</span>
-          </div>
-          <div class="team-url">
-            <small>加入連結: <a href="${team.joinUrl}" target="_blank">${team.joinUrl}</a></small>
-          </div>
-        </div>
-        <div class="team-actions">
-          <button class="qr-btn" onclick="window.gameApp.hostControls.showQRCode('${team.id}', '${team.joinUrl}', '${team.name}')">
-            📱 QR 碼
-          </button>
-          <button class="copy-btn" onclick="window.gameApp.hostControls.copyURL('${team.joinUrl}')">
-            📋 複製連結
-          </button>
-        </div>
-      </div>
-    `).join('')
+    // Clear container first
+    container.innerHTML = ''
+    
+    // Create team items safely
+    this.currentGameState.teams.forEach(team => {
+      const teamItem = document.createElement('div')
+      teamItem.className = 'team-item'
+      
+      const teamInfo = document.createElement('div')
+      teamInfo.className = 'team-info'
+      
+      const teamName = document.createElement('div')
+      teamName.className = 'team-name'
+      
+      if (team.image) {
+        const img = document.createElement('img')
+        img.src = team.image
+        img.alt = team.name
+        img.style.cssText = 'width: 24px; height: 24px; margin-right: 8px; vertical-align: middle;'
+        teamName.appendChild(img)
+      } else {
+        const emoji = document.createElement('span')
+        emoji.style.color = team.color
+        emoji.textContent = team.emoji
+        teamName.appendChild(emoji)
+      }
+      
+      const nameStrong = document.createElement('strong')
+      nameStrong.textContent = team.name
+      teamName.appendChild(nameStrong)
+      
+      const memberCount = document.createElement('span')
+      memberCount.className = 'member-count'
+      memberCount.textContent = `(${team.members.length} 人)`
+      teamName.appendChild(memberCount)
+      
+      const teamUrl = document.createElement('div')
+      teamUrl.className = 'team-url'
+      
+      const small = document.createElement('small')
+      small.textContent = '加入連結: '
+      
+      const link = document.createElement('a')
+      link.href = team.joinUrl
+      link.target = '_blank'
+      link.textContent = team.joinUrl
+      
+      small.appendChild(link)
+      teamUrl.appendChild(small)
+      
+      teamInfo.appendChild(teamName)
+      teamInfo.appendChild(teamUrl)
+      
+      const teamActions = document.createElement('div')
+      teamActions.className = 'team-actions'
+      
+      const qrBtn = document.createElement('button')
+      qrBtn.className = 'qr-btn'
+      qrBtn.textContent = '📱 QR 碼'
+      qrBtn.addEventListener('click', () => this.showQRCode(team.id, team.joinUrl, team.name))
+      
+      const copyBtn = document.createElement('button')
+      copyBtn.className = 'copy-btn'
+      copyBtn.textContent = '📋 複製連結'
+      copyBtn.addEventListener('click', () => this.copyURL(team.joinUrl))
+      
+      teamActions.appendChild(qrBtn)
+      teamActions.appendChild(copyBtn)
+      
+      teamItem.appendChild(teamInfo)
+      teamItem.appendChild(teamActions)
+      
+      container.appendChild(teamItem)
+    })
   }
 
   showQRCode(teamId, joinUrl, teamName) {
-    // For now, show URL - will implement QR generation later
+    // Create QR modal safely without innerHTML
     const qrModal = document.createElement('div')
     qrModal.className = 'qr-modal'
-    qrModal.innerHTML = `
-      <div class="modal-overlay">
-        <div class="modal-content qr-content">
-          <div class="modal-header">
-            <h3>📱 ${teamName} QR 碼</h3>
-            <button class="close-btn" onclick="this.closest('.qr-modal').remove()">×</button>
-          </div>
-          <div class="modal-body">
-            <div class="qr-display">
-              <div class="qr-placeholder">
-                <div style="font-size: 48px; margin-bottom: 20px;">📱</div>
-                <p>QR 碼生成功能即將推出</p>
-                <p>目前請使用以下連結:</p>
-                <div class="url-display">
-                  <input type="text" value="${joinUrl}" readonly onclick="this.select()">
-                  <button onclick="navigator.clipboard.writeText('${joinUrl}').then(() => alert('已複製到剪貼板!'))">
-                    📋 複製
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `
+    
+    const modalOverlay = document.createElement('div')
+    modalOverlay.className = 'modal-overlay'
+    
+    const modalContent = document.createElement('div')
+    modalContent.className = 'modal-content qr-content'
+    
+    const modalHeader = document.createElement('div')
+    modalHeader.className = 'modal-header'
+    
+    const title = document.createElement('h3')
+    title.textContent = `📱 ${teamName} QR 碼`
+    
+    const closeBtn = document.createElement('button')
+    closeBtn.className = 'close-btn'
+    closeBtn.textContent = '×'
+    closeBtn.addEventListener('click', () => qrModal.remove())
+    
+    modalHeader.appendChild(title)
+    modalHeader.appendChild(closeBtn)
+    
+    const modalBody = document.createElement('div')
+    modalBody.className = 'modal-body'
+    
+    const qrDisplay = document.createElement('div')
+    qrDisplay.className = 'qr-display'
+    
+    const qrPlaceholder = document.createElement('div')
+    qrPlaceholder.className = 'qr-placeholder'
+    
+    const icon = document.createElement('div')
+    icon.style.cssText = 'font-size: 48px; margin-bottom: 20px;'
+    icon.textContent = '📱'
+    
+    const p1 = document.createElement('p')
+    p1.textContent = 'QR 碼生成功能即將推出'
+    
+    const p2 = document.createElement('p')
+    p2.textContent = '目前請使用以下連結:'
+    
+    const urlDisplay = document.createElement('div')
+    urlDisplay.className = 'url-display'
+    
+    const input = document.createElement('input')
+    input.type = 'text'
+    input.value = joinUrl
+    input.readOnly = true
+    input.addEventListener('click', () => input.select())
+    
+    const copyButton = document.createElement('button')
+    copyButton.textContent = '📋 複製'
+    copyButton.addEventListener('click', () => {
+      navigator.clipboard.writeText(joinUrl).then(() => {
+        alert('已複製到剪貼板!')
+      }).catch(() => {
+        alert('複製失敗，請手動複製')
+      })
+    })
+    
+    urlDisplay.appendChild(input)
+    urlDisplay.appendChild(copyButton)
+    
+    qrPlaceholder.appendChild(icon)
+    qrPlaceholder.appendChild(p1)
+    qrPlaceholder.appendChild(p2)
+    qrPlaceholder.appendChild(urlDisplay)
+    
+    qrDisplay.appendChild(qrPlaceholder)
+    modalBody.appendChild(qrDisplay)
+    
+    modalContent.appendChild(modalHeader)
+    modalContent.appendChild(modalBody)
+    modalOverlay.appendChild(modalContent)
+    qrModal.appendChild(modalOverlay)
+    
     document.body.appendChild(qrModal)
   }
 

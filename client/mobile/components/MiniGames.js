@@ -5,8 +5,23 @@ window.MiniGames = {
   gameContainer: null,
   socket: null,
   teamId: null,
+  
+  // Initialize error handlers
+  init() {
+    // Handle image load errors globally
+    document.addEventListener('error', (event) => {
+      if (event.target.tagName === 'IMG' && event.target.hasAttribute('data-fallback')) {
+        event.target.style.display = 'none'
+      }
+    }, true)
+  },
 
   load(gameData, container, socket, teamId, playerId, onReadyCallback, isCaptain = true) {
+    // Initialize error handlers if not already done
+    if (!this.initialized) {
+      this.init()
+      this.initialized = true
+    }
     // Stop any existing timer first
     this.stopTimer()
 
@@ -270,7 +285,7 @@ window.MiniGames = {
                     : ''
                 }
                 <div class="question-text">${question.question}</div>
-                ${question.image ? `<img src="${question.image}" alt="Quiz Image" class="question-image" onerror="this.style.display='none'">` : ''}
+                ${question.image ? `<img src="${question.image}" alt="Quiz Image" class="question-image" data-fallback="true">` : ''}
                 <div class="options-container">
                     ${question.options
                       .map(
