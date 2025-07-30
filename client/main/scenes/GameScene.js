@@ -2117,6 +2117,12 @@ class GameScene extends Phaser.Scene {
         onComplete: () => {
           this.leaderboardElements.forEach((element) => element.destroy())
           this.leaderboardElements = null
+          
+          // Automatically reset the game after leaderboard closes
+          console.log('Automatically resetting game after leaderboard close')
+          if (window.gameApp && window.gameApp.hostControls && window.gameApp.isHost) {
+            window.gameApp.hostControls.sendHostControl({ action: 'reset_game' })
+          }
         },
       })
     }

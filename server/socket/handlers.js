@@ -338,7 +338,11 @@ function setupSocketHandlers(io, gameManager) {
         }
 
         // Add host authorization for all other actions
-        if (!authorizeHost(socket)) {
+        // Check both socket handshake and message payload for token
+        const isAuthorizedViaSocket = authorizeHost(socket)
+        const isAuthorizedViaPayload = data.token && data.token === process.env.HOST_TOKEN
+        
+        if (!isAuthorizedViaSocket && !isAuthorizedViaPayload) {
           socket.emit(SOCKET_EVENTS.ERROR, { message: '未授權的主持人操作' })
           return
         }

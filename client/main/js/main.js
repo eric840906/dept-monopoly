@@ -145,8 +145,6 @@ class GameApp {
       if (this.game && this.game.scene.getScene('GameScene')) {
         this.game.scene.getScene('GameScene').handleGameEnd(data)
       }
-      // Also update the basic HTML display as fallback
-      this.showGameEndScreen(data)
     })
 
     // Error handling
@@ -342,26 +340,6 @@ class GameApp {
     mobileUrlElement.textContent = `${baseUrl}/mobile`
   }
 
-  showGameEndScreen(data) {
-    const gameStatus = document.getElementById('gameStatus')
-
-    if (data.winner) {
-      gameStatus.innerHTML = `
-                <div style="text-align: center;">
-                    <h2>遊戲結束！</h2>
-                    <p>獲勝隊伍: ${data.winner.image ? `<img src="${data.winner.image}" alt="${data.winner.name}" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 8px;">` : data.winner.emoji} ${data.winner.name || '隊伍 ' + data.winner.id.split('_')[1]}</p>
-                    <p>最終分數: ${data.winner.score} 分</p>
-                </div>
-            `
-    } else {
-      gameStatus.innerHTML = `
-                <div style="text-align: center;">
-                    <h2>🏁 遊戲結束！</h2>
-                    <p>遊戲因為 ${data.reason === 'no_teams_remaining' ? '沒有隊伍' : '其他原因'} 而結束</p>
-                </div>
-            `
-    }
-  }
 
   cleanupModals() {
     console.log('Cleaning up modals after game reset')

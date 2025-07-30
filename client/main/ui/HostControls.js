@@ -1077,9 +1077,5 @@ class HostControls {
   }
 }
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.gameApp) {
-    window.gameApp.hostControls = new HostControls(window.gameApp)
-  }
-})
+// HostControls is now initialized in main.js after host authentication
+// No need for automatic initialization here
