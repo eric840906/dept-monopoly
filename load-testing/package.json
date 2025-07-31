@@ -10,6 +10,10 @@
     "test:mobile": "node mobile/mobile-device-simulator.js",
     "test:scenarios": "node scenarios/game-scenario-simulator.js",
     "test:socket": "node scripts/socket-load-tester.js",
+    "test:websocket-fixes": "jest __tests__/",
+    "test:captain-validation": "jest __tests__/mobile-captain-validation.test.js",
+    "test:game-transitions": "jest __tests__/gamemanager-transitions.test.js",
+    "test:websocket-integration": "jest __tests__/websocket-integration.test.js",
     "monitor": "node monitoring/performance-monitor.js",
     "help": "node master-test-runner.js --help"
   },
@@ -27,6 +31,11 @@
     "axios": "^1.11.0",
     "node-fetch": "^2.7.0",
     "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "@jest/globals": "^29.7.0"
   },
   "engines": {
     "node": ">=14.0.0"

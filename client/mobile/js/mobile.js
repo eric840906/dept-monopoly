@@ -10,6 +10,9 @@ class MobileGameApp {
     this.targetTeamId = null
     this.modalCount = 0 // Track active modals
     this.diceButtonDisabled = false // Track dice button state
+    this.lastActionAttempt = 0 // Track last action attempt for debouncing
+    this.actionsDisabled = false // Track if actions are temporarily disabled
+    this.disableActionsTimer = null // Timer for temporarily disabling actions
     
     // Connection management
     this.reconnectAttempts = 0
@@ -88,6 +91,19 @@ class MobileGameApp {
           break
         default:
           console.warn('Unknown mobile action:', action)
+      }
+    })
+
+    // Enhanced error handling for socket errors
+    document.addEventListener('socket-validation-error', (event) => {
+      const { reason, message } = event.detail
+      
+      if (reason === 'not_captain') {
+        this.showCaptainValidationError(message)
+      } else if (reason === 'wrong_turn') {
+        this.showTurnValidationError(message)
+      } else if (reason === 'transitioning') {
+        this.showTransitionWarning(message)
       }
     })
   }
@@ -264,6 +280,11 @@ class MobileGameApp {
       this.handleTurnEnd(data)
     })
 
+    this.socket.on('captain_change', (data) => {
+      console.log('Captain changed:', data)
+      this.handleCaptainChange(data)
+    })
+
     this.socket.on('dice_roll', (data) => {
       console.log('Dice rolled:', data)
       this.handleDiceRoll(data)
@@ -331,9 +352,27 @@ class MobileGameApp {
       this.showGameEnd(data)
     })
 
-    // Error handling
+    // Enhanced error handling with validation-specific responses
     this.socket.on('error', (error) => {
       console.error('Socket error:', error)
+      
+      // Enhanced handling for captain validation errors
+      if (error.reason) {
+        switch (error.reason) {
+          case 'not_captain':
+            this.showCaptainValidationError(error.message || '只有隊長可以執行此操作')
+            return
+          case 'wrong_turn':
+            this.showTurnValidationError(error.message || '不是您的隊伍回合')
+            return
+          case 'transitioning':
+            this.showTransitionWarning(error.message || '遊戲正在轉換狀態，請稍候')
+            return
+          case 'no_captain':
+            this.showCaptainValidationError(error.message || '隊伍尚未設定隊長')
+            return
+        }
+      }
       
       // If team joining failed, provide specific handling
       if (this.targetTeamId && error.message.includes('Team not found')) {
@@ -591,11 +630,15 @@ class MobileGameApp {
     const isMyTurn = this.gameState.currentTurnTeamId === this.teamData.id
     const isCaptain = this.teamData.currentCaptainId === this.playerData.id
     const isMoving = this.teamData.isMoving
+    const isTransitioning = this.gameState.isTransitioning || false
 
-    // Update turn status
+    // Update turn status with transition awareness
     const turnStatusEl = document.getElementById('turnStatus')
     if (turnStatusEl) {
-      if (isMyTurn) {
+      if (isTransitioning) {
+        turnStatusEl.textContent = '⏳ 回合切換中...'
+        turnStatusEl.style.color = '#f39c12'
+      } else if (isMyTurn) {
         if (isMoving) {
           turnStatusEl.textContent = '🎲 隊伍移動中...'
           turnStatusEl.style.color = '#e67e22'
@@ -627,8 +670,11 @@ class MobileGameApp {
       }
     }
 
-    // Show/hide interfaces based on turn, captain status, and movement state
-    if (isMyTurn && !isMoving && isCaptain) {
+    // Show/hide interfaces based on turn, captain status, movement state, and transitions
+    if (isTransitioning) {
+      this.showInterface('waitingInterface')
+      this.updateTransitionWaitingMessage()
+    } else if (isMyTurn && !isMoving && isCaptain) {
       this.showInterface('diceInterface')
     } else if (isMyTurn && !isMoving && !isCaptain) {
       this.showAdvisorDiceInterface()
@@ -636,20 +682,24 @@ class MobileGameApp {
       this.showInterface('waitingInterface')
     }
     
-    // Update dice button state
-    this.updateDiceButtonState(isMyTurn, isCaptain, isMoving)
+    // Update dice button state with transition awareness
+    this.updateDiceButtonState(isMyTurn, isCaptain, isMoving, isTransitioning)
   }
 
-  updateDiceButtonState(isMyTurn, isCaptain, isMoving) {
+  updateDiceButtonState(isMyTurn, isCaptain, isMoving, isTransitioning = false) {
     const rollBtn = document.getElementById('rollDiceBtn')
     if (!rollBtn || !isMyTurn || !isCaptain) return
 
-    if (isMoving || this.diceButtonDisabled || this.modalCount > 0) {
+    if (isTransitioning || isMoving || this.diceButtonDisabled || this.modalCount > 0 || this.actionsDisabled) {
       rollBtn.disabled = true
-      if (isMoving) {
+      if (isTransitioning) {
+        rollBtn.textContent = '回合切換中...'
+      } else if (isMoving) {
         rollBtn.textContent = '移動中...'
       } else if (this.modalCount > 0) {
         rollBtn.textContent = '等待確認...'
+      } else if (this.actionsDisabled) {
+        rollBtn.textContent = '等待狀態穩定...'
       } else {
         rollBtn.textContent = '處理中...'
       }
@@ -742,7 +792,40 @@ class MobileGameApp {
   }
 
   rollDice() {
-    if (!this.teamData || this.gameState.currentTurnTeamId !== this.teamData.id) {
+    // ENHANCED validation to prevent race condition bugs and invalid captain attempts
+    if (!this.teamData || !this.gameState || !this.playerData) {
+      console.log('Cannot roll dice - missing essential data')
+      return
+    }
+
+    // CRITICAL: Check if game is transitioning to prevent race conditions
+    if (this.gameState.isTransitioning) {
+      console.log('Cannot roll dice - game is transitioning between turns')
+      this.showTransitionWarning('遊戲正在切換回合，請稍後再試')
+      return
+    }
+
+    // Verify it's our team's turn with enhanced logging
+    const isMyTurn = this.gameState.currentTurnTeamId === this.teamData.id
+    if (!isMyTurn) {
+      console.log(`Cannot roll dice - not our team turn. Current turn: ${this.gameState.currentTurnTeamId}, Our team: ${this.teamData.id}`)
+      
+      // Show user-friendly error for wrong turn attempts
+      const currentTeam = this.gameState.teams.find(t => t.id === this.gameState.currentTurnTeamId)
+      const currentTeamName = currentTeam ? (currentTeam.name || `隊伍 ${currentTeam.id.split('_')[1]}`) : '其他隊伍'
+      this.showTurnValidationError(`現在是 ${currentTeamName} 的回合，請等待輪到您的隊伍`)
+      return
+    }
+
+    // CRITICAL FIX: Enhanced captain validation with state consistency check
+    const isCaptain = this.teamData.currentCaptainId === this.playerData.id
+    if (!isCaptain) {
+      console.log(`Cannot roll dice - not team captain. Current captain: ${this.teamData.currentCaptainId}, Player: ${this.playerData.id}`)
+      
+      // Find current captain name for user-friendly error
+      const currentCaptain = this.teamData.members.find(m => m.id === this.teamData.currentCaptainId)
+      const captainName = currentCaptain ? currentCaptain.nickname : '隊友'
+      this.showCaptainValidationError(`只有隊長 ${captainName} 可以擲骰子，請與隊長討論後由隊長操作`)
       return
     }
 
@@ -752,10 +835,19 @@ class MobileGameApp {
       return
     }
 
+    // Enhanced debouncing to prevent rapid attempts during state transitions
+    if (this.lastActionAttempt && Date.now() - this.lastActionAttempt < 2000) {
+      console.log('Cannot roll dice - too soon after last attempt, waiting for state to stabilize')
+      this.showTransitionWarning('操作過於頻繁，請等待狀態穩定後再試')
+      return
+    }
+    this.lastActionAttempt = Date.now()
+
     const rollBtn = document.getElementById('rollDiceBtn')
     rollBtn.disabled = true
     rollBtn.textContent = '擲骰中...'
 
+    console.log(`Rolling dice - Team: ${this.teamData.id}, Captain: ${this.playerData.id}`)
     this.socket.emit('dice_roll', { 
       teamId: this.teamData.id, 
       playerId: this.playerData.id 
@@ -772,8 +864,47 @@ class MobileGameApp {
     this.updateGameInterface()
   }
 
+  handleCaptainChange(data) {
+    console.log('Captain change event received:', data)
+    
+    // CRITICAL FIX: Ensure immediate state consistency to prevent race conditions
+    if (this.gameState) {
+      const team = this.gameState.teams.find(t => t.id === data.teamId)
+      if (team) {
+        // Update team's captain info immediately
+        team.currentCaptainId = data.captainId
+        console.log(`Updated team ${data.teamId} captain to ${data.captainName} (${data.captainId})`)
+        
+        // If this is our team, update local team data AND force interface refresh
+        if (this.teamData && this.teamData.id === data.teamId) {
+          console.log('Captain change affects our team, updating all references')
+          
+          // Update both references to prevent inconsistency
+          this.teamData.currentCaptainId = data.captainId
+          
+          // Clear any pending action attempts to prevent stale actions
+          this.lastActionAttempt = 0
+          
+          // ENHANCED: Disable actions temporarily during captain transition
+          this.disableActionsTemporarily('captain_change', 1000)
+          
+          // Force complete UI refresh to reflect captain change
+          this.updateGameInterface()
+          
+          // Show captain change notification to reduce confusion
+          this.showCaptainChangeNotification(data.captainName, data.captainId === this.playerData.id)
+          
+          // Additional logging for debugging
+          console.log(`Team ${data.teamId} captain updated - Player ${this.playerData.id} is ${this.playerData.id === data.captainId ? 'NOW CAPTAIN' : 'NOT CAPTAIN'}`)
+        }
+      }
+    }
+  }
+
   handleDiceRoll(data) {
-    if (data.teamId === this.teamData?.id) {
+    // Only show dice animation if this player initiated the roll
+    if (data.teamId === this.teamData?.id && data.initiatedBy === this.playerData?.id) {
+      console.log(`Showing dice animation for player ${this.playerData.id} who initiated the roll`)
       // Show animated dice roll
       this.showAnimatedDiceRoll(data.dice, data.total)
 
@@ -782,6 +913,8 @@ class MobileGameApp {
       setTimeout(() => {
         this.enableDiceButtonIfReady()
       }, 4000) // Wait for dice animation to complete first
+    } else if (data.teamId === this.teamData?.id) {
+      console.log(`Dice rolled by teammate ${data.initiatorName} (${data.initiatedBy}), not showing animation for this player`)
     }
 
     // Update team position
@@ -1741,6 +1874,19 @@ class MobileGameApp {
     // Reset modal count
     this.modalCount = 0
 
+    // Clear any action disable timers
+    if (this.disableActionsTimer) {
+      clearTimeout(this.disableActionsTimer)
+      this.disableActionsTimer = null
+    }
+    this.actionsDisabled = false
+
+    // Remove any validation error messages
+    const validationError = document.getElementById('validationError')
+    if (validationError) {
+      validationError.remove()
+    }
+
     // Re-enable dice button if it was disabled due to modals
     this.enableDiceButtonIfReady()
 
@@ -1881,6 +2027,160 @@ class MobileGameApp {
         successMsg.remove()
       }
     }, 3000)
+  }
+
+  // Helper methods for enhanced validation and error handling
+
+  disableActionsTemporarily(reason, duration = 1000) {
+    console.log(`Disabling actions temporarily for ${duration}ms due to: ${reason}`)
+    
+    this.actionsDisabled = true
+    
+    // Clear any existing timer
+    if (this.disableActionsTimer) {
+      clearTimeout(this.disableActionsTimer)
+    }
+    
+    // Set new timer to re-enable actions
+    this.disableActionsTimer = setTimeout(() => {
+      this.actionsDisabled = false
+      console.log('Actions re-enabled after temporary disable')
+      
+      // Refresh UI to reflect enabled state
+      if (this.gameState && this.teamData) {
+        this.updateGameInterface()
+      }
+    }, duration)
+  }
+
+  showTurnValidationError(message) {
+    this.showValidationError(message, 'turn-validation', 3000)
+  }
+
+  showCaptainValidationError(message) {
+    this.showValidationError(message, 'captain-validation', 4000)
+  }
+
+  showTransitionWarning(message) {
+    this.showValidationError(message, 'transition-warning', 2000)
+  }
+
+  showValidationError(message, type, duration = 3000) {
+    // Remove any existing validation error
+    const existingError = document.getElementById('validationError')
+    if (existingError) {
+      existingError.remove()
+    }
+
+    const errorEl = document.createElement('div')
+    errorEl.id = 'validationError'
+    errorEl.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(231, 76, 60, 0.95);
+      color: white;
+      padding: 20px 25px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 10001;
+      max-width: 80%;
+      text-align: center;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+      border: 2px solid rgba(255,255,255,0.2);
+      animation: errorShake 0.5s ease-in-out;
+    `
+
+    // Different colors for different types of validation errors
+    if (type === 'transition-warning') {
+      errorEl.style.background = 'rgba(243, 156, 18, 0.95)' // Orange for warnings
+    } else if (type === 'captain-validation') {
+      errorEl.style.background = 'rgba(155, 89, 182, 0.95)' // Purple for captain issues
+    }
+
+    errorEl.innerHTML = `
+      <div style="margin-bottom: 10px; font-size: 18px;">
+        ${type === 'transition-warning' ? '⚠️' : type === 'captain-validation' ? '👤' : '🚫'}
+      </div>
+      <div>${message}</div>
+    `
+
+    // Add shake animation CSS if not exists
+    if (!document.querySelector('#validationErrorAnimation')) {
+      const style = document.createElement('style')
+      style.id = 'validationErrorAnimation'
+      style.textContent = `
+        @keyframes errorShake {
+          0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+          25% { transform: translate(-50%, -50%) rotate(-2deg); }
+          75% { transform: translate(-50%, -50%) rotate(2deg); }
+        }
+      `
+      document.head.appendChild(style)
+    }
+
+    document.body.appendChild(errorEl)
+
+    // Auto-remove after duration
+    setTimeout(() => {
+      if (errorEl.parentElement) {
+        errorEl.remove()
+      }
+    }, duration)
+  }
+
+  showCaptainChangeNotification(captainName, isNowCaptain) {
+    const notificationEl = document.createElement('div')
+    notificationEl.style.cssText = `
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: ${isNowCaptain ? 'rgba(46, 204, 113, 0.95)' : 'rgba(52, 152, 219, 0.95)'};
+      color: white;
+      padding: 15px 20px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 1000;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      animation: slideDown 0.5s ease-out;
+    `
+
+    const message = isNowCaptain 
+      ? `🎯 您現在是隊長！` 
+      : `👤 隊長已變更為 ${captainName}`
+
+    notificationEl.innerHTML = message
+    document.body.appendChild(notificationEl)
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+      if (notificationEl.parentElement) {
+        notificationEl.remove()
+      }
+    }, 3000)
+  }
+
+  updateTransitionWaitingMessage() {
+    const waitingMessage = document.getElementById('waitingMessage')
+    if (waitingMessage) {
+      waitingMessage.innerHTML = `
+        <div style="text-align: center; padding: 20px;">
+          <h3 style="color: #f39c12; margin-bottom: 15px;">⏳ 回合切換中</h3>
+          <div style="background: rgba(243, 156, 18, 0.1); padding: 15px; border-radius: 8px; border: 2px solid rgba(243, 156, 18, 0.3);">
+            <div style="font-size: 16px; color: #f39c12; margin-bottom: 8px;">
+              🔄 系統正在處理回合轉換
+            </div>
+            <div style="font-size: 14px; color: #7f8c8d;">
+              請稍候，即將開始新回合
+            </div>
+          </div>
+        </div>
+      `
+    }
   }
 
   setupVisibilityHandling() {

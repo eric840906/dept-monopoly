@@ -245,16 +245,17 @@ function setupSocketHandlers(io, gameManager) {
         const sanitizedPlayerId = sanitizeString(playerId)
 
         // Validate that the player is the current captain
-        const isValidCaptain = gameManager.validateCaptainSubmission(sanitizedTeamId, sanitizedPlayerId)
-        if (!isValidCaptain) {
-          console.warn(`Non-captain player ${sanitizedPlayerId} attempted to roll dice for team ${sanitizedTeamId}`)
+        const captainValidation = gameManager.validateCaptainSubmission(sanitizedTeamId, sanitizedPlayerId)
+        if (!captainValidation.valid) {
+          console.warn(`Captain validation failed for player ${sanitizedPlayerId} in team ${sanitizedTeamId}: ${captainValidation.reason}`)
           socket.emit(SOCKET_EVENTS.ERROR, {
-            message: '只有隊長可以擲骰子，請與隊長討論後由隊長操作',
+            message: captainValidation.message,
+            reason: captainValidation.reason
           })
           return
         }
 
-        const result = gameManager.rollDice(sanitizedTeamId)
+        const result = gameManager.rollDice(sanitizedTeamId, sanitizedPlayerId)
         console.log(`Team ${sanitizedTeamId} captain ${sanitizedPlayerId} rolled: ${result.dice.join(', ')} (total: ${result.total})`)
       } catch (error) {
         socket.emit(SOCKET_EVENTS.ERROR, { message: error.message })
@@ -320,11 +321,12 @@ function setupSocketHandlers(io, gameManager) {
         }
 
         // Validate that the submitting player is the current captain
-        const isValidCaptain = gameManager.validateCaptainSubmission(sanitizedTeamId, sanitizedPlayerId)
-        if (!isValidCaptain) {
-          console.warn(`Non-captain player ${sanitizedPlayerId} attempted to submit for team ${sanitizedTeamId}`)
+        const captainValidation = gameManager.validateCaptainSubmission(sanitizedTeamId, sanitizedPlayerId)
+        if (!captainValidation.valid) {
+          console.warn(`Captain validation failed for player ${sanitizedPlayerId} in team ${sanitizedTeamId}: ${captainValidation.reason}`)
           socket.emit(SOCKET_EVENTS.ERROR, {
-            message: '只有隊長可以提交答案，請與隊長討論後由隊長提交',
+            message: captainValidation.message,
+            reason: captainValidation.reason
           })
           return
         }
@@ -334,8 +336,13 @@ function setupSocketHandlers(io, gameManager) {
       } catch (error) {
         console.error('Mini-game submission error:', error)
         socket.emit(SOCKET_EVENTS.ERROR, { message: error.message })
-        // End turn anyway to prevent game from getting stuck
-        gameManager.endTurn()
+        // Only end turn for non-validation errors to prevent cascading turn endings
+        if (!error.message.includes('隊長') && !error.message.includes('captain')) {
+          console.log('Ending turn due to non-validation error to prevent game from getting stuck')
+          gameManager.endTurn()
+        } else {
+          console.log('Validation error detected, not ending turn to prevent cascade')
+        }
       }
     })
 

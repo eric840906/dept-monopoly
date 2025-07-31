@@ -352,5 +352,35 @@ For issues with the load testing suite:
 4. Use debug mode for detailed troubleshooting information
 
 ---
+  # 1. Navigate to project directory
+  cd /mnt/d/ONEAD/dept-monopoly
 
+  # 2. Stop any existing server
+  pkill -f "node server/index.js" 2>/dev/null || true
+
+  # 3. Start server with load test configuration
+  HOST_TOKEN=default-host-token LOAD_TEST_MODE=true CONNECTION_LIMIT_PER_IP=200 npm start > server.log 2>&1 &
+
+  # 4. Wait for server to start
+  sleep 5
+
+  # 5. Navigate to load testing directory
+  cd load-testing
+
+  # 6. Reset game state (crucial step!)
+  HOST_TOKEN=default-host-token node reset-game.js
+
+  # 7. Run comprehensive load test
+  HOST_TOKEN=default-host-token node master-test-runner.js --targetPlayerCount 120 --testSuites comprehensive
+
+  🔧 For Individual Test Runs:
+
+  # Quick test (10 players)
+  HOST_TOKEN=default-host-token node reset-game.js && \
+  HOST_TOKEN=default-host-token node scripts/socket-load-tester.js --maxPlayers 10 --testDuration 30000
+
+  # Medium test (30 players)
+  HOST_TOKEN=default-host-token node reset-game.js && \
+  HOST_TOKEN=default-host-token node master-test-runner.js --targetPlayerCount 30 --testSuites comprehensive
+  
 *This load testing suite ensures Dept-Monopoly can handle real-world usage patterns and provides confidence for production deployment.*

@@ -112,6 +112,8 @@ const SOCKET_EVENTS = {
   DICE_ROLL: 'dice_roll',
   TURN_START: 'turn_start',
   TURN_END: 'turn_end',
+  TURN_TRANSITION_START: 'turn_transition_start',
+  CAPTAIN_CHANGE: 'captain_change',
   TIMER_UPDATE: 'timer_update',
 
   // Event tile events

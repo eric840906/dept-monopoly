@@ -10,6 +10,7 @@ class GameManager {
     this.gameTimer = null
     this.board = this.generateBoard()
     this.miniGameProcessor = new MiniGameProcessor()
+    this.isTransitioning = false // Track turn transition state to prevent race conditions
 
     // Auto-create predefined teams
     this.initializePredefinedTeams()
@@ -247,6 +248,14 @@ class GameManager {
       return
     }
 
+    // Prevent concurrent team transitions
+    if (this.isTransitioning) {
+      console.log('Team transition already in progress, ignoring duplicate skipToNextTeam call')
+      return
+    }
+
+    this.isTransitioning = true
+
     if (this.gameState.teams.length === 0) {
       // No teams left, end the game
       this.endGame('no_teams_remaining')
@@ -271,6 +280,16 @@ class GameManager {
     this.startTurnTimer()
 
     console.log(`Skipped to next team: ${this.gameState.currentTurnTeamId}`)
+
+    // Reset transition state after a brief delay to allow state synchronization
+    setTimeout(() => {
+      this.isTransitioning = false
+      console.log('Team skip transition completed, actions now allowed')
+      
+      // CRITICAL FIX: Broadcast updated game state with isTransitioning = false
+      // This ensures mobile clients can exit the "回合切換中..." state after team skip
+      this.broadcastGameState()
+    }, 500) // 500ms delay for state sync
   }
 
   joinTeam(playerId, teamId) {
@@ -373,7 +392,7 @@ class GameManager {
     })
   }
 
-  rollDice(teamId) {
+  rollDice(teamId, playerId = null) {
     // Check if game has ended
     if (this.gameState.phase === GamePhase.ENDED) {
       throw new Error('遊戲已結束，無法擲骰子')
@@ -413,6 +432,9 @@ class GameManager {
 
     const landedTile = this.board[newPosition]
 
+    // Find the player who initiated the roll for better event targeting
+    const initiatingPlayer = playerId ? team.members.find(m => m.id === playerId) : null
+
     this.io.emit(SOCKET_EVENTS.DICE_ROLL, {
       teamId,
       dice: [dice1, dice2],
@@ -420,7 +442,11 @@ class GameManager {
       oldPosition,
       newPosition,
       landedTile,
+      initiatedBy: playerId, // Add player who initiated the roll
+      initiatorName: initiatingPlayer?.nickname || 'Unknown',
     })
+
+    console.log(`Team ${teamId} dice rolled by ${initiatingPlayer?.nickname || 'Unknown'} (${playerId}): ${dice1} + ${dice2} = ${total}`)
 
     // Broadcast updated game state with movement flag
     this.broadcastGameState()
@@ -567,6 +593,24 @@ class GameManager {
       return null
     }
 
+    // Validate current captain index and reset if needed
+    if (team.captainRotationIndex >= team.members.length) {
+      console.warn(`Captain rotation index ${team.captainRotationIndex} exceeds team size ${team.members.length}, resetting to 0`)
+      team.captainRotationIndex = 0
+    }
+
+    // If current captain is no longer in the team, find their new index or reset
+    if (team.currentCaptainId) {
+      const currentCaptainIndex = team.members.findIndex(m => m.id === team.currentCaptainId)
+      if (currentCaptainIndex === -1) {
+        console.warn(`Current captain ${team.currentCaptainId} not found in team, resetting rotation`)
+        team.captainRotationIndex = 0
+      } else if (currentCaptainIndex !== team.captainRotationIndex) {
+        // Update rotation index to match actual captain position
+        team.captainRotationIndex = currentCaptainIndex
+      }
+    }
+
     // Get current captain based on rotation index
     const captain = team.members[team.captainRotationIndex % team.members.length]
     team.currentCaptainId = captain.id
@@ -574,7 +618,8 @@ class GameManager {
     // Increment rotation index for next time
     team.captainRotationIndex = (team.captainRotationIndex + 1) % team.members.length
 
-    console.log(`Team ${teamId} captain rotated to: ${captain.nickname} (${captain.id})`)
+    console.log(`Team ${teamId} captain rotated to: ${captain.nickname} (${captain.id}) at index ${team.captainRotationIndex - 1}`)
+    console.log(`Next captain will be at index: ${team.captainRotationIndex} of ${team.members.length} members`)
     return captain
   }
 
@@ -633,21 +678,44 @@ class GameManager {
   }
 
   validateCaptainSubmission(teamId, playerId) {
+    // Prevent actions during turn transitions to avoid race conditions
+    if (this.isTransitioning) {
+      console.warn(`Captain validation blocked during turn transition for team ${teamId}, player ${playerId}`)
+      return { valid: false, reason: 'turn_transition', message: '正在切換回合，請稍等片刻再試' }
+    }
+
     const team = this.gameState.teams.find((t) => t.id === teamId)
     if (!team) {
       console.warn(`Team ${teamId} not found for captain validation`)
-      return false
+      return { valid: false, reason: 'team_not_found', message: '找不到隊伍' }
     }
 
     if (!team.currentCaptainId) {
       console.warn(`No captain set for team ${teamId}`)
-      return false
+      return { valid: false, reason: 'no_captain', message: '隊伍尚未設定隊長' }
+    }
+
+    // Verify the player is still a member of the team
+    const isTeamMember = team.members.some(member => member.id === playerId)
+    if (!isTeamMember) {
+      console.warn(`Player ${playerId} is not a member of team ${teamId}`)
+      return { valid: false, reason: 'not_team_member', message: '您不是該隊伍的成員' }
     }
 
     const isValidCaptain = team.currentCaptainId === playerId
     console.log(`Captain validation for team ${teamId}: player ${playerId} is ${isValidCaptain ? 'VALID' : 'INVALID'} captain (expected: ${team.currentCaptainId})`)
 
-    return isValidCaptain
+    if (!isValidCaptain) {
+      const currentCaptain = team.members.find(m => m.id === team.currentCaptainId)
+      const captainName = currentCaptain ? currentCaptain.nickname : '未知'
+      return { 
+        valid: false, 
+        reason: 'not_captain', 
+        message: `只有隊長 ${captainName} 可以執行此操作，請與隊長討論後由隊長操作` 
+      }
+    }
+
+    return { valid: true, reason: 'success', message: '驗證成功' }
   }
 
   processMiniGameSubmission(teamId, submission) {
@@ -702,7 +770,19 @@ class GameManager {
       return
     }
 
+    // Prevent concurrent turn transitions
+    if (this.isTransitioning) {
+      console.log('Turn transition already in progress, ignoring duplicate endTurn call')
+      return
+    }
+
+    this.isTransitioning = true
     this.clearTurnTimer()
+
+    // Notify clients that turn transition is starting
+    this.io.emit(SOCKET_EVENTS.TURN_TRANSITION_START, {
+      message: '正在切換回合，請稍等...'
+    })
 
     // Check if there are any teams left
     if (this.gameState.teams.length === 0) {
@@ -743,12 +823,33 @@ class GameManager {
     this.startTurnTimer()
     this.broadcastGameState()
 
-    this.io.emit(SOCKET_EVENTS.TURN_END, {
-      nextTeamId: this.gameState.currentTurnTeamId,
+    // Emit captain change event first to ensure clients get captain update
+    this.io.emit(SOCKET_EVENTS.CAPTAIN_CHANGE, {
+      teamId: this.gameState.currentTurnTeamId,
       captainId: captain?.id || null,
       captainName: captain?.nickname || 'Unknown',
       round: this.gameState.round,
     })
+
+    // Reset transition state BEFORE emitting turn end to prevent race conditions
+    setTimeout(() => {
+      this.isTransitioning = false
+      console.log('Turn transition completed, emitting TURN_END event')
+      
+      // CRITICAL FIX: Broadcast updated game state with isTransitioning = false
+      // This ensures mobile clients can exit the "回合切換中..." state
+      this.broadcastGameState()
+      
+      // Now emit turn end after transition is complete
+      this.io.emit(SOCKET_EVENTS.TURN_END, {
+        nextTeamId: this.gameState.currentTurnTeamId,
+        captainId: captain?.id || null,
+        captainName: captain?.nickname || 'Unknown',
+        round: this.gameState.round,
+      })
+      
+      console.log(`Round ${this.gameState.round} Turn transitioned to team ${this.gameState.currentTurnTeamId} with captain ${captain?.nickname}`)
+    }, 300) // Reduced delay but still allows for state sync
   }
 
   startTurnTimer() {
@@ -800,6 +901,7 @@ class GameManager {
 
   endGame(reason) {
     this.gameState.phase = GamePhase.ENDED
+    this.isTransitioning = false // Reset transition state when game ends
     this.clearTurnTimer()
 
     if (this.gameTimer) {
@@ -864,7 +966,12 @@ class GameManager {
 
   broadcastGameState() {
     if (this.io) {
-      this.io.emit(SOCKET_EVENTS.GAME_STATE_UPDATE, this.gameState)
+      // Include transition state in game state broadcasts to prevent race conditions
+      const gameStateWithTransition = {
+        ...this.gameState,
+        isTransitioning: this.isTransitioning
+      }
+      this.io.emit(SOCKET_EVENTS.GAME_STATE_UPDATE, gameStateWithTransition)
     }
   }
 

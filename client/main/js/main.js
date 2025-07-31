@@ -190,6 +190,12 @@ class GameApp {
       }
     })
 
+    this.socket.on('captain_change', (data) => {
+      console.log('Captain changed:', data)
+      // Update UI to reflect captain change
+      this.updateUI()
+    })
+
     // Error handling
     this.socket.on('error', (error) => {
       console.error('Socket error:', error)
