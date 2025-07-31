@@ -1,4 +1,5 @@
 node_modules
+results
 # Environment variables
 .env
 .env.local

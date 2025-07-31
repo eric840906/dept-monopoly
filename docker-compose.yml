@@ -24,21 +24,25 @@ services:
       - SOCKET_CONNECTION_TIMEOUT=${SOCKET_CONNECTION_TIMEOUT:-20000}
       - SOCKET_HEARTBEAT_TIMEOUT=${SOCKET_HEARTBEAT_TIMEOUT:-5000}
       - SOCKET_HEARTBEAT_INTERVAL=${SOCKET_HEARTBEAT_INTERVAL:-25000}
+      
+      # Load Testing Configuration
+      - LOAD_TEST_MODE=${LOAD_TEST_MODE:-false}
+      - CONNECTION_LIMIT_PER_IP=${CONNECTION_LIMIT_PER_IP:-200}
     volumes:
       # Mount logs directory for persistence (optional)
       - ./logs:/app/logs
     restart: unless-stopped
     networks:
       - dept-monopoly-network
-    # Resource limits for production
+    # Resource limits for production - scaled for 100-120 concurrent players
     deploy:
       resources:
         limits:
+          memory: 1G
+          cpus: '2.0'
+        reservations:
           memory: 512M
           cpus: '1.0'
-        reservations:
-          memory: 256M
-          cpus: '0.5'
 
 networks:
   dept-monopoly-network:

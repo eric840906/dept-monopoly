@@ -764,7 +764,7 @@ class GameManager {
         return
       }
 
-      this.gameState.turnTimer -= 1000
+      this.gameState.turnTimer -= 2000
 
       this.io.emit(SOCKET_EVENTS.TIMER_UPDATE, {
         timeLeft: this.gameState.turnTimer,
@@ -773,7 +773,7 @@ class GameManager {
       if (this.gameState.turnTimer <= 0) {
         this.endTurn()
       }
-    }, 1000)
+    }, 2000) // Reduced frequency from 1s to 2s to optimize network traffic
   }
 
   clearTurnTimer() {

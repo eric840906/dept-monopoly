@@ -27,15 +27,58 @@ class GameApp {
   }
 
   setupSocket() {
-    this.socket = io()
-
-    // Connection events
-    this.socket.on('connect', () => {
-      console.log('Connected to server')
+    console.log('🔌 Setting up socket connection...')
+    
+    this.socket = io({
+      // Enhanced connection settings for reliability
+      forceNew: false,
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 30000,
+      timeout: 20000,
+      transports: ['websocket', 'polling'],
+      upgrade: true,
     })
 
-    this.socket.on('disconnect', () => {
-      console.log('Disconnected from server')
+    // Enhanced connection events
+    this.socket.on('connect', () => {
+      console.log(`✅ Connected to server (Socket ID: ${this.socket.id})`)
+      this.updateConnectionStatus(true)
+    })
+
+    this.socket.on('disconnect', (reason) => {
+      console.log(`💔 Disconnected from server: ${reason}`)
+      this.updateConnectionStatus(false)
+      
+      if (reason !== 'io server disconnect' && reason !== 'io client disconnect') {
+        this.showConnectionLostIndicator()
+      }
+    })
+
+    this.socket.on('connect_error', (error) => {
+      console.error('❌ Connection error:', error)
+    })
+
+    this.socket.on('reconnect', (attemptNumber) => {
+      console.log(`🔄 Reconnected after ${attemptNumber} attempts`)
+      this.hideConnectionLostIndicator()
+      this.showReconnectionSuccess()
+    })
+
+    this.socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`🔄 Reconnection attempt ${attemptNumber}`)
+      this.updateConnectionStatus(false, `重新連接中... (${attemptNumber}/10)`)
+    })
+
+    this.socket.on('reconnect_failed', () => {
+      console.error('💀 All reconnection attempts failed')
+      this.updateConnectionStatus(false, '連接失敗')
+    })
+
+    // Server connection status updates
+    this.socket.on('connection_status', (status) => {
+      console.log('📊 Server connection status:', status)
     })
 
     // Game state events
@@ -506,6 +549,93 @@ class GameApp {
       tokenInput.focus()
       tokenInput.select()
     }
+  }
+
+  // Connection management methods
+
+  updateConnectionStatus(connected, customMessage = null) {
+    const statusElement = document.querySelector('.connection-status')
+    if (!statusElement) return
+
+    if (connected) {
+      statusElement.innerHTML = '🟢 已連接'
+      statusElement.style.color = '#2ecc71'
+    } else {
+      const message = customMessage || '🔑 已斷線'
+      statusElement.innerHTML = message
+      statusElement.style.color = '#e74c3c'
+    }
+  }
+
+  showConnectionLostIndicator() {
+    if (document.getElementById('connectionLostIndicator')) return
+
+    const indicator = document.createElement('div')
+    indicator.id = 'connectionLostIndicator'
+    indicator.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #e74c3c;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 10000;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      animation: pulse 1.5s ease-in-out infinite alternate;
+    `
+    indicator.innerHTML = '⚠️ 連接中斷'
+
+    // Add pulse animation if not exists
+    if (!document.querySelector('#mainConnectionPulse')) {
+      const style = document.createElement('style')
+      style.id = 'mainConnectionPulse'
+      style.textContent = `
+        @keyframes pulse {
+          from { opacity: 0.7; transform: scale(0.98); }
+          to { opacity: 1; transform: scale(1.02); }
+        }
+      `
+      document.head.appendChild(style)
+    }
+
+    document.body.appendChild(indicator)
+  }
+
+  hideConnectionLostIndicator() {
+    const indicator = document.getElementById('connectionLostIndicator')
+    if (indicator) {
+      indicator.remove()
+    }
+  }
+
+  showReconnectionSuccess() {
+    const successMsg = document.createElement('div')
+    successMsg.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #2ecc71;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 10000;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    `
+    successMsg.innerHTML = '✅ 重新連接成功'
+
+    document.body.appendChild(successMsg)
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+      if (successMsg.parentElement) {
+        successMsg.remove()
+      }
+    }, 3000)
   }
 }
 

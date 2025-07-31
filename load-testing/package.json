@@ -1,0 +1,34 @@
+{
+  "name": "dept-monopoly-load-testing",
+  "version": "1.0.0",
+  "description": "Comprehensive load testing suite for Dept-Monopoly game",
+  "main": "master-test-runner.js",
+  "scripts": {
+    "test": "node master-test-runner.js",
+    "test:comprehensive": "node framework/testing-framework.js",
+    "test:network": "node network/network-performance-tester.js",
+    "test:mobile": "node mobile/mobile-device-simulator.js",
+    "test:scenarios": "node scenarios/game-scenario-simulator.js",
+    "test:socket": "node scripts/socket-load-tester.js",
+    "monitor": "node monitoring/performance-monitor.js",
+    "help": "node master-test-runner.js --help"
+  },
+  "keywords": [
+    "load-testing",
+    "performance",
+    "socket.io",
+    "game-testing",
+    "mobile-testing",
+    "network-testing"
+  ],
+  "author": "Load Testing Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.11.0",
+    "node-fetch": "^2.7.0",
+    "socket.io-client": "^4.8.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

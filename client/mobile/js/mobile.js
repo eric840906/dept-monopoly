@@ -10,7 +10,16 @@ class MobileGameApp {
     this.targetTeamId = null
     this.modalCount = 0 // Track active modals
     this.diceButtonDisabled = false // Track dice button state
-
+    
+    // Connection management
+    this.reconnectAttempts = 0
+    this.maxReconnectAttempts = 10
+    this.reconnectDelay = 1000 // Start with 1 second
+    this.isReconnecting = false
+    this.connectionLost = false
+    this.lastDisconnectTime = null
+    this.heartbeatInterval = null
+    
     this.init()
   }
 
@@ -22,6 +31,7 @@ class MobileGameApp {
     this.setupSocket()
     this.setupEventListeners()
     this.setupEventDelegation()
+    this.setupVisibilityHandling()
     this.showScreen('loadingScreen')
 
     // Prevent zoom on double tap
@@ -83,23 +93,105 @@ class MobileGameApp {
   }
 
   setupSocket() {
-    this.socket = io()
+    console.log('🔌 Setting up socket connection...')
+    
+    this.socket = io({
+      // Mobile-optimized connection settings
+      forceNew: false,
+      reconnection: true,
+      reconnectionAttempts: this.maxReconnectAttempts,
+      reconnectionDelay: this.reconnectDelay,
+      reconnectionDelayMax: 30000, // Max 30 seconds between attempts
+      maxReconnectionAttempts: this.maxReconnectAttempts,
+      timeout: 20000,
+      transports: ['websocket', 'polling'], // Allow fallback
+      upgrade: true,
+      // Prevent connection issues on mobile
+      randomizationFactor: 0.5,
+    })
 
-    // Connection events
+    // Connection events with enhanced handling
     this.socket.on('connect', () => {
-      console.log('Connected to server')
+      const wasReconnecting = this.isReconnecting
+      console.log(`✅ Connected to server (Socket ID: ${this.socket.id})`)
+      
+      // Reset reconnection state
+      this.reconnectAttempts = 0
+      this.isReconnecting = false
+      this.connectionLost = false
+      this.reconnectDelay = 1000
+      
       this.updateConnectionStatus(true)
+      this.hideReconnectingIndicator()
+      
+      if (wasReconnecting) {
+        console.log('🔄 Successfully reconnected!')
+        this.showReconnectionSuccess()
+        
+        // Restore player state if needed
+        if (this.playerData && !this.gameState?.players[this.playerData.id]) {
+          console.log('🔄 Restoring player after reconnection...')
+          this.rejoinAfterReconnection()
+        }
+      } else {
+        // First time connection
+        if (this.currentScreen === 'loadingScreen' && !this.playerData) {
+          this.showScreen('joinScreen')
+        }
+      }
+      
+      // Start heartbeat monitoring
+      this.startHeartbeat()
+    })
 
-      // Auto-transition to join screen if not already joined
-      if (this.currentScreen === 'loadingScreen' && !this.playerData) {
-        this.showScreen('joinScreen')
+    this.socket.on('disconnect', (reason) => {
+      console.log(`💔 Disconnected from server: ${reason}`)
+      this.lastDisconnectTime = Date.now()
+      this.connectionLost = true
+      this.updateConnectionStatus(false)
+      this.stopHeartbeat()
+      
+      // Handle different disconnect reasons
+      if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+        // Server or client initiated disconnect - don't auto-reconnect
+        this.showError('連接已中斷')
+      } else {
+        // Network issue or timeout - attempt reconnection
+        this.handleDisconnection(reason)
       }
     })
 
-    this.socket.on('disconnect', () => {
-      console.log('Disconnected from server')
-      this.updateConnectionStatus(false)
-      this.showError('連接中斷，請重新連接')
+    this.socket.on('connect_error', (error) => {
+      console.error('❌ Connection error:', error)
+      this.handleConnectionError(error)
+    })
+
+    this.socket.on('reconnect', (attemptNumber) => {
+      console.log(`🔄 Reconnected after ${attemptNumber} attempts`)
+      this.isReconnecting = false
+    })
+
+    this.socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`🔄 Reconnection attempt ${attemptNumber}/${this.maxReconnectAttempts}`)
+      this.showReconnectingIndicator(attemptNumber)
+    })
+
+    this.socket.on('reconnect_error', (error) => {
+      console.error('❌ Reconnection failed:', error)
+    })
+
+    this.socket.on('reconnect_failed', () => {
+      console.error('💀 All reconnection attempts failed')
+      this.hideReconnectingIndicator()
+      this.showError('無法重新連接到伺服器\n請檢查網路連接後重新整理頁面')
+    })
+
+    // Server connection status updates
+    this.socket.on('connection_status', (status) => {
+      console.log('📊 Server connection status:', status)
+      if (status.recovered) {
+        console.log('✅ Connection state recovered from server')
+      }
     })
 
     // Player events
@@ -1660,6 +1752,198 @@ class MobileGameApp {
     } else {
       this.showScreen('joinScreen')
     }
+  }
+
+  // Connection management methods
+
+  handleDisconnection(reason) {
+    console.log(`🔄 Handling disconnection: ${reason}`)
+    
+    if (!this.isReconnecting) {
+      this.isReconnecting = true
+      this.showReconnectingIndicator(0)
+    }
+  }
+
+  handleConnectionError(error) {
+    console.error(`❌ Connection error: ${error.message}`)
+    
+    if (!this.isReconnecting) {
+      this.isReconnecting = true
+      this.reconnectAttempts++
+    }
+  }
+
+  startHeartbeat() {
+    // Clear existing heartbeat
+    this.stopHeartbeat()
+    
+    // Send periodic ping to detect connection issues early
+    this.heartbeatInterval = setInterval(() => {
+      if (this.socket && this.socket.connected) {
+        this.socket.emit('ping', Date.now())
+      }
+    }, 30000) // Every 30 seconds
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval)
+      this.heartbeatInterval = null
+    }
+  }
+
+  rejoinAfterReconnection() {
+    if (this.playerData) {
+      console.log('🔄 Rejoining game after reconnection...')
+      this.socket.emit('player_join', {
+        nickname: this.playerData.nickname,
+        department: this.playerData.department
+      })
+    }
+  }
+
+  showReconnectingIndicator(attemptNumber) {
+    // Remove existing indicator
+    this.hideReconnectingIndicator()
+    
+    const indicator = document.createElement('div')
+    indicator.id = 'reconnectingIndicator'
+    indicator.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #f39c12;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 25px;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 10000;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      animation: pulse 1.5s ease-in-out infinite alternate;
+    `
+    
+    const message = attemptNumber > 0 
+      ? `🔄 重新連接中... (${attemptNumber}/${this.maxReconnectAttempts})` 
+      : '🔄 重新連接中...'
+    
+    indicator.innerHTML = message
+    
+    // Add pulse animation
+    if (!document.querySelector('#reconnectPulseAnimation')) {
+      const style = document.createElement('style')
+      style.id = 'reconnectPulseAnimation'
+      style.textContent = `
+        @keyframes pulse {
+          from { opacity: 0.7; transform: translateX(-50%) scale(0.98); }
+          to { opacity: 1; transform: translateX(-50%) scale(1.02); }
+        }
+      `
+      document.head.appendChild(style)
+    }
+    
+    document.body.appendChild(indicator)
+  }
+
+  hideReconnectingIndicator() {
+    const indicator = document.getElementById('reconnectingIndicator')
+    if (indicator) {
+      indicator.remove()
+    }
+  }
+
+  showReconnectionSuccess() {
+    const successMsg = document.createElement('div')
+    successMsg.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2ecc71;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 25px;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 10000;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      animation: slideDown 0.5s ease-out;
+    `
+    successMsg.innerHTML = `✅ 重新連接成功！`
+    
+    document.body.appendChild(successMsg)
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+      if (successMsg.parentElement) {
+        successMsg.remove()
+      }
+    }, 3000)
+  }
+
+  setupVisibilityHandling() {
+    // Handle page visibility changes for mobile apps going to background/foreground
+    let visibilityChangeTimeout = null
+    
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        console.log('📱 App went to background')
+        // Clear any pending timeouts
+        if (visibilityChangeTimeout) {
+          clearTimeout(visibilityChangeTimeout)
+        }
+        
+        // Reduce heartbeat frequency when in background
+        this.stopHeartbeat()
+        
+        // Set a longer heartbeat interval for background
+        this.heartbeatInterval = setInterval(() => {
+          if (this.socket && this.socket.connected) {
+            this.socket.emit('ping', Date.now())
+          }
+        }, 60000) // Every 60 seconds in background
+        
+      } else {
+        console.log('📱 App came to foreground')
+        
+        // Restart normal heartbeat when app comes back to foreground
+        this.startHeartbeat()
+        
+        // Check connection status after coming back from background
+        visibilityChangeTimeout = setTimeout(() => {
+          if (this.socket && !this.socket.connected && !this.isReconnecting) {
+            console.log('🔄 Attempting to reconnect after returning from background')
+            this.socket.connect()
+          }
+        }, 1000) // Give 1 second for connection to restore naturally
+      }
+    })
+
+    // Handle network online/offline events
+    window.addEventListener('online', () => {
+      console.log('🌐 Network came back online')
+      if (this.connectionLost && !this.socket.connected) {
+        console.log('🔄 Attempting to reconnect after network restored')
+        setTimeout(() => {
+          this.socket.connect()
+        }, 500)
+      }
+    })
+
+    window.addEventListener('offline', () => {
+      console.log('🌐 Network went offline')
+      this.updateConnectionStatus(false, '網路已斷線')
+    })
+
+    // Handle beforeunload to cleanup properly
+    window.addEventListener('beforeunload', () => {
+      this.stopHeartbeat()
+      if (this.socket) {
+        this.socket.disconnect()
+      }
+    })
   }
 }
 

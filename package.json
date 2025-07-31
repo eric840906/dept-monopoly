@@ -4,9 +4,10 @@
   "description": "Real-time multiplayer Monopoly-style team-building board game",
   "main": "server/index.js",
   "scripts": {
-    "start": "NODE_ENV=production node server/index.js",
-    "dev": "NODE_ENV=development nodemon server/index.js",
-    "dev:debug": "NODE_ENV=development DEBUG=* nodemon server/index.js",
+    "start": "cross-env NODE_ENV=production node server/index.js",
+    "dev": "cross-env NODE_ENV=development nodemon server/index.js",
+    "loadtest": "cross-env HOST_TOKEN=default-host-token LOAD_TEST_MODE=true CONNECTION_LIMIT_PER_IP=200 nodemon server/index.js",
+    "dev:debug": "cross-env NODE_ENV=development DEBUG=* nodemon server/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "docker:build": "docker build --platform linux/amd64 -t dept-monopoly:latest .",
     "docker:run": "docker run -p 3000:3000 --env-file .env.docker dept-monopoly:latest",
@@ -33,6 +34,7 @@
     "socket.io": "^4.7.4"
   },
   "devDependencies": {
+    "cross-env": "^10.0.0",
     "nodemon": "^3.0.2",
     "socket.io-client": "^4.8.1"
   }

@@ -76,12 +76,47 @@ const checkRateLimit = (socketId, action, limit = 10, windowMs = 60000) => {
 function setupSocketHandlers(io, gameManager) {
   gameManager.setIO(io)
 
+  // Connection monitoring and statistics
+  const connectionStats = {
+    totalConnections: 0,
+    activeConnections: 0,
+    disconnections: 0,
+    reconnections: 0
+  }
+
   io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
-    console.log(`Player connected: ${socket.id}`)
+    connectionStats.totalConnections++
+    connectionStats.activeConnections++
+    
+    // Check if this is a reconnection
+    const isReconnection = socket.recovered
+    if (isReconnection) {
+      connectionStats.reconnections++
+      console.log(`🔄 Player reconnected: ${socket.id} (recovered: ${socket.recovered})`)
+    } else {
+      console.log(`🔗 Player connected: ${socket.id}`)
+    }
+
+    // Log connection details for debugging
+    console.log(`📊 Connection stats - Active: ${connectionStats.activeConnections}, Total: ${connectionStats.totalConnections}, Reconnections: ${connectionStats.reconnections}`)
+    console.log(`🌐 Client info - Transport: ${socket.conn.transport.name}, Upgraded: ${socket.conn.upgraded}`)
+    
+    // Mobile detection based on user agent
+    const userAgent = socket.handshake.headers['user-agent'] || ''
+    const isMobile = /Mobile|Android|iPhone|iPad/.test(userAgent)
+    console.log(`📱 Device type: ${isMobile ? 'Mobile' : 'Desktop'} - ${userAgent.substring(0, 50)}...`)
 
     // Send current game state to new connection
     socket.emit(SOCKET_EVENTS.GAME_STATE_UPDATE, gameManager.getGameState())
     socket.emit('board_state', gameManager.getBoard())
+    
+    // Send connection confirmation with recovery info
+    socket.emit('connection_status', {
+      connected: true,
+      socketId: socket.id,
+      recovered: isReconnection,
+      serverTime: Date.now()
+    })
 
     // Handle player joining
     socket.on(SOCKET_EVENTS.PLAYER_JOIN, (data) => {
@@ -380,10 +415,43 @@ function setupSocketHandlers(io, gameManager) {
       }
     })
 
-    // Handle disconnection
-    socket.on(SOCKET_EVENTS.DISCONNECT, () => {
-      console.log(`Player disconnected: ${socket.id}`)
+    // Handle disconnection with detailed logging
+    socket.on(SOCKET_EVENTS.DISCONNECT, (reason) => {
+      connectionStats.activeConnections--
+      connectionStats.disconnections++
+      
+      console.log(`💔 Player disconnected: ${socket.id}`)
+      console.log(`📊 Disconnect reason: ${reason}`)
+      console.log(`📊 Connection stats - Active: ${connectionStats.activeConnections}, Disconnections: ${connectionStats.disconnections}`)
+      
+      // Log transport info at disconnect
+      if (socket.conn) {
+        console.log(`🌐 Transport at disconnect: ${socket.conn.transport.name}`)
+      }
+      
       gameManager.removePlayer(socket.id)
+    })
+
+    // Handle connection errors
+    socket.on('error', (error) => {
+      console.error(`⚠️ Socket error for ${socket.id}:`, error)
+    })
+    
+    // Handle transport upgrade
+    socket.conn.on('upgrade', () => {
+      console.log(`⬆️ Transport upgraded to ${socket.conn.transport.name} for ${socket.id}`)
+    })
+    
+    // Handle transport close
+    socket.conn.on('close', (reason) => {
+      console.log(`🔌 Transport closed for ${socket.id}: ${reason}`)
+    })
+
+    // Handle heartbeat ping from clients
+    socket.on('ping', (timestamp) => {
+      const latency = Date.now() - timestamp
+      console.log(`💓 Heartbeat from ${socket.id} - Latency: ${latency}ms`)
+      socket.emit('pong', { timestamp, serverTime: Date.now(), latency })
     })
   })
 }
