@@ -49,7 +49,6 @@ function createTeam(id, color, emoji) {
     emoji,
     members: [],
     currentCaptainId: null, // ID of current captain for mini-games
-    captainRotationIndex: 0, // Index for rotating captains
     abilities: {
       tech: Math.floor(Math.random() * 6) + 1,
       creative: Math.floor(Math.random() * 6) + 1,

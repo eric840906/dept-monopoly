@@ -223,8 +223,7 @@ class GameManager {
             team.position = 0
             team.runsCompleted = 0
             team.currentCaptainId = null
-            // DON'T reset captainRotationIndex - preserve captain rotation across disconnects
-            // team.captainRotationIndex = 0
+            // With single-member teams, captain assignment is automatic
           } else {
             console.log(`Team ${team.id} is now empty, removing from game`)
             this.gameState.teams = this.gameState.teams.filter((t) => t.id !== team.id)
@@ -323,7 +322,10 @@ class GameManager {
     player.teamId = teamId
     team.members.push(player)
 
-    console.log(`Player ${player.nickname} joined team ${team.name}`)
+    // Automatically set as captain since there's only 1 member per team
+    team.currentCaptainId = player.id
+
+    console.log(`Player ${player.nickname} joined team ${team.name} and became captain`)
     this.broadcastGameState()
 
     return team
@@ -377,7 +379,7 @@ class GameManager {
 
     // Set initial captain for the first team
     const firstTeam = this.gameState.teams[0]
-    const captain = this.rotateCaptain(firstTeam.id)
+    const captain = this.setCaptain(firstTeam.id)
 
     this.startTurnTimer()
     // Note: Game timer is kept as backup but primary ending is based on runs
@@ -587,40 +589,18 @@ class GameManager {
     }, 4000) // 4 second delay to show the destiny card effect
   }
 
-  rotateCaptain(teamId) {
+  setCaptain(teamId) {
     const team = this.gameState.teams.find((t) => t.id === teamId)
     if (!team || team.members.length === 0) {
-      console.warn(`Cannot rotate captain for team ${teamId}: team not found or no members`)
+      console.warn(`Cannot set captain for team ${teamId}: team not found or no members`)
       return null
     }
 
-    // Validate current captain index and reset if needed
-    if (team.captainRotationIndex >= team.members.length) {
-      console.warn(`Captain rotation index ${team.captainRotationIndex} exceeds team size ${team.members.length}, resetting to 0`)
-      team.captainRotationIndex = 0
-    }
-
-    // If current captain is no longer in the team, find their new index or reset
-    if (team.currentCaptainId) {
-      const currentCaptainIndex = team.members.findIndex(m => m.id === team.currentCaptainId)
-      if (currentCaptainIndex === -1) {
-        console.warn(`Current captain ${team.currentCaptainId} not found in team, resetting rotation`)
-        team.captainRotationIndex = 0
-      } else if (currentCaptainIndex !== team.captainRotationIndex) {
-        // Update rotation index to match actual captain position
-        team.captainRotationIndex = currentCaptainIndex
-      }
-    }
-
-    // Get current captain based on rotation index
-    const captain = team.members[team.captainRotationIndex % team.members.length]
+    // With only 1 member per team, that member is always the captain
+    const captain = team.members[0]
     team.currentCaptainId = captain.id
 
-    // Increment rotation index for next time
-    team.captainRotationIndex = (team.captainRotationIndex + 1) % team.members.length
-
-    console.log(`Team ${teamId} captain rotated to: ${captain.nickname} (${captain.id}) at index ${team.captainRotationIndex - 1}`)
-    console.log(`Next captain will be at index: ${team.captainRotationIndex} of ${team.members.length} members`)
+    console.log(`Team ${teamId} captain set to: ${captain.nickname} (${captain.id})`)
     return captain
   }
 
@@ -834,9 +814,9 @@ class GameManager {
       return
     }
 
-    // Rotate captain for the new turn team
+    // Set captain for the new turn team
     const nextTeam = this.gameState.teams[nextTeamIndex]
-    const captain = this.rotateCaptain(nextTeam.id)
+    const captain = this.setCaptain(nextTeam.id)
 
     this.startTurnTimer()
     this.broadcastGameState()
