@@ -39,28 +39,18 @@ class GameManager {
 
   generateBoard() {
     const board = []
-    const eventCounts = {}
+    const eventCounts = { chance: 0 }
 
     // Start tile
     board.push(createTile(0, TileType.START))
 
-    // Generate remaining tiles
+    // Generate remaining tiles - ALL CHANCE TILES FOR TESTING
     for (let i = 1; i < GAME_CONFIG.BOARD_SIZE; i++) {
-      if (i % 6 === 0) {
-        // Every 6th tile is a chance tile
-        board.push(createTile(i, TileType.CHANCE))
-      } else if ((i - 9) % 6 === 0 && i >= 9) {
-        // Every 6th tile starting from tile 9 is a destiny tile (9, 15, 21, etc.)
-        board.push(createTile(i, TileType.DESTINY))
-      } else {
-        // All other tiles are event tiles
-        const eventType = this.generateRandomEvent()
-        board.push(createTile(i, TileType.EVENT, eventType))
-        eventCounts[eventType] = (eventCounts[eventType] || 0) + 1
-      }
+      board.push(createTile(i, TileType.CHANCE))
+      eventCounts.chance++
     }
 
-    console.log('Generated board with event distribution:', eventCounts)
+    console.log('Generated board with ALL CHANCE TILES for testing. Total chance tiles:', eventCounts.chance)
     return board
   }
 
@@ -223,7 +213,8 @@ class GameManager {
             team.position = 0
             team.runsCompleted = 0
             team.currentCaptainId = null
-            team.captainRotationIndex = 0
+            // DON'T reset captainRotationIndex - preserve captain rotation across disconnects
+            // team.captainRotationIndex = 0
           } else {
             console.log(`Team ${team.id} is now empty, removing from game`)
             this.gameState.teams = this.gameState.teams.filter((t) => t.id !== team.id)

@@ -13,6 +13,7 @@ class MobileGameApp {
     this.lastActionAttempt = 0 // Track last action attempt for debouncing
     this.actionsDisabled = false // Track if actions are temporarily disabled
     this.disableActionsTimer = null // Timer for temporarily disabling actions
+    this.hasRolledThisTurn = false // Track if dice has been rolled this turn
     
     // Connection management
     this.reconnectAttempts = 0
@@ -690,12 +691,14 @@ class MobileGameApp {
     const rollBtn = document.getElementById('rollDiceBtn')
     if (!rollBtn || !isMyTurn || !isCaptain) return
 
-    if (isTransitioning || isMoving || this.diceButtonDisabled || this.modalCount > 0 || this.actionsDisabled) {
+    if (isTransitioning || isMoving || this.diceButtonDisabled || this.modalCount > 0 || this.actionsDisabled || this.hasRolledThisTurn) {
       rollBtn.disabled = true
       if (isTransitioning) {
         rollBtn.textContent = '回合切換中...'
       } else if (isMoving) {
         rollBtn.textContent = '移動中...'
+      } else if (this.hasRolledThisTurn) {
+        rollBtn.textContent = '已擲骰'
       } else if (this.modalCount > 0) {
         rollBtn.textContent = '等待確認...'
       } else if (this.actionsDisabled) {
@@ -792,37 +795,41 @@ class MobileGameApp {
   }
 
   rollDice() {
-    // ENHANCED validation to prevent race condition bugs and invalid captain attempts
+    // Simple check: if already rolled this turn, don't allow another roll
+    if (this.hasRolledThisTurn) {
+      console.log('Cannot roll dice - already rolled this turn')
+      return
+    }
+
+    // Basic validation
     if (!this.teamData || !this.gameState || !this.playerData) {
       console.log('Cannot roll dice - missing essential data')
       return
     }
 
-    // CRITICAL: Check if game is transitioning to prevent race conditions
+    // Check if game is transitioning
     if (this.gameState.isTransitioning) {
       console.log('Cannot roll dice - game is transitioning between turns')
       this.showTransitionWarning('遊戲正在切換回合，請稍後再試')
       return
     }
 
-    // Verify it's our team's turn with enhanced logging
+    // Verify it's our team's turn
     const isMyTurn = this.gameState.currentTurnTeamId === this.teamData.id
     if (!isMyTurn) {
       console.log(`Cannot roll dice - not our team turn. Current turn: ${this.gameState.currentTurnTeamId}, Our team: ${this.teamData.id}`)
       
-      // Show user-friendly error for wrong turn attempts
       const currentTeam = this.gameState.teams.find(t => t.id === this.gameState.currentTurnTeamId)
       const currentTeamName = currentTeam ? (currentTeam.name || `隊伍 ${currentTeam.id.split('_')[1]}`) : '其他隊伍'
       this.showTurnValidationError(`現在是 ${currentTeamName} 的回合，請等待輪到您的隊伍`)
       return
     }
 
-    // CRITICAL FIX: Enhanced captain validation with state consistency check
+    // Check if player is captain
     const isCaptain = this.teamData.currentCaptainId === this.playerData.id
     if (!isCaptain) {
       console.log(`Cannot roll dice - not team captain. Current captain: ${this.teamData.currentCaptainId}, Player: ${this.playerData.id}`)
       
-      // Find current captain name for user-friendly error
       const currentCaptain = this.teamData.members.find(m => m.id === this.teamData.currentCaptainId)
       const captainName = currentCaptain ? currentCaptain.nickname : '隊友'
       this.showCaptainValidationError(`只有隊長 ${captainName} 可以擲骰子，請與隊長討論後由隊長操作`)
@@ -835,17 +842,11 @@ class MobileGameApp {
       return
     }
 
-    // Enhanced debouncing to prevent rapid attempts during state transitions
-    if (this.lastActionAttempt && Date.now() - this.lastActionAttempt < 2000) {
-      console.log('Cannot roll dice - too soon after last attempt, waiting for state to stabilize')
-      this.showTransitionWarning('操作過於頻繁，請等待狀態穩定後再試')
-      return
-    }
-    this.lastActionAttempt = Date.now()
-
+    // Mark as rolled for this turn and disable button immediately
+    this.hasRolledThisTurn = true
     const rollBtn = document.getElementById('rollDiceBtn')
     rollBtn.disabled = true
-    rollBtn.textContent = '擲骰中...'
+    rollBtn.textContent = '已擲骰'
 
     console.log(`Rolling dice - Team: ${this.teamData.id}, Captain: ${this.playerData.id}`)
     this.socket.emit('dice_roll', { 
@@ -856,11 +857,15 @@ class MobileGameApp {
 
   handleTurnStart(data) {
     console.log('Turn started for:', data)
+    // Reset dice roll flag when a new turn starts
+    this.hasRolledThisTurn = false
     this.updateGameInterface()
   }
 
   handleTurnEnd(data) {
     console.log('Turn ended, next team:', data.nextTeamId)
+    // Reset dice roll flag when turn ends
+    this.hasRolledThisTurn = false
     this.updateGameInterface()
   }
 
@@ -907,12 +912,6 @@ class MobileGameApp {
       console.log(`Showing dice animation for player ${this.playerData.id} who initiated the roll`)
       // Show animated dice roll
       this.showAnimatedDiceRoll(data.dice, data.total)
-
-      // Disable dice button and schedule re-enable after all modals are dismissed
-      this.diceButtonDisabled = true
-      setTimeout(() => {
-        this.enableDiceButtonIfReady()
-      }, 4000) // Wait for dice animation to complete first
     } else if (data.teamId === this.teamData?.id) {
       console.log(`Dice rolled by teammate ${data.initiatorName} (${data.initiatedBy}), not showing animation for this player`)
     }
