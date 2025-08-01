@@ -39,18 +39,28 @@ class GameManager {
 
   generateBoard() {
     const board = []
-    const eventCounts = { chance: 0 }
+    const eventCounts = {}
 
     // Start tile
     board.push(createTile(0, TileType.START))
 
-    // Generate remaining tiles - ALL CHANCE TILES FOR TESTING
+    // Generate remaining tiles
     for (let i = 1; i < GAME_CONFIG.BOARD_SIZE; i++) {
-      board.push(createTile(i, TileType.CHANCE))
-      eventCounts.chance++
+      if (i % 6 === 0) {
+        // Every 6th tile is a chance tile
+        board.push(createTile(i, TileType.CHANCE))
+      } else if ((i - 9) % 6 === 0 && i >= 9) {
+        // Every 6th tile starting from tile 9 is a destiny tile (9, 15, 21, etc.)
+        board.push(createTile(i, TileType.DESTINY))
+      } else {
+        // All other tiles are event tiles
+        const eventType = this.generateRandomEvent()
+        board.push(createTile(i, TileType.EVENT, eventType))
+        eventCounts[eventType] = (eventCounts[eventType] || 0) + 1
+      }
     }
 
-    console.log('Generated board with ALL CHANCE TILES for testing. Total chance tiles:', eventCounts.chance)
+    console.log('Generated board with event counts:', eventCounts)
     return board
   }
 
@@ -651,8 +661,10 @@ class GameManager {
       const gameData = this.miniGameProcessor.activeGames.get(teamId)
       console.log(`Game data for team ${teamId}:`, gameData ? 'present' : 'null')
 
-      this.io.emit('mini_game_timer_start', {
+      // First emit preparation start event
+      this.io.emit('mini_game_preparation_start', {
         teamId,
+        preparationTime: GAME_CONFIG.MINI_GAME_PREPARATION_TIME,
         gameData: gameData
           ? {
               eventType: gameData.eventType,
@@ -661,7 +673,22 @@ class GameManager {
             }
           : null,
       })
-      console.log(`Mini-game timer started for team ${teamId}, emitted mini_game_timer_start event`)
+      console.log(`Mini-game preparation started for team ${teamId}, ${GAME_CONFIG.MINI_GAME_PREPARATION_TIME}ms preparation time`)
+
+      // After preparation time, emit the actual timer start
+      setTimeout(() => {
+        this.io.emit('mini_game_timer_start', {
+          teamId,
+          gameData: gameData
+            ? {
+                eventType: gameData.eventType,
+                timeLimit: gameData.timeLimit,
+                data: gameData.data,
+              }
+            : null,
+        })
+        console.log(`Mini-game timer started for team ${teamId}, emitted mini_game_timer_start event`)
+      }, GAME_CONFIG.MINI_GAME_PREPARATION_TIME)
     } else {
       console.log(`Failed to confirm mini-game ready for team ${teamId}`)
     }

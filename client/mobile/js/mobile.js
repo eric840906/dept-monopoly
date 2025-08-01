@@ -310,10 +310,20 @@ class MobileGameApp {
       this.showMiniGame(data)
     })
 
+    this.socket.on('mini_game_preparation_start', (data) => {
+      console.log('Mini game preparation started:', data)
+      // Only show preparation for our team
+      if (this.teamData && data.teamId === this.teamData.id) {
+        this.startPreparationCountdown(data.preparationTime)
+      }
+    })
+
     this.socket.on('mini_game_timer_start', (data) => {
       console.log('Mini game timer started:', data)
-      // Timer is already started when mini-game loads, no need to restart it
-      // This event is primarily for the main screen to display the game interface
+      // Only start actual timer for our team
+      if (this.teamData && data.teamId === this.teamData.id) {
+        this.startMiniGameTimer()
+      }
     })
 
     this.socket.on('mini_game_result', (data) => {
@@ -2243,6 +2253,80 @@ class MobileGameApp {
         this.socket.disconnect()
       }
     })
+  }
+
+  startPreparationCountdown(preparationTime) {
+    console.log(`Starting preparation countdown: ${preparationTime}ms`)
+    
+    // Show preparation overlay
+    const preparationOverlay = document.createElement('div')
+    preparationOverlay.id = 'preparationOverlay'
+    preparationOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      color: white;
+      font-family: Arial, sans-serif;
+    `
+    
+    const preparationText = document.createElement('div')
+    preparationText.style.cssText = `
+      font-size: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+    `
+    preparationText.textContent = '準備時間'
+    
+    const countdownText = document.createElement('div')
+    countdownText.style.cssText = `
+      font-size: 48px;
+      font-weight: bold;
+      color: #ffd700;
+    `
+    
+    const instructionText = document.createElement('div')
+    instructionText.style.cssText = `
+      font-size: 16px;
+      margin-top: 20px;
+      text-align: center;
+      opacity: 0.8;
+    `
+    instructionText.textContent = '請仔細閱讀題目內容，準備開始答題'
+    
+    preparationOverlay.appendChild(preparationText)
+    preparationOverlay.appendChild(countdownText)
+    preparationOverlay.appendChild(instructionText)
+    document.body.appendChild(preparationOverlay)
+    
+    // Start countdown
+    let timeLeft = Math.ceil(preparationTime / 1000)
+    countdownText.textContent = timeLeft
+    
+    const countdownInterval = setInterval(() => {
+      timeLeft--
+      countdownText.textContent = timeLeft
+      
+      if (timeLeft <= 0) {
+        clearInterval(countdownInterval)
+        document.body.removeChild(preparationOverlay)
+      }
+    }, 1000)
+  }
+
+  startMiniGameTimer() {
+    console.log('Starting mini-game timer')
+    // This will be handled by the MiniGames library
+    if (window.MiniGames && window.MiniGames.startTimer) {
+      window.MiniGames.startTimer()
+    }
   }
 }
 

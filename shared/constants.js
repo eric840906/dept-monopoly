@@ -22,6 +22,9 @@ const GAME_CONFIG = {
     FORMAT_MATCHING: 45000,
     TRUE_OR_FALSE: 20000,
   },
+
+  // Time for players to read mini-game content before actual timer starts
+  MINI_GAME_PREPARATION_TIME: 5000, // 5 seconds
 }
 
 const TEAM_COLORS = [
@@ -45,7 +48,7 @@ const PREDEFINED_TEAMS = [
     color: '#FF6B6B', // Red
     emoji: '🚀',
     image: '/images/teams/team_A.png',
-    maxPlayers: null, // No limit
+    maxPlayers: 1, // Maximum 1 player per team
   },
   {
     id: 'team_B',
@@ -53,7 +56,7 @@ const PREDEFINED_TEAMS = [
     color: '#4ECDC4', // Teal
     emoji: '⚡',
     image: '/images/teams/team_B.png',
-    maxPlayers: null,
+    maxPlayers: 1,
   },
   {
     id: 'team_C',
@@ -61,7 +64,7 @@ const PREDEFINED_TEAMS = [
     color: '#45B7D1', // Blue
     emoji: '🎯',
     image: '/images/teams/team_C.png',
-    maxPlayers: null,
+    maxPlayers: 1,
   },
   {
     id: 'team_D',
@@ -69,7 +72,7 @@ const PREDEFINED_TEAMS = [
     color: '#96CEB4', // Green
     emoji: '🌟',
     image: '/images/teams/team_D.png',
-    maxPlayers: null,
+    maxPlayers: 1,
   },
   {
     id: 'team_E',
@@ -77,7 +80,7 @@ const PREDEFINED_TEAMS = [
     color: '#FFEAA7', // Yellow
     emoji: '🔥',
     image: '/images/teams/team_E.png',
-    maxPlayers: null,
+    maxPlayers: 1,
   },
   {
     id: 'team_F',
@@ -85,7 +88,7 @@ const PREDEFINED_TEAMS = [
     color: '#DDA0DD', // Plum
     emoji: '💎',
     image: '/images/teams/team_F.png',
-    maxPlayers: null,
+    maxPlayers: 1,
   },
 ]
 

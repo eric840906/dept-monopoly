@@ -1027,6 +1027,95 @@ class GameScene extends Phaser.Scene {
     this.currentMiniGameBanner = { banner, bannerText, bannerTeamImage, teamId, eventType, timeLimit }
   }
 
+  handleMiniGamePreparationStart(data) {
+    const { teamId, preparationTime, gameData } = data
+    console.log(`Mini-game preparation starting for team ${teamId}`, gameData)
+
+    // Store game data for later use
+    this.pendingMiniGameData = gameData
+
+    // Show preparation overlay on the main screen
+    this.showPreparationOverlay(teamId, preparationTime)
+  }
+
+  showPreparationOverlay(teamId, preparationTime) {
+    const team = this.gameState?.teams.find((t) => t.id === teamId)
+    if (!team) return
+
+    // Create preparation overlay
+    const preparationContainer = this.add.container(this.centerX, this.centerY)
+    preparationContainer.setDepth(1000)
+
+    const background = this.add.rectangle(0, 0, 800, 400, 0x2c3e50, 0.95)
+    background.setStrokeStyle(6, 0x3498db)
+    preparationContainer.add(background)
+
+    // Team info
+    const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
+    
+    if (team.image && this.textures.exists(team.id)) {
+      const teamImage = this.add.image(0, -120, team.id)
+      teamImage.setDisplaySize(40, 40)
+      teamImage.setOrigin(0.5)
+      preparationContainer.add(teamImage)
+    }
+
+    const preparationTitle = this.add.text(0, -80, '準備時間', {
+      fontSize: '36px',
+      fontFamily: 'Arial',
+      color: '#ffffff',
+      fontStyle: 'bold'
+    })
+    preparationTitle.setOrigin(0.5)
+    preparationContainer.add(preparationTitle)
+
+    const teamText = this.add.text(0, -40, teamDisplay, {
+      fontSize: '24px',
+      fontFamily: 'Arial',
+      color: '#ffd700'
+    })
+    teamText.setOrigin(0.5)
+    preparationContainer.add(teamText)
+
+    const countdownText = this.add.text(0, 20, '', {
+      fontSize: '72px',
+      fontFamily: 'Arial',
+      color: '#ffd700',
+      fontStyle: 'bold'
+    })
+    countdownText.setOrigin(0.5)
+    preparationContainer.add(countdownText)
+
+    const instructionText = this.add.text(0, 100, '隊員正在閱讀題目，準備開始答題', {
+      fontSize: '20px',
+      fontFamily: 'Arial',
+      color: '#ffffff',
+      alpha: 0.8
+    })
+    instructionText.setOrigin(0.5)
+    preparationContainer.add(instructionText)
+
+    // Start countdown
+    let timeLeft = Math.ceil(preparationTime / 1000)
+    countdownText.setText(timeLeft.toString())
+
+    const countdownTimer = this.time.addEvent({
+      delay: 1000,
+      repeat: timeLeft - 1,
+      callback: () => {
+        timeLeft--
+        countdownText.setText(timeLeft.toString())
+        
+        if (timeLeft <= 0) {
+          preparationContainer.destroy()
+        }
+      }
+    })
+
+    // Store reference for cleanup
+    this.preparationOverlay = { container: preparationContainer, timer: countdownTimer }
+  }
+
   handleMiniGameTimerStart(data) {
     const { teamId, gameData } = data
     console.log(`Mini-game timer starting for team ${teamId}`, gameData)
