@@ -952,9 +952,9 @@ window.MiniGames = {
       { left: 'Node.js', right: '後端服務' },
     ]
 
-    // Shuffle both left and right items for better UX
-    const shuffledLeft = [...pairs].sort(() => Math.random() - 0.5)
-    const shuffledRight = [...pairs].sort(() => Math.random() - 0.5)
+    // Use synchronized shuffled data from server if available, otherwise fallback to random
+    const shuffledLeft = gameData.data?.shuffledLeft || [...pairs].sort(() => Math.random() - 0.5)
+    const shuffledRight = gameData.data?.shuffledRight || [...pairs].sort(() => Math.random() - 0.5)
 
     this.gameContainer.innerHTML = `
             <div class="mini-game format-matching">

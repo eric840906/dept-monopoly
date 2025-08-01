@@ -3,18 +3,39 @@ require('dotenv').config()
 
 const express = require('express')
 const http = require('http')
+const https = require('https')
+const fs = require('fs')
 const socketIo = require('socket.io')
 const cors = require('cors')
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
 const path = require('path')
-const fs = require('fs')
 
 const GameManager = require('./game/GameManager')
 const { setupSocketHandlers } = require('./socket/handlers')
 
 const app = express()
-const server = http.createServer(app)
+
+// Create server based on environment and HTTPS config
+let server
+const useHTTPS = process.env.ENABLE_HTTPS === 'true' && process.env.NODE_ENV === 'development'
+
+if (useHTTPS) {
+  try {
+    // Try to load SSL certificates
+    const privateKey = fs.readFileSync(process.env.SSL_KEY_PATH || 'certificates/key.pem', 'utf8')
+    const certificate = fs.readFileSync(process.env.SSL_CERT_PATH || 'certificates/cert.pem', 'utf8')
+    const credentials = { key: privateKey, cert: certificate }
+    server = https.createServer(credentials, app)
+    console.log('🔒 HTTPS server enabled for development')
+  } catch (error) {
+    console.warn('⚠️  SSL certificates not found, falling back to HTTP')
+    console.warn('   To enable HTTPS, generate certificates: npm run generate-certs')
+    server = http.createServer(app)
+  }
+} else {
+  server = http.createServer(app)
+}
 // Configure allowed origins based on environment
 const getLocalNetworkIPs = () => {
   const { networkInterfaces } = require('os')
@@ -25,7 +46,8 @@ const getLocalNetworkIPs = () => {
     for (const net of nets[name]) {
       // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
       if (net.family === 'IPv4' && !net.internal) {
-        ips.push(`http://${net.address}:${process.env.PORT || 3000}`)
+        const protocol = useHTTPS ? 'https' : 'http'
+        ips.push(`${protocol}://${net.address}:${process.env.PORT || 3000}`)
       }
     }
   }
@@ -39,8 +61,8 @@ const allowedOrigins =
       ? baseOrigins
       : ['https://yourdomain.com']
     : [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
+        useHTTPS ? 'https://localhost:3000' : 'http://localhost:3000',
+        useHTTPS ? 'https://127.0.0.1:3000' : 'http://127.0.0.1:3000',
         ...baseOrigins,
         ...getLocalNetworkIPs(), // Auto-detect local network IPs in development
       ]
@@ -50,9 +72,10 @@ console.log('🌐 Allowed CORS origins:', allowedOrigins)
 // Connection throttling to prevent connection storms
 const connectionTracker = new Map() // Track connections per IP
 // Environment-aware connection limits: much higher for load testing
-const CONNECTION_LIMIT_PER_IP = process.env.LOAD_TEST_MODE === 'true' 
-  ? parseInt(process.env.CONNECTION_LIMIT_PER_IP) || 200 // Allow 200 connections per IP in test mode
-  : 10 // Max connections per IP in production
+const CONNECTION_LIMIT_PER_IP =
+  process.env.LOAD_TEST_MODE === 'true'
+    ? parseInt(process.env.CONNECTION_LIMIT_PER_IP) || 200 // Allow 200 connections per IP in test mode
+    : 10 // Max connections per IP in production
 const CONNECTION_WINDOW_MS = 60 * 1000 // 1 minute window
 
 const io = socketIo(server, {
@@ -62,9 +85,10 @@ const io = socketIo(server, {
     credentials: true,
   },
   // Environment-aware connection configuration
-  pingTimeout: process.env.LOAD_TEST_MODE === 'true' 
-    ? parseInt(process.env.SOCKET_PING_TIMEOUT) || 30000 // 30s for load testing
-    : parseInt(process.env.SOCKET_PING_TIMEOUT) || 90000, // 90s for mobile devices
+  pingTimeout:
+    process.env.LOAD_TEST_MODE === 'true'
+      ? parseInt(process.env.SOCKET_PING_TIMEOUT) || 30000 // 30s for load testing
+      : parseInt(process.env.SOCKET_PING_TIMEOUT) || 90000, // 90s for mobile devices
   pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL) || 25000, // 25 seconds ping interval
   upgradeTimeout: process.env.LOAD_TEST_MODE === 'true' ? 10000 : 30000, // Faster upgrade timeout for testing
   allowUpgrades: true,
@@ -77,37 +101,37 @@ const io = socketIo(server, {
   // Additional mobile-specific settings
   connectTimeout: process.env.LOAD_TEST_MODE === 'true' ? 5000 : 20000, // Faster connection timeout for testing
   forceNew: false, // Allow connection reuse
-  
+
   // Connection throttling middleware
   allowRequest: (req, callback) => {
     const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown'
     const now = Date.now()
-    
+
     // Clean up old entries first
     for (const [ip, data] of connectionTracker.entries()) {
-      data.connections = data.connections.filter(timestamp => now - timestamp < CONNECTION_WINDOW_MS)
+      data.connections = data.connections.filter((timestamp) => now - timestamp < CONNECTION_WINDOW_MS)
       if (data.connections.length === 0) {
         connectionTracker.delete(ip)
       }
     }
-    
+
     // Get current IP data
     const ipData = connectionTracker.get(clientIP) || { connections: [] }
-    
+
     // Check if IP has exceeded connection limit
     if (ipData.connections.length >= CONNECTION_LIMIT_PER_IP) {
       console.warn(`Connection throttled for IP ${clientIP}: ${ipData.connections.length} connections in last minute`)
       callback('Connection limit exceeded', false)
       return
     }
-    
+
     // Allow connection and track it
     ipData.connections.push(now)
     connectionTracker.set(clientIP, ipData)
-    
+
     console.log(`Connection allowed for IP ${clientIP}: ${ipData.connections.length}/${CONNECTION_LIMIT_PER_IP}`)
     callback(null, true)
-  }
+  },
 })
 
 // Security middleware with environment-specific CSP
@@ -309,7 +333,7 @@ app.get('/network-info', (req, res) => {
 app.get('/health', (req, res) => {
   const connectedClients = io.engine.clientsCount || 0
   const uptime = process.uptime()
-  
+
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -318,8 +342,8 @@ app.get('/health', (req, res) => {
     socketConfig: {
       pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT) || 90000,
       pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL) || 25000,
-      connectionRecovery: parseInt(process.env.SOCKET_CONNECTION_RECOVERY) || 300000
-    }
+      connectionRecovery: parseInt(process.env.SOCKET_CONNECTION_RECOVERY) || 300000,
+    },
   })
 })
 
@@ -329,12 +353,12 @@ app.get('/metrics', (req, res) => {
   const cpuUsage = process.cpuUsage()
   const connectedClients = io.engine.clientsCount || 0
   const uptime = process.uptime()
-  
+
   // Get active games count (if gameManager is available)
   let activeGames = 0
   let teamsCount = 0
   let playersCount = 0
-  
+
   try {
     if (global.gameManager) {
       const gameState = global.gameManager.getGameState()
@@ -345,56 +369,55 @@ app.get('/metrics', (req, res) => {
   } catch (error) {
     console.warn('Could not get game metrics:', error.message)
   }
-  
+
   const metrics = {
     // System metrics
     timestamp: new Date().toISOString(),
     uptime: Math.floor(uptime),
-    
+
     // Memory metrics (in MB)
     memory: {
       rss: Math.round(memoryUsage.rss / 1024 / 1024),
       heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
       heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
       external: Math.round(memoryUsage.external / 1024 / 1024),
-      arrayBuffers: Math.round(memoryUsage.arrayBuffers / 1024 / 1024)
+      arrayBuffers: Math.round(memoryUsage.arrayBuffers / 1024 / 1024),
     },
-    
+
     // CPU metrics (in microseconds)
     cpu: {
       user: cpuUsage.user,
-      system: cpuUsage.system
+      system: cpuUsage.system,
     },
-    
+
     // Connection metrics
     connections: {
       total: connectedClients,
       socketio: connectedClients,
       throttling: {
         trackedIPs: connectionTracker.size,
-        totalTrackedConnections: Array.from(connectionTracker.values())
-          .reduce((sum, data) => sum + data.connections.length, 0),
+        totalTrackedConnections: Array.from(connectionTracker.values()).reduce((sum, data) => sum + data.connections.length, 0),
         limitPerIP: CONNECTION_LIMIT_PER_IP,
-        windowMs: CONNECTION_WINDOW_MS
-      }
+        windowMs: CONNECTION_WINDOW_MS,
+      },
     },
-    
+
     // Game metrics
     game: {
       active: activeGames,
       teams: teamsCount,
-      players: playersCount
+      players: playersCount,
     },
-    
+
     // Process info
     process: {
       pid: process.pid,
       version: process.version,
       platform: process.platform,
-      arch: process.arch
-    }
+      arch: process.arch,
+    },
   }
-  
+
   res.json(metrics)
 })
 

@@ -163,10 +163,10 @@ class GameScene extends Phaser.Scene {
 
       teamImages.forEach((team) => {
         if (team.image) {
-          console.log(`🖼️  Loading team image: ${team.id} from ${team.image}`);
-          this.load.image(team.id, team.image);
+          console.log(`🖼️  Loading team image: ${team.id} from ${team.image}`)
+          this.load.image(team.id, team.image)
         }
-      });
+      })
     } catch (error) {
       console.log('Could not preload team images:', error)
     }
@@ -185,8 +185,8 @@ class GameScene extends Phaser.Scene {
       ]
 
       quizImages.forEach((img) => {
-        console.log(`🖼️  Loading quiz image: ${img.key} from ${img.path}`);
-        this.load.image(img.key, img.path);
+        console.log(`🖼️  Loading quiz image: ${img.key} from ${img.path}`)
+        this.load.image(img.key, img.path)
       })
     } catch (error) {
       console.log('Could not preload quiz images:', error)
@@ -207,8 +207,8 @@ class GameScene extends Phaser.Scene {
       ]
 
       tileImages.forEach((img) => {
-        console.log(`🖼️  Loading tile image: ${img.key} from ${img.path}`);
-        this.load.image(img.key, img.path);
+        console.log(`🖼️  Loading tile image: ${img.key} from ${img.path}`)
+        this.load.image(img.key, img.path)
       })
     } catch (error) {
       console.log('Could not preload tile images:', error)
@@ -227,8 +227,8 @@ class GameScene extends Phaser.Scene {
       ]
 
       resultImages.forEach((img) => {
-        console.log(`🖼️  Loading result image: ${img.key} from ${img.path}`);
-        this.load.image(img.key, img.path);
+        console.log(`🖼️  Loading result image: ${img.key} from ${img.path}`)
+        this.load.image(img.key, img.path)
       })
     } catch (error) {
       console.log('Could not preload result images:', error)
@@ -1374,11 +1374,13 @@ class GameScene extends Phaser.Scene {
       { left: 'Node.js', right: '後端服務' },
     ]
 
-    const leftItems = pairs.map((pair) => pair.left)
-    const rightItems = pairs.map((pair) => pair.right)
+    // Use synchronized shuffled data from server if available, otherwise generate fallback
+    const shuffledLeft = matchingData.shuffledLeft || pairs
+    const shuffledRight = matchingData.shuffledRight || pairs
 
-    // Left column
-    leftItems.forEach((item, index) => {
+    // Left column (use server-synchronized order)
+    shuffledLeft.forEach((pair, index) => {
+      const item = pair.left
       const itemBg = this.add.rectangle(-400, -150 + index * 80, 180, 40, 0x3498db, 0.8)
       container.add(itemBg)
 
@@ -1392,9 +1394,9 @@ class GameScene extends Phaser.Scene {
       container.add(itemText)
     })
 
-    // Right column (shuffled for display)
-    const shuffledRight = [...rightItems].sort(() => Math.random() - 0.5)
-    shuffledRight.forEach((item, index) => {
+    // Right column (use server-synchronized order)
+    shuffledRight.forEach((pair, index) => {
+      const item = pair.right
       const itemBg = this.add.rectangle(400, -150 + index * 80, 180, 40, 0xe67e22, 0.8)
       container.add(itemBg)
 
@@ -2117,7 +2119,7 @@ class GameScene extends Phaser.Scene {
         onComplete: () => {
           this.leaderboardElements.forEach((element) => element.destroy())
           this.leaderboardElements = null
-          
+
           // Automatically reset the game after leaderboard closes
           console.log('Automatically resetting game after leaderboard close')
           if (window.gameApp && window.gameApp.hostControls && window.gameApp.isHost) {

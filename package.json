@@ -6,6 +6,8 @@
   "scripts": {
     "start": "cross-env NODE_ENV=production node server/index.js",
     "dev": "cross-env NODE_ENV=development nodemon server/index.js",
+    "dev:https": "cross-env NODE_ENV=development ENABLE_HTTPS=true nodemon server/index.js",
+    "generate-certs": "mkdir -p certificates && openssl req -x509 -newkey rsa:4096 -keyout certificates/key.pem -out certificates/cert.pem -days 365 -nodes -subj '/CN=localhost'",
     "loadtest": "cross-env HOST_TOKEN=default-host-token LOAD_TEST_MODE=true CONNECTION_LIMIT_PER_IP=200 nodemon server/index.js",
     "dev:debug": "cross-env NODE_ENV=development DEBUG=* nodemon server/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",

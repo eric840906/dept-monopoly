@@ -4,6 +4,7 @@ class MiniGameProcessor {
   constructor() {
     this.activeGames = new Map() // teamId -> gameData
     this.usedQuestions = new Map() // teamId -> Set of used question IDs
+    this.currentGameSeed = Date.now() // Seed for synchronizing random generation across teams
   }
 
   resetUsedQuestions() {
@@ -12,6 +13,12 @@ class MiniGameProcessor {
   }
 
   startMiniGame(teamId, eventType, gameState) {
+    // Update seed only when starting the first mini-game of this round
+    // This ensures all teams get synchronized content
+    if (this.activeGames.size === 0) {
+      this.updateGameSeed()
+    }
+    
     const gameData = this.generateMiniGameData(eventType, gameState, teamId)
     this.activeGames.set(teamId, {
       ...gameData,
@@ -174,7 +181,7 @@ class MiniGameProcessor {
     }
   }
 
-  generateDragDropWorkflow() {
+  generateDragDropWorkflow(teamId) {
     const workflows = [
       {
         title: '格式開發流程',
@@ -193,9 +200,13 @@ class MiniGameProcessor {
       },
     ]
 
-    const selectedWorkflow = workflows[Math.floor(Math.random() * workflows.length)]
-    // Shuffle the correct order for display
-    const shuffledItems = [...selectedWorkflow.correctOrder].sort(() => Math.random() - 0.5)
+    // Use a fixed seed based on current time/round to ensure all teams get the same workflow and shuffle
+    const seed = this.getCurrentGameSeed()
+    const selectedWorkflow = workflows[seed % workflows.length]
+    
+    // Use seeded random to ensure all teams get the same shuffle
+    const shuffledItems = [...selectedWorkflow.correctOrder]
+    this.seededShuffle(shuffledItems, seed)
 
     return {
       eventType: 'drag_drop_workflow',
@@ -207,7 +218,7 @@ class MiniGameProcessor {
     }
   }
 
-  generateFormatMatching() {
+  generateFormatMatching(teamId) {
     const matchingSets = [
       {
         title: 'MIR 格式',
@@ -258,9 +269,21 @@ class MiniGameProcessor {
       },
     ]
 
-    const selectedSet = matchingSets[Math.floor(Math.random() * matchingSets.length)]
-    // Randomly select 4-5 pairs
-    const selectedPairs = selectedSet.pairs.sort(() => Math.random() - 0.5).slice(0, Math.min(5, selectedSet.pairs.length))
+    // Use a fixed seed to ensure all teams get the same matching set and pairs
+    const seed = this.getCurrentGameSeed()
+    const selectedSet = matchingSets[seed % matchingSets.length]
+    
+    // Use seeded random to select pairs consistently across all teams
+    const shuffledPairs = [...selectedSet.pairs]
+    this.seededShuffle(shuffledPairs, seed)
+    const selectedPairs = shuffledPairs.slice(0, Math.min(5, selectedSet.pairs.length))
+
+    // Create synchronized shuffled left and right columns for consistent display
+    // Create shuffled versions using seeded randomization
+    const shuffledLeft = [...selectedPairs]
+    const shuffledRight = [...selectedPairs]
+    this.seededShuffle(shuffledLeft, seed + 1) // Different seed for left shuffle
+    this.seededShuffle(shuffledRight, seed + 2) // Different seed for right shuffle
 
     return {
       eventType: 'format_matching',
@@ -268,6 +291,8 @@ class MiniGameProcessor {
       data: {
         title: selectedSet.title,
         pairs: selectedPairs,
+        shuffledLeft: shuffledLeft,
+        shuffledRight: shuffledRight,
       },
     }
   }
@@ -574,6 +599,42 @@ class MiniGameProcessor {
       success: isCorrect,
       feedback: isCorrect ? '回答正確！' : `回答錯誤。${data.explanation}`,
     }
+  }
+
+  // Utility methods for synchronized random generation
+  getCurrentGameSeed() {
+    return this.currentGameSeed
+  }
+
+  updateGameSeed() {
+    this.currentGameSeed = Date.now()
+    console.log('Updated game seed for synchronized mini-games:', this.currentGameSeed)
+  }
+
+  // Seeded random number generator using simple Linear Congruential Generator
+  seededRandom(seed) {
+    const x = Math.sin(seed) * 10000
+    return x - Math.floor(x)
+  }
+
+  // Fisher-Yates shuffle with seeded randomization
+  seededShuffle(array, seed) {
+    let currentIndex = array.length
+    let temporaryValue, randomIndex
+
+    // While there remain elements to shuffle
+    while (0 !== currentIndex) {
+      // Pick a remaining element using seeded random
+      randomIndex = Math.floor(this.seededRandom(seed + currentIndex) * currentIndex)
+      currentIndex -= 1
+
+      // Swap it with the current element
+      temporaryValue = array[currentIndex]
+      array[currentIndex] = array[randomIndex]
+      array[randomIndex] = temporaryValue
+    }
+
+    return array
   }
 
   getActiveGameCount() {
