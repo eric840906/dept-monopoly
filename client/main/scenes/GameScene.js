@@ -605,7 +605,7 @@ class GameScene extends Phaser.Scene {
     this.pendingMiniGameData = data
 
     // Show mini-game notification on main screen with captain info
-    this.showMiniGameNotification(teamId, eventType, timeLimit, captainName)
+    // this.showMiniGameNotification(teamId, eventType, timeLimit, captainName)
   }
 
   handleMiniGameResult(data) {
@@ -1052,7 +1052,7 @@ class GameScene extends Phaser.Scene {
 
     // Team info
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
-    
+
     if (team.image && this.textures.exists(team.id)) {
       const teamImage = this.add.image(0, -120, team.id)
       teamImage.setDisplaySize(40, 40)
@@ -1105,7 +1105,7 @@ class GameScene extends Phaser.Scene {
       callback: () => {
         timeLeft--
         countdownText.setText(timeLeft.toString())
-        
+
         if (timeLeft <= 0) {
           preparationContainer.destroy()
         }

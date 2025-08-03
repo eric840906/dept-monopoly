@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Test - MTO 體驗營</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .play-btn { background: #2ecc71; color: white; }
+        .pause-btn { background: #e74c3c; color: white; }
+        .stop-btn { background: #95a5a6; color: white; }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #ecf0f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎵 Background Music Test</h1>
+        <p>This page tests the AudioManager functionality for the host screen.</p>
+        
+        <div class="controls">
+            <button class="play-btn" onclick="testPlay()">▶️ Play Music</button>
+            <button class="pause-btn" onclick="testPause()">⏸️ Pause Music</button>
+            <button class="stop-btn" onclick="testStop()">⏹️ Stop Music</button>
+            <button onclick="testToggle()">🔄 Toggle Music</button>
+        </div>
+        
+        <div>
+            <label>Volume: </label>
+            <input type="range" id="volumeControl" min="0" max="100" value="30" onchange="testVolume(this.value)">
+            <span id="volumeDisplay">30%</span>
+        </div>
+        
+        <div id="status" class="status">
+            Ready to test background music...
+        </div>
+        
+        <div class="info">
+            <h3>Instructions:</h3>
+            <ul>
+                <li>Replace /public/audio/background-music.mp3 with an actual audio file</li>
+                <li>The audio will be served at: http://localhost:3000/audio/background-music.mp3</li>
+                <li>Test play/pause/stop functionality</li>
+                <li>Test volume controls</li>
+                <li>Check browser console for any errors</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="client/main/js/AudioManager.js"></script>
+    <script>
+        let audioManager;
+        
+        // Initialize AudioManager when page loads
+        window.addEventListener('load', () => {
+            audioManager = new AudioManager();
+            updateStatus();
+        });
+        
+        function testPlay() {
+            audioManager.play();
+            updateStatus();
+        }
+        
+        function testPause() {
+            audioManager.pause();
+            updateStatus();
+        }
+        
+        function testStop() {
+            audioManager.stop();
+            updateStatus();
+        }
+        
+        function testToggle() {
+            audioManager.toggle();
+            updateStatus();
+        }
+        
+        function testVolume(value) {
+            const volume = value / 100;
+            audioManager.setVolume(volume);
+            document.getElementById('volumeDisplay').textContent = value + '%';
+            updateStatus();
+        }
+        
+        function updateStatus() {
+            const state = audioManager.getState();
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = `
+                <strong>Audio Status:</strong><br>
+                • Enabled: ${state.isEnabled ? '✅' : '❌'}<br>
+                • Loaded: ${state.isLoaded ? '✅' : '❌'}<br>
+                • Playing: ${state.isPlaying ? '✅' : '❌'}<br>
+                • Volume: ${Math.round(state.volume * 100)}%
+            `;
+        }
+        
+        // Update status every second
+        setInterval(updateStatus, 1000);
+    </script>
+</body>
+</html>

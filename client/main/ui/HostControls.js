@@ -6,6 +6,7 @@ class HostControls {
     this.isHost = window.location.search.includes('host=true')
     this.currentGameState = null
     this.hostToken = gameApp.hostToken // Get token from gameApp
+    this.audioManager = new AudioManager()
 
     if (this.isHost) {
       this.setupHostInterface()
@@ -73,6 +74,14 @@ class HostControls {
     // Check if advanced button already exists
     const existingAdvancedBtn = document.getElementById('advancedControlBtn')
     if (existingAdvancedBtn) return
+
+    // Add background music control button
+    const musicBtn = document.createElement('button')
+    musicBtn.id = 'backgroundMusicBtn'
+    musicBtn.className = 'host-btn music-btn'
+    musicBtn.textContent = '🎵 背景音樂'
+    musicBtn.addEventListener('click', () => this.toggleBackgroundMusic())
+    hostControls.appendChild(musicBtn)
 
     // Add advanced control button
     const advancedBtn = document.createElement('button')
@@ -147,6 +156,18 @@ class HostControls {
                     </div>
 
                     <div class="panel-section">
+                        <h4>音效控制</h4>
+                        <div class="control-group">
+                            <label>背景音樂:</label>
+                            <button class="action-btn music-toggle-btn" data-action="toggle-music">
+                                🎵 開啟/關閉
+                            </button>
+                            <input type="range" id="musicVolume" min="0" max="100" value="30" style="margin-left: 10px;">
+                            <span id="volumeLabel">30%</span>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
                         <h4>統計資訊</h4>
                         <div id="gameStats">
                             <!-- Stats will be populated here -->
@@ -158,6 +179,9 @@ class HostControls {
 
     document.body.appendChild(panel)
     this.addPanelStyles()
+    
+    // Setup volume control
+    this.setupVolumeControl()
   }
 
   setupEventDelegation() {
@@ -170,6 +194,11 @@ class HostControls {
       
       // Prevent default behavior
       event.preventDefault()
+      
+      // Update music button state after toggle
+      if (action === 'toggle-music') {
+        setTimeout(() => this.updateMusicButtonState(), 100)
+      }
       
       switch (action) {
         case 'close-panel':
@@ -195,6 +224,9 @@ class HostControls {
           break
         case 'reset-game':
           this.resetGame()
+          break
+        case 'toggle-music':
+          this.toggleBackgroundMusic()
           break
         default:
           console.warn('Unknown action:', action)
@@ -627,6 +659,46 @@ class HostControls {
     }
   }
 
+  // Background Music Control Methods
+  toggleBackgroundMusic() {
+    this.audioManager.toggle()
+    this.updateMusicButtonState()
+  }
+
+  updateMusicButtonState() {
+    const musicBtn = document.getElementById('backgroundMusicBtn')
+    const state = this.audioManager.getState()
+    
+    if (musicBtn) {
+      if (state.isPlaying) {
+        musicBtn.textContent = '🔇 停止音樂'
+        musicBtn.classList.add('playing')
+      } else {
+        musicBtn.textContent = '🎵 背景音樂'
+        musicBtn.classList.remove('playing')
+      }
+    }
+
+    // Update advanced panel button if open
+    const advancedMusicBtn = document.querySelector('[data-action="toggle-music"]')
+    if (advancedMusicBtn) {
+      advancedMusicBtn.textContent = state.isPlaying ? '🔇 停止' : '🎵 播放'
+    }
+  }
+
+  setupVolumeControl() {
+    const volumeSlider = document.getElementById('musicVolume')
+    const volumeLabel = document.getElementById('volumeLabel')
+    
+    if (volumeSlider && volumeLabel) {
+      volumeSlider.addEventListener('input', (e) => {
+        const volume = parseInt(e.target.value) / 100
+        this.audioManager.setVolume(volume)
+        volumeLabel.textContent = `${e.target.value}%`
+      })
+    }
+  }
+
   cleanupModals() {
     console.log('HostControls: Cleaning up modals')
 
@@ -900,6 +972,64 @@ class HostControls {
             .stat-item span:last-child {
                 color: #2c3e50;
                 font-weight: bold;
+            }
+
+            .music-btn {
+                background: #9b59b6 !important;
+                transition: all 0.3s ease;
+            }
+
+            .music-btn:hover {
+                background: #8e44ad !important;
+            }
+
+            .music-btn.playing {
+                background: #e74c3c !important;
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+                70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+            }
+
+            .music-toggle-btn {
+                background: #9b59b6;
+                color: white;
+            }
+
+            .music-toggle-btn:hover {
+                background: #8e44ad;
+            }
+
+            #musicVolume {
+                width: 100px;
+                height: 6px;
+                border-radius: 3px;
+                background: #ddd;
+                outline: none;
+                opacity: 0.7;
+                transition: opacity 0.2s;
+            }
+
+            #musicVolume:hover {
+                opacity: 1;
+            }
+
+            #musicVolume::-webkit-slider-thumb {
+                appearance: none;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background: #9b59b6;
+                cursor: pointer;
+            }
+
+            #volumeLabel {
+                color: #666;
+                font-size: 12px;
+                min-width: 30px;
             }
         `
     document.head.appendChild(styles)
