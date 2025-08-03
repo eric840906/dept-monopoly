@@ -5,7 +5,7 @@ class AudioManager {
     this.volume = 0.3
     this.isPlaying = false
     this.isLoaded = false
-    
+
     this.init()
   }
 
@@ -13,25 +13,24 @@ class AudioManager {
     this.backgroundMusic = new Audio('/audio/background-music.mp3')
     this.backgroundMusic.loop = true
     this.backgroundMusic.volume = this.volume
-    
     this.backgroundMusic.addEventListener('loadeddata', () => {
       this.isLoaded = true
       console.log('Background music loaded successfully')
     })
-    
+
     this.backgroundMusic.addEventListener('error', (e) => {
       console.warn('Background music failed to load:', e)
       this.isLoaded = false
     })
-    
+
     this.backgroundMusic.addEventListener('ended', () => {
       this.isPlaying = false
     })
-    
+
     this.backgroundMusic.addEventListener('play', () => {
       this.isPlaying = true
     })
-    
+
     this.backgroundMusic.addEventListener('pause', () => {
       this.isPlaying = false
     })
@@ -39,7 +38,7 @@ class AudioManager {
 
   play() {
     if (!this.isEnabled || !this.isLoaded) return
-    
+
     this.backgroundMusic.play().then(() => {
       console.log('Background music started')
     }).catch(err => {

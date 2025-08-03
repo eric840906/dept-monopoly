@@ -19,7 +19,7 @@ class GameApp {
       this.showHostAuthModal()
       return // Don't initialize until authenticated
     }
-    
+
     this.setupSocket()
     this.setupPhaser()
     this.setupUI()
@@ -28,7 +28,7 @@ class GameApp {
 
   setupSocket() {
     console.log('🔌 Setting up socket connection...')
-    
+
     this.socket = io({
       // Enhanced connection settings for reliability
       forceNew: false,
@@ -50,7 +50,7 @@ class GameApp {
     this.socket.on('disconnect', (reason) => {
       console.log(`💔 Disconnected from server: ${reason}`)
       this.updateConnectionStatus(false)
-      
+
       if (reason !== 'io server disconnect' && reason !== 'io client disconnect') {
         this.showConnectionLostIndicator()
       }
@@ -84,10 +84,10 @@ class GameApp {
     // Game state events
     this.socket.on('game_state_update', (gameState) => {
       // Detect game reset (when we go back to lobby phase with no players)
-      const wasReset = this.gameState && 
-                      this.gameState.phase === 'in_progress' && 
-                      gameState.phase === 'lobby' && 
-                      Object.keys(gameState.players).length === 0
+      const wasReset = this.gameState &&
+        this.gameState.phase === 'in_progress' &&
+        gameState.phase === 'lobby' &&
+        Object.keys(gameState.players).length === 0
 
       this.gameState = gameState
       this.updateUI()
@@ -262,6 +262,9 @@ class GameApp {
       document.getElementById('hostControls').style.display = 'none'
     }
 
+    // Initialize UI Components
+    this.rulesBoard = new GameRulesBoard(this)
+
     // Window resize handler
     window.addEventListener('resize', () => {
       if (this.game) {
@@ -276,6 +279,11 @@ class GameApp {
     this.updateScoreBoard()
     this.updateGameInfo()
     this.updateHostControls()
+
+    // Update rules board visibility based on game state
+    if (this.rulesBoard) {
+      this.rulesBoard.updateVisibility(this.gameState)
+    }
   }
 
   updateScoreBoard() {
@@ -447,7 +455,7 @@ class GameApp {
 
     // Show modal
     modal.style.display = 'flex'
-    
+
     // Focus token input
     setTimeout(() => {
       tokenInput.focus()
@@ -484,7 +492,7 @@ class GameApp {
     const errorDiv = document.getElementById('authError')
     errorDiv.textContent = message
     errorDiv.style.display = 'block'
-    
+
     // Auto-hide after 5 seconds
     setTimeout(() => {
       errorDiv.style.display = 'none'
@@ -499,7 +507,7 @@ class GameApp {
 
     const submitBtn = document.getElementById('authSubmitBtn')
     const tokenInput = document.getElementById('hostTokenInput')
-    
+
     // Disable form during verification
     submitBtn.disabled = true
     submitBtn.textContent = '🔍 驗證中...'
@@ -508,7 +516,7 @@ class GameApp {
     try {
       // Test the token by attempting a simple host operation
       const testSocket = io()
-      
+
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           reject(new Error('連線超時'))
@@ -516,7 +524,7 @@ class GameApp {
 
         testSocket.on('connect', () => {
           // Test token with a simple host operation
-          testSocket.emit('host_control', { 
+          testSocket.emit('host_control', {
             action: 'test_auth',
             token: token
           })
@@ -539,13 +547,13 @@ class GameApp {
       this.hostToken = token
       this.hostAuthenticated = true
       this.hideHostAuthModal()
-      
+
       // Continue with normal initialization
       this.setupSocket()
       this.setupPhaser()
       this.setupUI()
       this.updateMobileUrl()
-      
+
       // Initialize host controls with token
       if (this.isHost) {
         this.hostControls = new HostControls(this)
@@ -554,7 +562,7 @@ class GameApp {
     } catch (error) {
       console.error('Host authentication failed:', error)
       this.showAuthError(error.message || '驗證失敗，請檢查令牌是否正確')
-      
+
       // Re-enable form
       submitBtn.disabled = false
       submitBtn.textContent = '🔓 驗證並進入'

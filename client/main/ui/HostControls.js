@@ -20,13 +20,13 @@ class HostControls {
       console.error('Socket not available')
       return
     }
-    
+
     // Add token to the request if available
     const requestData = { ...data }
     if (this.hostToken) {
       requestData.token = this.hostToken
     }
-    
+
     this.gameApp.socket.emit('host_control', requestData)
   }
 
@@ -75,13 +75,16 @@ class HostControls {
     const existingAdvancedBtn = document.getElementById('advancedControlBtn')
     if (existingAdvancedBtn) return
 
-    // Add background music control button
-    const musicBtn = document.createElement('button')
-    musicBtn.id = 'backgroundMusicBtn'
-    musicBtn.className = 'host-btn music-btn'
-    musicBtn.textContent = '🎵 背景音樂'
-    musicBtn.addEventListener('click', () => this.toggleBackgroundMusic())
-    hostControls.appendChild(musicBtn)
+    // Create floating background music button
+    this.createFloatingMusicButton()
+
+    // Add game rules control button
+    const rulesBtn = document.createElement('button')
+    rulesBtn.id = 'gameRulesBtn'
+    rulesBtn.className = 'host-btn rules-btn'
+    rulesBtn.textContent = '📋 遊戲規則'
+    rulesBtn.addEventListener('click', () => this.toggleGameRules())
+    hostControls.appendChild(rulesBtn)
 
     // Add advanced control button
     const advancedBtn = document.createElement('button')
@@ -179,7 +182,7 @@ class HostControls {
 
     document.body.appendChild(panel)
     this.addPanelStyles()
-    
+
     // Setup volume control
     this.setupVolumeControl()
   }
@@ -189,17 +192,17 @@ class HostControls {
     document.addEventListener('click', (event) => {
       const target = event.target
       const action = target.getAttribute('data-action')
-      
+
       if (!action) return
-      
+
       // Prevent default behavior
       event.preventDefault()
-      
+
       // Update music button state after toggle
       if (action === 'toggle-music') {
         setTimeout(() => this.updateMusicButtonState(), 100)
       }
-      
+
       switch (action) {
         case 'close-panel':
           target.closest('.advanced-panel').classList.add('hidden')
@@ -261,62 +264,62 @@ class HostControls {
 
     // Clear container first
     container.innerHTML = ''
-    
+
     // Create elements safely without innerHTML
     this.currentGameState.teams.forEach((team) => {
       const teamControl = document.createElement('div')
       teamControl.className = 'team-control'
       teamControl.dataset.teamId = team.id
-      
+
       const teamInfo = document.createElement('div')
       teamInfo.className = 'team-info'
-      
+
       const emoji = document.createElement('span')
       emoji.className = 'team-emoji'
       emoji.textContent = team.emoji
-      
+
       const name = document.createElement('span')
       name.className = 'team-name'
       name.textContent = team.name || '隊伍 ' + team.id.split('_')[1]
-      
+
       const memberCount = document.createElement('span')
       memberCount.className = 'member-count'
       memberCount.textContent = `(${team.members.length} 人)`
-      
+
       teamInfo.appendChild(emoji)
       teamInfo.appendChild(name)
       teamInfo.appendChild(memberCount)
-      
+
       const teamActions = document.createElement('div')
       teamActions.className = 'team-actions'
-      
+
       const leftBtn = document.createElement('button')
       leftBtn.className = 'mini-btn'
       leftBtn.textContent = '←'
       leftBtn.addEventListener('click', () => this.moveTeam(team.id, -1))
-      
+
       const position = document.createElement('span')
       position.className = 'position'
       position.textContent = `位置: ${team.position || 0}`
-      
+
       const rightBtn = document.createElement('button')
       rightBtn.className = 'mini-btn'
       rightBtn.textContent = '→'
       rightBtn.addEventListener('click', () => this.moveTeam(team.id, 1))
-      
+
       const eliminateBtn = document.createElement('button')
       eliminateBtn.className = 'mini-btn eliminate-btn'
       eliminateBtn.textContent = team.isEliminated ? '復活' : '淘汰'
       eliminateBtn.addEventListener('click', () => this.toggleElimination(team.id))
-      
+
       teamActions.appendChild(leftBtn)
       teamActions.appendChild(position)
       teamActions.appendChild(rightBtn)
       teamActions.appendChild(eliminateBtn)
-      
+
       teamControl.appendChild(teamInfo)
       teamControl.appendChild(teamActions)
-      
+
       container.appendChild(teamControl)
     })
   }
@@ -327,13 +330,13 @@ class HostControls {
 
     // Clear selector first
     selector.innerHTML = ''
-    
+
     // Add default option
     const defaultOption = document.createElement('option')
     defaultOption.value = ''
     defaultOption.textContent = '選擇隊伍...'
     selector.appendChild(defaultOption)
-    
+
     // Add team options safely
     this.currentGameState.teams.forEach((team) => {
       const option = document.createElement('option')
@@ -353,7 +356,7 @@ class HostControls {
 
     // Clear container first
     container.innerHTML = ''
-    
+
     // Create stat items safely
     const stats = [
       { label: '總玩家數:', value: playerCount },
@@ -362,17 +365,17 @@ class HostControls {
       { label: '當前回合:', value: this.currentGameState.round || 1 },
       { label: '遊戲階段:', value: this.getPhaseText(this.currentGameState.phase) }
     ]
-    
+
     stats.forEach(stat => {
       const statItem = document.createElement('div')
       statItem.className = 'stat-item'
-      
+
       const label = document.createElement('span')
       label.textContent = stat.label
-      
+
       const value = document.createElement('span')
       value.textContent = stat.value
-      
+
       statItem.appendChild(label)
       statItem.appendChild(value)
       container.appendChild(statItem)
@@ -421,12 +424,12 @@ class HostControls {
         </div>
       </div>
     `
-    
+
     this.addTeamModalStyles()
-    
+
     // Populate teams
     setTimeout(() => this.updateTeamsList(), 100)
-    
+
     return modal
   }
 
@@ -434,26 +437,26 @@ class HostControls {
   updateTeamsList() {
     const container = document.getElementById('teamsList')
     if (!container || !this.currentGameState?.teams) return
-    
+
     if (this.currentGameState.teams.length === 0) {
       container.innerHTML = '<p style="color: #666; text-align: center;">隊伍加載中...</p>'
       return
     }
-    
+
     // Clear container first
     container.innerHTML = ''
-    
+
     // Create team items safely
     this.currentGameState.teams.forEach(team => {
       const teamItem = document.createElement('div')
       teamItem.className = 'team-item'
-      
+
       const teamInfo = document.createElement('div')
       teamInfo.className = 'team-info'
-      
+
       const teamName = document.createElement('div')
       teamName.className = 'team-name'
-      
+
       if (team.image) {
         const img = document.createElement('img')
         img.src = team.image
@@ -466,46 +469,46 @@ class HostControls {
         emoji.textContent = team.emoji
         teamName.appendChild(emoji)
       }
-      
+
       const nameStrong = document.createElement('strong')
       nameStrong.textContent = team.name
       teamName.appendChild(nameStrong)
-      
+
       const memberCount = document.createElement('span')
       memberCount.className = 'member-count'
       memberCount.textContent = `(${team.members.length} 人)`
       teamName.appendChild(memberCount)
-      
+
       const teamUrl = document.createElement('div')
       teamUrl.className = 'team-url'
-      
+
       const small = document.createElement('small')
       small.textContent = '加入連結: '
-      
+
       const link = document.createElement('a')
       link.href = team.joinUrl
       link.target = '_blank'
       link.textContent = team.joinUrl
-      
+
       small.appendChild(link)
       teamUrl.appendChild(small)
-      
+
       teamInfo.appendChild(teamName)
       teamInfo.appendChild(teamUrl)
-      
+
       const teamActions = document.createElement('div')
       teamActions.className = 'team-actions'
-      
+
       const copyBtn = document.createElement('button')
       copyBtn.className = 'copy-btn'
       copyBtn.textContent = '📋 複製連結'
       copyBtn.addEventListener('click', () => this.copyURL(team.joinUrl))
-      
+
       teamActions.appendChild(copyBtn)
-      
+
       teamItem.appendChild(teamInfo)
       teamItem.appendChild(teamActions)
-      
+
       container.appendChild(teamItem)
     })
   }
@@ -528,7 +531,7 @@ class HostControls {
         animation: fadeInOut 2s ease-out;
       `
       successMsg.textContent = '✅ 連結已複製到剪貼板'
-      
+
       if (!document.querySelector('#copyAnimation')) {
         const style = document.createElement('style')
         style.id = 'copyAnimation'
@@ -542,7 +545,7 @@ class HostControls {
         `
         document.head.appendChild(style)
       }
-      
+
       document.body.appendChild(successMsg)
       setTimeout(() => successMsg.remove(), 2000)
     }).catch(err => {
@@ -666,15 +669,15 @@ class HostControls {
   }
 
   updateMusicButtonState() {
-    const musicBtn = document.getElementById('backgroundMusicBtn')
+    const musicBtn = document.getElementById('floatingMusicBtn')
     const state = this.audioManager.getState()
-    
+
     if (musicBtn) {
       if (state.isPlaying) {
-        musicBtn.textContent = '🔇 停止音樂'
+        musicBtn.textContent = '🔇'
         musicBtn.classList.add('playing')
       } else {
-        musicBtn.textContent = '🎵 背景音樂'
+        musicBtn.textContent = '🎵'
         musicBtn.classList.remove('playing')
       }
     }
@@ -689,13 +692,39 @@ class HostControls {
   setupVolumeControl() {
     const volumeSlider = document.getElementById('musicVolume')
     const volumeLabel = document.getElementById('volumeLabel')
-    
+
     if (volumeSlider && volumeLabel) {
       volumeSlider.addEventListener('input', (e) => {
         const volume = parseInt(e.target.value) / 100
         this.audioManager.setVolume(volume)
         volumeLabel.textContent = `${e.target.value}%`
       })
+    }
+  }
+
+  // Game Rules Control Methods
+  toggleGameRules() {
+    if (this.gameApp.rulesBoard) {
+      if (this.gameApp.rulesBoard.isVisible) {
+        this.gameApp.rulesBoard.hideRules()
+      } else {
+        this.gameApp.rulesBoard.showRules()
+      }
+      this.updateRulesButtonState()
+    }
+  }
+
+  updateRulesButtonState() {
+    const rulesBtn = document.getElementById('gameRulesBtn')
+
+    if (rulesBtn && this.gameApp.rulesBoard) {
+      if (this.gameApp.rulesBoard.isVisible) {
+        rulesBtn.textContent = '❌ 隱藏規則'
+        rulesBtn.classList.add('active')
+      } else {
+        rulesBtn.textContent = '📋 遊戲規則'
+        rulesBtn.classList.remove('active')
+      }
     }
   }
 
@@ -714,6 +743,13 @@ class HostControls {
     if (advancedPanel) {
       advancedPanel.remove()
       console.log('HostControls: Removed advanced controls panel')
+    }
+
+    // Remove floating music button
+    const floatingMusicBtn = document.getElementById('floatingMusicBtn')
+    if (floatingMusicBtn) {
+      floatingMusicBtn.remove()
+      console.log('HostControls: Removed floating music button')
     }
 
     // Remove any other host-related modals
@@ -758,6 +794,24 @@ class HostControls {
     if (startGameBtn) startGameBtn.disabled = !hasTeamsWithMembers || gameInProgress || gameEnded
     if (skipTurnBtn) skipTurnBtn.disabled = !gameInProgress
     if (endGameBtn) endGameBtn.disabled = !gameInProgress
+  }
+
+  createFloatingMusicButton() {
+    // Remove existing floating button if present
+    const existingBtn = document.getElementById('floatingMusicBtn')
+    if (existingBtn) {
+      existingBtn.remove()
+    }
+
+    // Create floating music button
+    const musicBtn = document.createElement('button')
+    musicBtn.id = 'floatingMusicBtn'
+    musicBtn.className = 'floating-music-btn'
+    musicBtn.textContent = '🎵'
+    musicBtn.addEventListener('click', () => this.toggleBackgroundMusic())
+
+    document.body.appendChild(musicBtn)
+    this.updateMusicButtonState()
   }
 
   addPanelStyles() {
@@ -1030,6 +1084,70 @@ class HostControls {
                 color: #666;
                 font-size: 12px;
                 min-width: 30px;
+            }
+
+            .rules-btn {
+                background: #34495e !important;
+                transition: all 0.3s ease;
+            }
+
+            .rules-btn:hover {
+                background: #2c3e50 !important;
+            }
+
+            .rules-btn.active {
+                background: #e74c3c !important;
+                animation: pulse 2s infinite;
+            }
+
+            .floating-music-btn {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+                color: white;
+                border: none;
+                font-size: 24px;
+                cursor: pointer;
+                box-shadow: 0 4px 20px rgba(155, 89, 182, 0.4);
+                transition: all 0.3s ease;
+                z-index: 1000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .floating-music-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 25px rgba(155, 89, 182, 0.6);
+                background: linear-gradient(135deg, #8e44ad 0%, #7d3c98 100%);
+            }
+
+            .floating-music-btn.playing {
+                background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+                animation: musicPulse 2s infinite;
+            }
+
+            .floating-music-btn.playing:hover {
+                background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+            }
+
+            @keyframes musicPulse {
+                0% { 
+                    box-shadow: 0 4px 20px rgba(231, 76, 60, 0.4);
+                    transform: scale(1);
+                }
+                50% { 
+                    box-shadow: 0 6px 30px rgba(231, 76, 60, 0.8);
+                    transform: scale(1.05);
+                }
+                100% { 
+                    box-shadow: 0 4px 20px rgba(231, 76, 60, 0.4);
+                    transform: scale(1);
+                }
             }
         `
     document.head.appendChild(styles)
