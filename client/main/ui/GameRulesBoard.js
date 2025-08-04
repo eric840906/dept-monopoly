@@ -9,7 +9,7 @@ class GameRulesBoard {
     this.currentPage = 0
     this.totalPages = 4
     this.keydownHandler = null
-    
+
     this.setupRulesBoard()
     this.loadGameRules()
   }
@@ -18,8 +18,8 @@ class GameRulesBoard {
     // Create rules board container
     this.rulesContainer = document.createElement('div')
     this.rulesContainer.id = 'gameRulesBoard'
-    this.rulesContainer.className = 'rules-board'
-    
+    this.rulesContainer.className = 'rules-board hidden' // Start hidden
+
     document.body.appendChild(this.rulesContainer)
     this.addRulesStyles()
   }
@@ -28,68 +28,45 @@ class GameRulesBoard {
     // Game rules content organized by pages
     this.rulesContent = [
       {
-        title: "🎯 遊戲目標",
-        icon: "🏆",
-        content: [
-          "📍 在棋盤上移動並完成各種挑戰",
-          "🎮 透過小遊戲獲得積分",
-          "👥 團隊合作達成最高分數",
-          "🥇 在規定時間內成為積分王！"
-        ],
-        highlight: "目標：獲得最高團隊積分！"
+        title: '遊戲說明',
+        icon: '',
+        content: ['每隊選出一位隊長', '隊長掃描 QR code 加入遊戲', '隊長可以與隊員討論答案', '隊長負責最終決策和提交', '注意時間限制，動作要快！'],
+        highlight: '準備好了嗎？讓遊戲開始吧！',
       },
       {
-        title: "🎲 遊戲流程",
-        icon: "🔄",
-        content: [
-          "1️⃣ 隊長擲骰子決定移動步數",
-          "2️⃣ 移動到新位置觸發事件",
-          "3️⃣ 完成小遊戲或挑戰",
-          "4️⃣ 根據表現獲得積分獎勵",
-          "5️⃣ 輪到下一隊繼續遊戲"
-        ],
-        highlight: "記住：只有隊長可以擲骰子和提交答案！"
+        title: '遊戲目標',
+        icon: '',
+        content: ['在棋盤上移動並完成各種挑戰', '透過小遊戲獲得積分', '團隊合作達成最高分數', '在規定時間內成為積分王！'],
+        highlight: '目標：獲得最高團隊積分！',
       },
       {
-        title: "🎮 小遊戲類型",
-        icon: "🎪",
-        content: [
-          "📝 選擇題：選出正確答案",
-          "✅❌ 是非題：判斷對錯",
-          "🔄 流程排序：按正確順序排列",
-          "🔗 連連看：配對正確組合",
-          "⏰ 限時作答：把握黃金時間！"
-        ],
-        highlight: "提示：隊友可以協助討論，但只有隊長能提交答案"
+        title: '遊戲流程',
+        icon: '',
+        content: ['1️⃣ 隊長擲骰子決定移動步數', '2️⃣ 移動到新位置觸發事件', '3️⃣ 完成小遊戲或挑戰', '4️⃣ 根據表現獲得積分獎勵', '5️⃣ 輪到下一隊繼續遊戲'],
+        highlight: '記住：只有隊長可以擲骰子和提交答案！',
       },
       {
-        title: "📱 操作說明",
-        icon: "🎯",
-        content: [
-          "📲 用手機掃描 QR Code 加入隊伍",
-          "👥 非隊長可以看題目並討論",
-          "🎯 隊長負責最終決策和提交",
-          "⏱️ 注意時間限制，動作要快！",
-          "🏃‍♂️ 隊長輪替：每回合自動更換"
-        ],
-        highlight: "準備好了嗎？讓遊戲開始吧！"
-      }
+        title: '小遊戲類型',
+        icon: '',
+        content: ['選擇題：選出正確答案', '是非題：判斷對錯', '流程排序：按正確順序排列', '連連看：配對正確組合', '限時作答：把握黃金時間！'],
+        highlight: '提示：隊友可以協助討論，但只有隊長能提交答案',
+      },
     ]
   }
 
   showRules() {
     if (this.isVisible) return
-    
+
     this.currentPage = 0
     this.renderRulesPage()
     this.rulesContainer.classList.remove('hidden')
     this.isVisible = true
-    
+
     // Update host button state
     if (this.gameApp.hostControls) {
       this.gameApp.hostControls.updateRulesButtonState()
     }
-    
+
     // Animate in
     setTimeout(() => {
       this.rulesContainer.classList.add('visible')
@@ -98,13 +75,13 @@ class GameRulesBoard {
 
   hideRules() {
     if (!this.isVisible) return
-    
+
     this.rulesContainer.classList.remove('visible')
-    
+
     setTimeout(() => {
       this.rulesContainer.classList.add('hidden')
       this.isVisible = false
-      
+
       // Update host button state
       if (this.gameApp.hostControls) {
         this.gameApp.hostControls.updateRulesButtonState()
@@ -114,7 +91,7 @@ class GameRulesBoard {
 
   renderRulesPage() {
     const currentRule = this.rulesContent[this.currentPage]
-    
+
     this.rulesContainer.innerHTML = `
       <div class="rules-board-content">
         <div class="rules-header">
@@ -130,13 +107,17 @@ class GameRulesBoard {
 
         <div class="rules-body">
           <div class="rules-content">
-            ${currentRule.content.map(item => `
+            ${currentRule.content
+              .map(
+                (item) => `
               <div class="rule-item">
                 <span class="rule-text">${item}</span>
               </div>
-            `).join('')}
+            `
+              )
+              .join('')}
           </div>
-          
+
           <div class="rules-highlight">
             <div class="highlight-box">
               <span class="highlight-icon">💡</span>
@@ -151,29 +132,36 @@ class GameRulesBoard {
               <span class="nav-icon">◀</span>
               <span class="nav-text">上一頁</span>
             </button>
-            
+
             <div class="page-dots" id="rulesPageDots">
-              ${Array.from({length: this.totalPages}, (_, i) => `
-                <div class="page-dot ${i === this.currentPage ? 'active' : ''}" 
+              ${Array.from(
+                { length: this.totalPages },
+                (_, i) => `
+                <div class="page-dot ${i === this.currentPage ? 'active' : ''}"
                      data-page="${i}"></div>
-              `).join('')}
+              `
+              ).join('')}
             </div>
-            
+
             <button class="nav-btn next-btn" id="rulesNextBtn" ${this.currentPage === this.totalPages - 1 ? 'disabled' : ''}>
               <span class="nav-text">下一頁</span>
               <span class="nav-icon">▶</span>
             </button>
           </div>
-          
-          ${this.currentPage === this.totalPages - 1 ? `
+
+          ${
+            this.currentPage === this.totalPages - 1
+              ? `
             <div class="start-game-prompt">
               <p class="prompt-text">📢 請主持人開始遊戲</p>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       </div>
     `
-    
+
     // Set up event listeners after rendering
     this.setupEventListeners()
   }
@@ -191,11 +179,11 @@ class GameRulesBoard {
     // Navigation buttons
     const prevBtn = document.getElementById('rulesPrevBtn')
     const nextBtn = document.getElementById('rulesNextBtn')
-    
+
     if (prevBtn) {
       prevBtn.addEventListener('click', () => this.previousPage())
     }
-    
+
     if (nextBtn) {
       nextBtn.addEventListener('click', () => this.nextPage())
     }
@@ -261,7 +249,7 @@ class GameRulesBoard {
     if (content) {
       content.style.opacity = '0.7'
       content.style.transform = 'scale(0.98)'
-      
+
       setTimeout(() => {
         this.renderRulesPage()
         const newContent = this.rulesContainer.querySelector('.rules-board-content')
@@ -276,13 +264,11 @@ class GameRulesBoard {
   // Check if rules should be shown based on game state
   updateVisibility(gameState) {
     if (!gameState) return
-    
-    const shouldShow = gameState.phase === 'lobby' && Object.keys(gameState.players).length > 0
-    
-    if (shouldShow && !this.isVisible) {
-      // Auto-show rules when players join in lobby
-      setTimeout(() => this.showRules(), 1000)
-    } else if (!shouldShow && this.isVisible) {
+
+    // Only auto-hide when game starts, don't auto-show when players join
+    const shouldHide = gameState.phase !== 'lobby' && this.isVisible
+
+    if (shouldHide) {
       // Auto-hide when game starts
       this.hideRules()
     }
@@ -366,7 +352,7 @@ class GameRulesBoard {
 
       .rules-title h2 {
         margin: 0;
-        font-size: 28px;
+        font-size: 32px;
         font-weight: bold;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       }
@@ -433,7 +419,7 @@ class GameRulesBoard {
       }
 
       .rule-text {
-        font-size: 18px;
+        font-size: 24px;
         line-height: 1.6;
         color: #2c3e50;
         font-weight: 500;
@@ -460,7 +446,7 @@ class GameRulesBoard {
       }
 
       .highlight-text {
-        font-size: 16px;
+        font-size: 24px;
         font-weight: bold;
         color: #e65100;
         line-height: 1.4;

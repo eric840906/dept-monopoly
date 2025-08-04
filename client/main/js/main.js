@@ -45,6 +45,7 @@ class GameApp {
     this.socket.on('connect', () => {
       console.log(`✅ Connected to server (Socket ID: ${this.socket.id})`)
       this.updateConnectionStatus(true)
+      this.hideConnectionLostIndicator()
     })
 
     this.socket.on('disconnect', (reason) => {
@@ -84,10 +85,7 @@ class GameApp {
     // Game state events
     this.socket.on('game_state_update', (gameState) => {
       // Detect game reset (when we go back to lobby phase with no players)
-      const wasReset = this.gameState &&
-        this.gameState.phase === 'in_progress' &&
-        gameState.phase === 'lobby' &&
-        Object.keys(gameState.players).length === 0
+      const wasReset = this.gameState && this.gameState.phase === 'in_progress' && gameState.phase === 'lobby' && Object.keys(gameState.players).length === 0
 
       this.gameState = gameState
       this.updateUI()
@@ -404,7 +402,6 @@ class GameApp {
     mobileUrlElement.textContent = `${baseUrl}/mobile`
   }
 
-
   cleanupModals() {
     console.log('Cleaning up modals after game reset')
 
@@ -431,7 +428,7 @@ class GameApp {
 
     // Remove any other modals that might be present
     const allModals = document.querySelectorAll('.modal, .game-modal, [class*="modal"]')
-    allModals.forEach(modal => {
+    allModals.forEach((modal) => {
       // Skip the auth modal since we handle it separately
       if (modal.id !== 'hostAuthModal') {
         modal.remove()
@@ -526,7 +523,7 @@ class GameApp {
           // Test token with a simple host operation
           testSocket.emit('host_control', {
             action: 'test_auth',
-            token: token
+            token: token,
           })
         })
 
@@ -558,7 +555,6 @@ class GameApp {
       if (this.isHost) {
         this.hostControls = new HostControls(this)
       }
-
     } catch (error) {
       console.error('Host authentication failed:', error)
       this.showAuthError(error.message || '驗證失敗，請檢查令牌是否正確')

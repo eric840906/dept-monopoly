@@ -1221,7 +1221,7 @@ class GameScene extends Phaser.Scene {
     // container.add(headerTeamImage)
 
     const teamHeader = this.add.text(0, -360, `${this.getEventName(gameData.eventType)}`, {
-      fontSize: '24px',
+      fontSize: '32px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -1231,7 +1231,7 @@ class GameScene extends Phaser.Scene {
 
     // Add timer display
     const timerText = this.add.text(0, -400, `⏱️ 時間: ${Math.ceil(gameData.timeLimit / 1000)} 秒`, {
-      fontSize: '18px',
+      fontSize: '26px',
       fontFamily: 'Arial',
       color: '#e74c3c',
       align: 'center',
@@ -1297,7 +1297,7 @@ class GameScene extends Phaser.Scene {
     }
 
     const questionText = this.add.text(0, -320, question.question, {
-      fontSize: '24px',
+      fontSize: '32px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -1356,7 +1356,7 @@ class GameScene extends Phaser.Scene {
     question.options.forEach((option, index) => {
       const yPosition = optionsStartY + index * 70
       const optionText = this.add.text(0, yPosition, `${String.fromCharCode(65 + index)}. ${option}`, {
-        fontSize: '18px',
+        fontSize: '26px',
         fontFamily: 'Arial',
         color: '#bdc3c7',
         align: 'center',
@@ -1373,7 +1373,7 @@ class GameScene extends Phaser.Scene {
     })
 
     const instructionText = this.add.text(0, 320, '👆 隊伍正在選擇答案...', {
-      fontSize: '16px',
+      fontSize: '24px',
       fontFamily: 'Arial',
       color: '#f39c12',
       align: 'center',
@@ -1387,7 +1387,7 @@ class GameScene extends Phaser.Scene {
     us.setScale(1.25)
     container.add(us)
     const title = this.add.text(0, -150, gameData.data?.title || '🔄 流程排序', {
-      fontSize: '20px',
+      fontSize: '28px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -1396,7 +1396,7 @@ class GameScene extends Phaser.Scene {
     container.add(title)
 
     const description = this.add.text(0, -110, gameData.data?.description || '請將以下項目按正確順序排列：', {
-      fontSize: '16px',
+      fontSize: '24px',
       fontFamily: 'Arial',
       color: '#bdc3c7',
       align: 'center',
@@ -1438,7 +1438,7 @@ class GameScene extends Phaser.Scene {
     container.add(chi)
     const matchingData = gameData.data || {}
     const title = this.add.text(0, -250, `🔗 ${matchingData.title || '連連看'}`, {
-      fontSize: '24px',
+      fontSize: '32px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -1447,7 +1447,7 @@ class GameScene extends Phaser.Scene {
     container.add(title)
 
     const description = this.add.text(0, -210, '請將左側和右側的項目正確配對：', {
-      fontSize: '18px',
+      fontSize: '26px',
       fontFamily: 'Arial',
       color: '#bdc3c7',
       align: 'center',
@@ -1474,7 +1474,7 @@ class GameScene extends Phaser.Scene {
       container.add(itemBg)
 
       const itemText = this.add.text(-400, -150 + index * 80, item, {
-        fontSize: '18px',
+        fontSize: '26px',
         fontFamily: 'Arial',
         color: '#ffffff',
         align: 'center',
@@ -1490,7 +1490,7 @@ class GameScene extends Phaser.Scene {
       container.add(itemBg)
 
       const itemText = this.add.text(400, -150 + index * 80, item, {
-        fontSize: '18px',
+        fontSize: '26px',
         fontFamily: 'Arial',
         color: '#ffffff',
         align: 'center',
@@ -1500,7 +1500,7 @@ class GameScene extends Phaser.Scene {
     })
 
     const instructionText = this.add.text(0, 250, '🔗 隊伍正在進行配對...', {
-      fontSize: '16px',
+      fontSize: '24px',
       fontFamily: 'Arial',
       color: '#f39c12',
       align: 'center',
@@ -1556,7 +1556,7 @@ class GameScene extends Phaser.Scene {
 
     // Question text with Safari-compatible styling - scaled up for larger container
     const questionText = this.add.text(0, -200, questionTextContent, {
-      fontSize: '36px',
+      fontSize: '44px',
       fontFamily: 'Arial, sans-serif',
       color: '#ffffff',
       align: 'center',
@@ -1575,7 +1575,7 @@ class GameScene extends Phaser.Scene {
     // Safari-compatible emoji rendering - larger emoji
     const trueEmojiText = question.trueEmoji || '⭕'
     const trueEmoji = this.add.text(-200, 20, trueEmojiText, {
-      fontSize: '64px',
+      fontSize: '72px',
       fontFamily: 'Arial, Apple Color Emoji, sans-serif',
       color: '#ffffff',
     })
@@ -1583,7 +1583,7 @@ class GameScene extends Phaser.Scene {
     container.add(trueEmoji)
 
     const trueLabel = this.add.text(-200, 100, '正確', {
-      fontSize: '32px',
+      fontSize: '40px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -1600,7 +1600,7 @@ class GameScene extends Phaser.Scene {
     // Safari-compatible emoji rendering - larger emoji
     const falseEmojiText = question.falseEmoji || '❌'
     const falseEmoji = this.add.text(200, 20, falseEmojiText, {
-      fontSize: '64px',
+      fontSize: '72px',
       fontFamily: 'Arial, Apple Color Emoji, sans-serif',
       color: '#ffffff',
     })
@@ -1608,7 +1608,7 @@ class GameScene extends Phaser.Scene {
     container.add(falseEmoji)
 
     const falseLabel = this.add.text(200, 100, '錯誤', {
-      fontSize: '32px',
+      fontSize: '40px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',

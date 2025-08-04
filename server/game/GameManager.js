@@ -285,7 +285,7 @@ class GameManager {
     setTimeout(() => {
       this.isTransitioning = false
       console.log('Team skip transition completed, actions now allowed')
-      
+
       // CRITICAL FIX: Broadcast updated game state with isTransitioning = false
       // This ensures mobile clients can exit the "回合切換中..." state after team skip
       this.broadcastGameState()
@@ -436,7 +436,7 @@ class GameManager {
     const landedTile = this.board[newPosition]
 
     // Find the player who initiated the roll for better event targeting
-    const initiatingPlayer = playerId ? team.members.find(m => m.id === playerId) : null
+    const initiatingPlayer = playerId ? team.members.find((m) => m.id === playerId) : null
 
     this.io.emit(SOCKET_EVENTS.DICE_ROLL, {
       teamId,
@@ -694,7 +694,7 @@ class GameManager {
     }
 
     // Verify the player is still a member of the team
-    const isTeamMember = team.members.some(member => member.id === playerId)
+    const isTeamMember = team.members.some((member) => member.id === playerId)
     if (!isTeamMember) {
       console.warn(`Player ${playerId} is not a member of team ${teamId}`)
       return { valid: false, reason: 'not_team_member', message: '您不是該隊伍的成員' }
@@ -704,12 +704,12 @@ class GameManager {
     console.log(`Captain validation for team ${teamId}: player ${playerId} is ${isValidCaptain ? 'VALID' : 'INVALID'} captain (expected: ${team.currentCaptainId})`)
 
     if (!isValidCaptain) {
-      const currentCaptain = team.members.find(m => m.id === team.currentCaptainId)
+      const currentCaptain = team.members.find((m) => m.id === team.currentCaptainId)
       const captainName = currentCaptain ? currentCaptain.nickname : '未知'
-      return { 
-        valid: false, 
-        reason: 'not_captain', 
-        message: `只有隊長 ${captainName} 可以執行此操作，請與隊長討論後由隊長操作` 
+      return {
+        valid: false,
+        reason: 'not_captain',
+        message: `只有隊長 ${captainName} 可以執行此操作，請與隊長討論後由隊長操作`,
       }
     }
 
@@ -779,7 +779,7 @@ class GameManager {
 
     // Notify clients that turn transition is starting
     this.io.emit(SOCKET_EVENTS.TURN_TRANSITION_START, {
-      message: '正在切換回合，請稍等...'
+      message: '正在切換回合，請稍等...',
     })
 
     // Check if there are any teams left
@@ -833,11 +833,11 @@ class GameManager {
     setTimeout(() => {
       this.isTransitioning = false
       console.log('Turn transition completed, emitting TURN_END event')
-      
+
       // CRITICAL FIX: Broadcast updated game state with isTransitioning = false
       // This ensures mobile clients can exit the "回合切換中..." state
       this.broadcastGameState()
-      
+
       // Now emit turn end after transition is complete
       this.io.emit(SOCKET_EVENTS.TURN_END, {
         nextTeamId: this.gameState.currentTurnTeamId,
@@ -845,7 +845,7 @@ class GameManager {
         captainName: captain?.nickname || 'Unknown',
         round: this.gameState.round,
       })
-      
+
       console.log(`Round ${this.gameState.round} Turn transitioned to team ${this.gameState.currentTurnTeamId} with captain ${captain?.nickname}`)
     }, 300) // Reduced delay but still allows for state sync
   }
@@ -863,7 +863,7 @@ class GameManager {
         return
       }
 
-      this.gameState.turnTimer -= 2000
+      this.gameState.turnTimer -= 1000
 
       this.io.emit(SOCKET_EVENTS.TIMER_UPDATE, {
         timeLeft: this.gameState.turnTimer,
@@ -872,7 +872,7 @@ class GameManager {
       if (this.gameState.turnTimer <= 0) {
         this.endTurn()
       }
-    }, 2000) // Reduced frequency from 1s to 2s to optimize network traffic
+    }, 1000) // Reduced frequency from 1s to 2s to optimize network traffic
   }
 
   clearTurnTimer() {
@@ -967,7 +967,7 @@ class GameManager {
       // Include transition state in game state broadcasts to prevent race conditions
       const gameStateWithTransition = {
         ...this.gameState,
-        isTransitioning: this.isTransitioning
+        isTransitioning: this.isTransitioning,
       }
       this.io.emit(SOCKET_EVENTS.GAME_STATE_UPDATE, gameStateWithTransition)
     }

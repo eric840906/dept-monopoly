@@ -322,7 +322,7 @@ class MobileGameApp {
       console.log('Mini game timer started:', data)
       // Only start actual timer for our team
       if (this.teamData && data.teamId === this.teamData.id) {
-        this.startMiniGameTimer()
+        this.startMiniGameTimer(data.gameData)
       }
     })
 
@@ -2321,11 +2321,18 @@ class MobileGameApp {
     }, 1000)
   }
 
-  startMiniGameTimer() {
-    console.log('Starting mini-game timer')
-    // This will be handled by the MiniGames library
+  startMiniGameTimer(gameData) {
+    console.log('Starting mini-game timer with data:', gameData)
+    
     if (window.MiniGames && window.MiniGames.startTimer) {
-      window.MiniGames.startTimer()
+      if (gameData && gameData.timeLimit) {
+        // Convert milliseconds to seconds
+        const seconds = Math.floor(gameData.timeLimit / 1000)
+        console.log(`Starting mini-game timer for ${seconds} seconds`)
+        window.MiniGames.startTimer(seconds)
+      } else {
+        console.warn('No game data or time limit available for timer')
+      }
     }
   }
 }
