@@ -201,7 +201,7 @@ class GameScene extends Phaser.Scene {
         { key: 'chanceImg2', path: '/images/special/chance2.png' },
         { key: 'chanceImg3', path: '/images/special/chance.png' },
         { key: 'destinyImg', path: '/images/special/destiny.png' },
-        { key: 'destinyImg2', path: '/images/special/destiny3.png' },
+        { key: 'destinyImg2', path: '/images/special/destiny2.png' },
         { key: 'destinyImg3', path: '/images/special/destiny4.png' },
         // Add more tile images here as needed
       ]
@@ -311,9 +311,9 @@ class GameScene extends Phaser.Scene {
         const chanceImage = this.add.image(x, y, chanceImageKey)
         // Set different sizes for different chance images
         if (chanceImageKey === 'chanceImg' || chanceImageKey === 'chanceImg2') {
-          chanceImage.setDisplaySize(60, 60)
+          chanceImage.setDisplaySize(70, 70)
         } else {
-          chanceImage.setDisplaySize(100, 100)
+          chanceImage.setDisplaySize(120, 120)
         }
         chanceImage.setOrigin(0.5)
       } else if (tile.type === 'destiny') {
@@ -323,7 +323,12 @@ class GameScene extends Phaser.Scene {
         destinyImageCounter++
 
         const destinyImage = this.add.image(x, y, destinyImageKey)
-        destinyImage.setDisplaySize(60, 60)
+        if (destinyImageKey === 'destinyImg2') {
+          destinyImage.setDisplaySize(120, 120)
+        } else {
+          destinyImage.setDisplaySize(100, 100)
+        }
+
         destinyImage.setOrigin(0.5)
       }
 
@@ -654,7 +659,7 @@ class GameScene extends Phaser.Scene {
 
     // Add title text
     const titleText = this.add.text(0, -35, '🎲 擲骰子', {
-      fontSize: '16px',
+      fontSize: '24px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -664,7 +669,7 @@ class GameScene extends Phaser.Scene {
 
     // Add total text (initially hidden)
     const totalText = this.add.text(0, 35, `總和: ${total}`, {
-      fontSize: '18px',
+      fontSize: '26px',
       fontFamily: 'Arial',
       color: '#f39c12',
       align: 'center',
@@ -946,7 +951,7 @@ class GameScene extends Phaser.Scene {
     teamImage.setAlpha(0)
 
     const notificationText = this.add.text(this.centerX, 100, `⚡ ${teamDisplay} 觸發事件！\n${this.getEventName(eventType)}`, {
-      fontSize: '20px',
+      fontSize: '28px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -1004,7 +1009,7 @@ class GameScene extends Phaser.Scene {
     bannerTeamImage.setOrigin(0.5)
 
     const bannerText = this.add.text(this.centerX, this.centerY, `🎮 小遊戲準備中...\n${teamDisplay}\n${this.getEventName(eventType)}\n${captainDisplay}\n等待介面載入完成`, {
-      fontSize: '16px',
+      fontSize: '24px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -1064,7 +1069,7 @@ class GameScene extends Phaser.Scene {
       fontSize: '36px',
       fontFamily: 'Arial',
       color: '#ffffff',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
     })
     preparationTitle.setOrigin(0.5)
     preparationContainer.add(preparationTitle)
@@ -1072,7 +1077,7 @@ class GameScene extends Phaser.Scene {
     const teamText = this.add.text(0, -40, teamDisplay, {
       fontSize: '24px',
       fontFamily: 'Arial',
-      color: '#ffd700'
+      color: '#ffd700',
     })
     teamText.setOrigin(0.5)
     preparationContainer.add(teamText)
@@ -1081,16 +1086,16 @@ class GameScene extends Phaser.Scene {
       fontSize: '72px',
       fontFamily: 'Arial',
       color: '#ffd700',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
     })
     countdownText.setOrigin(0.5)
     preparationContainer.add(countdownText)
 
     const instructionText = this.add.text(0, 100, '隊員正在閱讀題目，準備開始答題', {
-      fontSize: '20px',
+      fontSize: '28px',
       fontFamily: 'Arial',
       color: '#ffffff',
-      alpha: 0.8
+      alpha: 0.8,
     })
     instructionText.setOrigin(0.5)
     preparationContainer.add(instructionText)
@@ -1109,7 +1114,7 @@ class GameScene extends Phaser.Scene {
         if (timeLeft <= 0) {
           preparationContainer.destroy()
         }
-      }
+      },
     })
 
     // Store reference for cleanup
@@ -1183,7 +1188,7 @@ class GameScene extends Phaser.Scene {
     }
 
     const statusText = this.add.text(0, -50, '🎮 遊戲界面載入中...', {
-      fontSize: '18px',
+      fontSize: '26px',
       fontFamily: 'Arial',
       color: '#f39c12',
       align: 'center',
@@ -1373,7 +1378,7 @@ class GameScene extends Phaser.Scene {
     })
 
     const instructionText = this.add.text(0, 320, '👆 隊伍正在選擇答案...', {
-      fontSize: '24px',
+      fontSize: '32px',
       fontFamily: 'Arial',
       color: '#f39c12',
       align: 'center',
@@ -1500,7 +1505,7 @@ class GameScene extends Phaser.Scene {
     })
 
     const instructionText = this.add.text(0, 250, '🔗 隊伍正在進行配對...', {
-      fontSize: '24px',
+      fontSize: '32px',
       fontFamily: 'Arial',
       color: '#f39c12',
       align: 'center',
@@ -1511,7 +1516,7 @@ class GameScene extends Phaser.Scene {
 
   renderDefaultGame(container, gameData) {
     const title = this.add.text(0, -100, '🎯 特殊事件', {
-      fontSize: '20px',
+      fontSize: '28px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -1520,7 +1525,7 @@ class GameScene extends Phaser.Scene {
     container.add(title)
 
     const eventInfo = this.add.text(0, -50, `事件類型: ${gameData.eventType}`, {
-      fontSize: '16px',
+      fontSize: '24px',
       fontFamily: 'Arial',
       color: '#bdc3c7',
       align: 'center',
@@ -1529,7 +1534,7 @@ class GameScene extends Phaser.Scene {
     container.add(eventInfo)
 
     const instructionText = this.add.text(0, 0, '⏳ 請等待主持人說明...', {
-      fontSize: '16px',
+      fontSize: '24px',
       fontFamily: 'Arial',
       color: '#f39c12',
       align: 'center',
@@ -1768,7 +1773,7 @@ class GameScene extends Phaser.Scene {
 
     // Add big success/failure text above everything
     const bigResultText = this.add.text(this.centerX, this.centerY - 200, success ? '成功！' : '失敗！', {
-      fontSize: '72px',
+      fontSize: '80px',
       fontFamily: 'Arial',
       color: success ? '#2ecc71' : '#e74c3c',
       align: 'center',
@@ -1778,7 +1783,7 @@ class GameScene extends Phaser.Scene {
 
     // Speech bubble text without success/failure indicators
     const resultText = this.add.text(bubbleX, bubbleY, `${teamDisplay}\n${feedback}\n${scoreText} 分`, {
-      fontSize: '28px',
+      fontSize: '36px',
       fontFamily: 'Arial',
       color: '#333333',
       align: 'center',
@@ -1879,7 +1884,7 @@ class GameScene extends Phaser.Scene {
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
     const cardText = this.add.text(this.centerX, this.centerY, `🃏 恭喜${teamDisplay}抓住機會！\n\n${chanceCard.title}\n${chanceCard.description}\n\n💰 分數變化: ${scoreText}${positionText}`, {
-      fontSize: '32px',
+      fontSize: '40px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -1963,7 +1968,7 @@ class GameScene extends Phaser.Scene {
     const teamDisplay = team.name || `隊伍 ${team.id.split('_')[1]}`
 
     const cardText = this.add.text(this.centerX, this.centerY, `💀 可憐哪${teamDisplay}！ \n\n${destinyCard.title}\n${destinyCard.description}\n\n💸 分數變化: ${scoreText}${positionText}`, {
-      fontSize: '32px',
+      fontSize: '40px',
       fontFamily: 'Arial',
       color: '#ffffff',
       align: 'center',
@@ -2055,7 +2060,7 @@ class GameScene extends Phaser.Scene {
 
     // Game end title
     const gameEndTitle = this.add.text(this.centerX, this.centerY - 250, '🏁 遊戲結束！', {
-      fontSize: '48px',
+      fontSize: '56px',
       fontFamily: 'Arial',
       color: '#2c3e50',
       align: 'center',
@@ -2073,7 +2078,7 @@ class GameScene extends Phaser.Scene {
     }
 
     const winnerAnnouncement = this.add.text(this.centerX, this.centerY - 180, winnerText, {
-      fontSize: '32px',
+      fontSize: '40px',
       fontFamily: 'Arial',
       color: '#e74c3c',
       align: 'center',
@@ -2083,7 +2088,7 @@ class GameScene extends Phaser.Scene {
 
     // Leaderboard title
     const leaderboardTitle = this.add.text(this.centerX, this.centerY - 120, '排行榜', {
-      fontSize: '28px',
+      fontSize: '36px',
       fontFamily: 'Arial',
       color: '#2c3e50',
       align: 'center',
@@ -2110,7 +2115,7 @@ class GameScene extends Phaser.Scene {
 
         // Team rank and info (centered to align with image)
         const teamRankText = this.add.text(this.centerX + 20, yPosition, `${teamDisplay} ${rankEmoji} - ${team.score} 分`, {
-          fontSize: '24px',
+          fontSize: '32px',
           fontFamily: 'Arial',
           color: '#2c3e50',
           align: 'center',
@@ -2176,7 +2181,7 @@ class GameScene extends Phaser.Scene {
 
       // Add "點擊關閉" text
       const closeText = this.add.text(this.centerX, this.centerY + 220, '點擊任意處關閉', {
-        fontSize: '18px',
+        fontSize: '26px',
         fontFamily: 'Arial',
         color: '#7f8c8d',
         align: 'center',
