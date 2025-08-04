@@ -5,11 +5,26 @@ class MiniGameProcessor {
     this.activeGames = new Map() // teamId -> gameData
     this.usedQuestions = new Map() // teamId -> Set of used question IDs
     this.currentGameSeed = Date.now() // Seed for synchronizing random generation across teams
+    this.timeouts = new Map() // teamId -> setTimeout ID
+    this.gameManager = null // Will be set by GameManager
+  }
+
+  setGameManager(gameManager) {
+    this.gameManager = gameManager
   }
 
   resetUsedQuestions() {
     console.log('Resetting all used questions for all teams')
     this.usedQuestions.clear()
+  }
+
+  clearAllTimeouts() {
+    console.log('Clearing all mini-game timeouts')
+    for (const [teamId, timeoutId] of this.timeouts) {
+      clearTimeout(timeoutId)
+      console.log(`Cleared timeout for team ${teamId}`)
+    }
+    this.timeouts.clear()
   }
 
   startMiniGame(teamId, eventType, gameState) {
@@ -38,11 +53,93 @@ class MiniGameProcessor {
       if (gameData.isWaitingForClient) {
         gameData.startTime = Date.now()
         gameData.isWaitingForClient = false
-        console.log(`Mini-game timer started for team ${teamId}`)
+        console.log(`Mini-game client ready confirmed for team ${teamId}`)
+        // Note: Timeout will be set up when actual timer starts (after preparation phase)
       }
       return true // Always return true if the game exists
     }
     return false
+  }
+
+  startTimerWithTimeout(teamId) {
+    const gameData = this.activeGames.get(teamId)
+    if (gameData) {
+      // Update the actual start time to now (when timer really starts)
+      gameData.startTime = Date.now()
+      console.log(`Mini-game timer started for team ${teamId}`)
+      
+      // Set up automatic timeout for the game duration
+      this.setupTimeout(teamId, gameData.timeLimit)
+      return true
+    }
+    return false
+  }
+
+  setupTimeout(teamId, timeLimit) {
+    // Clear any existing timeout for this team
+    this.clearTimeout(teamId)
+    
+    // Set up new timeout
+    const timeoutId = setTimeout(() => {
+      this.handleTimeout(teamId)
+    }, timeLimit)
+    
+    this.timeouts.set(teamId, timeoutId)
+    console.log(`Timeout set for team ${teamId}: ${timeLimit}ms`)
+  }
+
+  clearTimeout(teamId) {
+    const timeoutId = this.timeouts.get(teamId)
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+      this.timeouts.delete(teamId)
+      console.log(`Timeout cleared for team ${teamId}`)
+    }
+  }
+
+  handleTimeout(teamId) {
+    console.log(`Mini-game timeout for team ${teamId}`)
+    
+    const gameData = this.activeGames.get(teamId)
+    if (!gameData || !this.gameManager) {
+      console.log(`No game data or game manager for team ${teamId}`)
+      return
+    }
+
+    // Check if this game has already been processed (race condition prevention)
+    if (gameData.processed) {
+      console.log(`Mini-game for team ${teamId} already processed, ignoring timeout`)
+      return
+    }
+
+    // Mark as processed to prevent double processing
+    gameData.processed = true
+
+    // Process timeout as a failed submission
+    const result = this.evaluateSubmission(gameData, { timeout: true })
+    
+    // Update team score through game manager
+    this.gameManager.updateScore(teamId, result.score, result.feedback)
+
+    // Broadcast timeout result
+    if (this.gameManager.io) {
+      this.gameManager.io.emit('mini_game_result', {
+        teamId,
+        ...result,
+      })
+    }
+
+    // Clean up
+    this.activeGames.delete(teamId)
+    this.clearTimeout(teamId)
+
+    // End turn after timeout
+    setTimeout(() => {
+      if (this.gameManager.gameState.phase === 'in_progress' && 
+          this.gameManager.gameState.currentTurnTeamId === teamId) {
+        this.gameManager.endTurn()
+      }
+    }, GAME_CONFIG.RESULT_DISPLAY_TIME || 3000)
   }
 
   generateMiniGameData(eventType, gameState, teamId) {
@@ -430,15 +527,20 @@ class MiniGameProcessor {
     if (!gameData) {
       // Instead of throwing an error, return a graceful response
       console.warn(`No active mini-game for team ${teamId}. Submission ignored.`)
-      return {
-        eventType: 'no_active_game',
-        score: 0,
-        success: false,
-        feedback: '沒有進行中的小遊戲，請等待您的回合',
-        timeTaken: 0,
-        isTimeout: false,
-      }
+      return null // Return null to indicate no banner should be shown
     }
+
+    // Check if this game has already been processed (race condition prevention)
+    if (gameData.processed) {
+      console.log(`Mini-game for team ${teamId} already processed, ignoring submission`)
+      return null // Return null to indicate no banner should be shown
+    }
+
+    // Mark as processed to prevent double processing
+    gameData.processed = true
+
+    // Clear timeout since we received a submission
+    this.clearTimeout(teamId)
 
     const result = this.evaluateSubmission(gameData, submission)
 
@@ -465,7 +567,7 @@ class MiniGameProcessor {
     let success = false
     let feedback = ''
 
-    if (isTimeout && !submission.timeout) {
+    if (isTimeout || submission.timeout) {
       score = -5
       feedback = '時間超時'
     } else {

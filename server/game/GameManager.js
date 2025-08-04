@@ -10,6 +10,7 @@ class GameManager {
     this.gameTimer = null
     this.board = this.generateBoard()
     this.miniGameProcessor = new MiniGameProcessor()
+    this.miniGameProcessor.setGameManager(this) // Set reference for timeout handling
     this.isTransitioning = false // Track turn transition state to prevent race conditions
 
     // Auto-create predefined teams
@@ -657,6 +658,9 @@ class GameManager {
 
       // After preparation time, emit the actual timer start
       setTimeout(() => {
+        // Start the actual timer with timeout in the mini-game processor
+        this.miniGameProcessor.startTimerWithTimeout(teamId)
+        
         this.io.emit('mini_game_timer_start', {
           teamId,
           gameData: gameData
@@ -719,6 +723,12 @@ class GameManager {
   processMiniGameSubmission(teamId, submission) {
     try {
       const result = this.miniGameProcessor.processResult(teamId, submission)
+
+      // If result is null, don't process or broadcast anything (no active game or already processed)
+      if (!result) {
+        console.log(`No result to process for team ${teamId} - submission ignored`)
+        return
+      }
 
       // Update team score
       this.updateScore(teamId, result.score, result.feedback)
@@ -907,6 +917,9 @@ class GameManager {
       this.gameTimer = null
     }
 
+    // Clear any active mini-game timeouts
+    this.miniGameProcessor.clearAllTimeouts()
+
     // Find winner (highest score) - handle empty teams array
     let winner = null
     if (this.gameState.teams.length > 0) {
@@ -953,8 +966,9 @@ class GameManager {
     // Generate new board for fresh game
     this.board = this.generateBoard()
 
-    // Clear mini-games and reset used questions
+    // Clear mini-games, timeouts, and reset used questions
     this.miniGameProcessor.activeGames.clear()
+    this.miniGameProcessor.clearAllTimeouts()
     this.miniGameProcessor.resetUsedQuestions()
 
     console.log('Game reset complete - ready for new players')
