@@ -199,6 +199,27 @@ class GameApp {
       console.log('Captain changed:', data)
       // Update UI to reflect captain change
       this.updateUI()
+      
+      // Show team switch banner with new captain info (this replaces the transition banner)
+      if (this.game && this.game.scene.getScene('GameScene')) {
+        this.game.scene.getScene('GameScene').showTeamSwitchBanner('輪到新隊伍！', data)
+      }
+    })
+
+    this.socket.on('turn_transition_start', (data) => {
+      console.log('Turn transition started:', data)
+      // Show initial transition banner (will be replaced by captain_change banner)
+      if (this.game && this.game.scene.getScene('GameScene')) {
+        this.game.scene.getScene('GameScene').showTeamSwitchBanner(data.message)
+      }
+    })
+
+    this.socket.on('turn_end', (data) => {
+      console.log('Turn ended:', data)
+      // Team switch banner will auto-hide after 3 seconds, but we can also hide it manually if needed
+      // if (this.game && this.game.scene.getScene('GameScene')) {
+      //   this.game.scene.getScene('GameScene').hideTeamSwitchBanner()
+      // }
     })
 
     // Error handling

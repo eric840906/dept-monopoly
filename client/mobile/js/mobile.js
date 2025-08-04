@@ -14,7 +14,7 @@ class MobileGameApp {
     this.actionsDisabled = false // Track if actions are temporarily disabled
     this.disableActionsTimer = null // Timer for temporarily disabling actions
     this.hasRolledThisTurn = false // Track if dice has been rolled this turn
-    
+
     // Connection management
     this.reconnectAttempts = 0
     this.maxReconnectAttempts = 10
@@ -23,7 +23,7 @@ class MobileGameApp {
     this.connectionLost = false
     this.lastDisconnectTime = null
     this.heartbeatInterval = null
-    
+
     this.init()
   }
 
@@ -31,7 +31,7 @@ class MobileGameApp {
     // Check for team joining URL parameter
     const urlParams = new URLSearchParams(window.location.search)
     this.targetTeamId = urlParams.get('team') // Changed from 'teamId' to 'team'
-    
+
     this.setupSocket()
     this.setupEventListeners()
     this.setupEventDelegation()
@@ -58,12 +58,12 @@ class MobileGameApp {
     document.addEventListener('click', (event) => {
       const target = event.target
       const action = target.getAttribute('data-action')
-      
+
       if (!action) return
-      
+
       // Prevent default behavior
       event.preventDefault()
-      
+
       switch (action) {
         case 'close-overlay':
           // Find the overlay element and remove it
@@ -72,8 +72,8 @@ class MobileGameApp {
             overlay.remove()
             // Decrement modal count if it's a game modal
             if (overlay.classList.contains('game-modal')) {
-              this.modalCount--;
-              this.enableDiceButtonIfReady();
+              this.modalCount--
+              this.enableDiceButtonIfReady()
             }
           } else {
             // Fallback: try to find parent elements
@@ -83,8 +83,8 @@ class MobileGameApp {
             }
             if (parent) {
               if (parent.classList.contains('game-modal')) {
-                this.modalCount--;
-                this.enableDiceButtonIfReady();
+                this.modalCount--
+                this.enableDiceButtonIfReady()
               }
               parent.remove()
             }
@@ -98,7 +98,7 @@ class MobileGameApp {
     // Enhanced error handling for socket errors
     document.addEventListener('socket-validation-error', (event) => {
       const { reason, message } = event.detail
-      
+
       if (reason === 'not_captain') {
         this.showCaptainValidationError(message)
       } else if (reason === 'wrong_turn') {
@@ -111,7 +111,7 @@ class MobileGameApp {
 
   setupSocket() {
     console.log('🔌 Setting up socket connection...')
-    
+
     this.socket = io({
       // Mobile-optimized connection settings
       forceNew: false,
@@ -131,20 +131,20 @@ class MobileGameApp {
     this.socket.on('connect', () => {
       const wasReconnecting = this.isReconnecting
       console.log(`✅ Connected to server (Socket ID: ${this.socket.id})`)
-      
+
       // Reset reconnection state
       this.reconnectAttempts = 0
       this.isReconnecting = false
       this.connectionLost = false
       this.reconnectDelay = 1000
-      
+
       this.updateConnectionStatus(true)
       this.hideReconnectingIndicator()
-      
+
       if (wasReconnecting) {
         console.log('🔄 Successfully reconnected!')
         this.showReconnectionSuccess()
-        
+
         // Restore player state if needed
         if (this.playerData && !this.gameState?.players[this.playerData.id]) {
           console.log('🔄 Restoring player after reconnection...')
@@ -156,7 +156,7 @@ class MobileGameApp {
           this.showScreen('joinScreen')
         }
       }
-      
+
       // Start heartbeat monitoring
       this.startHeartbeat()
     })
@@ -167,7 +167,7 @@ class MobileGameApp {
       this.connectionLost = true
       this.updateConnectionStatus(false)
       this.stopHeartbeat()
-      
+
       // Handle different disconnect reasons
       if (reason === 'io server disconnect' || reason === 'io client disconnect') {
         // Server or client initiated disconnect - don't auto-reconnect
@@ -216,21 +216,22 @@ class MobileGameApp {
       console.log('Join successful:', data)
       this.playerData = data.player
       this.updatePlayerInfo()
-      
+
       // If we have a target team, try to join it after a small delay
       // This allows time for the game state to be synchronized
       if (this.targetTeamId) {
         console.log(`Attempting to join team: ${this.targetTeamId}`)
         this.showTeamJoiningIndicator()
-        
+
         // Wait a bit for game state to sync, then attempt team join
         setTimeout(() => {
-          if (this.targetTeamId) { // Check again in case it was cleared
+          if (this.targetTeamId) {
+            // Check again in case it was cleared
             this.socket.emit('team_join', { teamId: this.targetTeamId })
           }
         }, 500) // 500ms delay
       }
-      
+
       this.showScreen('lobbyScreen')
     })
 
@@ -243,16 +244,13 @@ class MobileGameApp {
     // Game state events
     this.socket.on('game_state_update', (gameState) => {
       console.log('Game state updated:', gameState)
-      
+
       // Detect game reset (when we go back to lobby phase with no players)
-      const wasReset = this.gameState && 
-                      this.gameState.phase === 'in_progress' && 
-                      gameState.phase === 'lobby' && 
-                      Object.keys(gameState.players).length === 0
+      const wasReset = this.gameState && this.gameState.phase === 'in_progress' && gameState.phase === 'lobby' && Object.keys(gameState.players).length === 0
 
       this.gameState = gameState
       this.updateGameState()
-      
+
       // Clean up modals if game was reset
       if (wasReset) {
         this.cleanupModals()
@@ -330,15 +328,15 @@ class MobileGameApp {
       console.log('Mini game result:', data)
       // Only show result if it's for our team
       if (this.teamData && data.teamId === this.teamData.id) {
-        this.modalCount++; // Track mini-game result modal
+        this.modalCount++ // Track mini-game result modal
         if (window.MiniGames) {
           window.MiniGames.showResult(data)
         }
         // Mini-game results don't auto-close, so enable dice after a delay
         setTimeout(() => {
-          this.modalCount--;
-          this.enableDiceButtonIfReady();
-        }, 3000); // Give time for players to read the result
+          this.modalCount--
+          this.enableDiceButtonIfReady()
+        }, 3000) // Give time for players to read the result
       }
     })
 
@@ -366,7 +364,7 @@ class MobileGameApp {
     // Enhanced error handling with validation-specific responses
     this.socket.on('error', (error) => {
       console.error('Socket error:', error)
-      
+
       // Enhanced handling for captain validation errors
       if (error.reason) {
         switch (error.reason) {
@@ -384,7 +382,7 @@ class MobileGameApp {
             return
         }
       }
-      
+
       // If team joining failed, provide specific handling
       if (this.targetTeamId && error.message.includes('Team not found')) {
         // Remove joining indicator
@@ -392,20 +390,15 @@ class MobileGameApp {
         if (joiningIndicator) {
           joiningIndicator.remove()
         }
-        
+
         // Show specific error message for team not found
-        const errorMsg = `隊伍連結無效或已過期\n\n` +
-                        `原因: ${error.message}\n\n` +
-                        `建議解決方案:\n` +
-                        `• 檢查連結是否正確\n` +
-                        `• 檢查隊伍連結是否正確\n` +
-                        `• 詢問主持人最新連結`
-        
+        const errorMsg = `隊伍連結無效或已過期\n\n` + `原因: ${error.message}\n\n` + `建議解決方案:\n` + `• 檢查連結是否正確\n` + `• 檢查隊伍連結是否正確\n` + `• 詢問主持人最新連結`
+
         this.showError(errorMsg)
         this.targetTeamId = null
         return
       }
-      
+
       // Generic team joining error
       if (this.targetTeamId && error.message.includes('Team')) {
         // Remove joining indicator
@@ -415,7 +408,7 @@ class MobileGameApp {
         }
         this.targetTeamId = null
       }
-      
+
       this.showError(error.message)
     })
   }
@@ -560,10 +553,8 @@ class MobileGameApp {
       // Update lobby team display
       const playerTeamEl = document.getElementById('playerTeam')
       if (playerTeamEl) {
-        const teamIcon = team.image ? 
-          `<img src="${team.image}" alt="${team.name}" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;">` :
-          team.emoji;
-        playerTeamEl.innerHTML = `${teamIcon} ${team.name || '隊伍 ' + team.id.split('_')[1]}`;
+        const teamIcon = team.image ? `<img src="${team.image}" alt="${team.name}" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;">` : team.emoji
+        playerTeamEl.innerHTML = `${teamIcon} ${team.name || '隊伍 ' + team.id.split('_')[1]}`
       }
 
       // Show team info card
@@ -657,7 +648,7 @@ class MobileGameApp {
           turnStatusEl.textContent = '🎯 您的回合！(隊長)'
           turnStatusEl.style.color = '#2ecc71'
         } else {
-          const currentCaptain = this.teamData.members.find(m => m.id === this.teamData.currentCaptainId)
+          const currentCaptain = this.teamData.members.find((m) => m.id === this.teamData.currentCaptainId)
           const captainName = currentCaptain ? currentCaptain.nickname : '隊友'
           turnStatusEl.textContent = `🎯 您隊的回合！(隊長: ${captainName})`
           turnStatusEl.style.color = '#f39c12'
@@ -665,15 +656,15 @@ class MobileGameApp {
       } else {
         const currentTeam = this.gameState.teams.find((t) => t.id === this.gameState.currentTurnTeamId)
         if (currentTeam) {
-          const teamDisplay = currentTeam.name || `隊伍 ${currentTeam.id.split('_')[1]}`;
+          const teamDisplay = currentTeam.name || `隊伍 ${currentTeam.id.split('_')[1]}`
           if (currentTeam.isMoving) {
             turnStatusEl.textContent = `🎲 ${teamDisplay} 移動中...`
             turnStatusEl.style.color = '#e67e22'
           } else {
             if (currentTeam.image) {
-              turnStatusEl.innerHTML = `<img src="${currentTeam.image}" alt="${teamDisplay}" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;">${teamDisplay} 的回合`;
+              turnStatusEl.innerHTML = `<img src="${currentTeam.image}" alt="${teamDisplay}" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;">${teamDisplay} 的回合`
             } else {
-              turnStatusEl.textContent = `${currentTeam.emoji} ${teamDisplay} 的回合`;
+              turnStatusEl.textContent = `${currentTeam.emoji} ${teamDisplay} 的回合`
             }
             turnStatusEl.style.color = '#f39c12'
           }
@@ -692,7 +683,7 @@ class MobileGameApp {
     } else {
       this.showInterface('waitingInterface')
     }
-    
+
     // Update dice button state with transition awareness
     this.updateDiceButtonState(isMyTurn, isCaptain, isMoving, isTransitioning)
   }
@@ -750,7 +741,6 @@ class MobileGameApp {
     if (teamPositionEl) {
       teamPositionEl.textContent = this.teamData.position || 0
     }
-
   }
 
   showInterface(interfaceId) {
@@ -771,13 +761,13 @@ class MobileGameApp {
   showAdvisorDiceInterface() {
     // Hide all interfaces first
     this.showInterface('waitingInterface')
-    
+
     // Update waiting message to show advisor role for dice rolling
     const waitingMessage = document.getElementById('waitingMessage')
     if (waitingMessage && this.teamData) {
-      const currentCaptain = this.teamData.members.find(m => m.id === this.teamData.currentCaptainId)
+      const currentCaptain = this.teamData.members.find((m) => m.id === this.teamData.currentCaptainId)
       const captainName = currentCaptain ? currentCaptain.nickname : '隊友'
-      
+
       waitingMessage.innerHTML = `
         <div style="text-align: center; padding: 20px;">
           <h3 style="color: #f39c12; margin-bottom: 15px;">👥 團隊討論階段</h3>
@@ -828,9 +818,9 @@ class MobileGameApp {
     const isMyTurn = this.gameState.currentTurnTeamId === this.teamData.id
     if (!isMyTurn) {
       console.log(`Cannot roll dice - not our team turn. Current turn: ${this.gameState.currentTurnTeamId}, Our team: ${this.teamData.id}`)
-      
-      const currentTeam = this.gameState.teams.find(t => t.id === this.gameState.currentTurnTeamId)
-      const currentTeamName = currentTeam ? (currentTeam.name || `隊伍 ${currentTeam.id.split('_')[1]}`) : '其他隊伍'
+
+      const currentTeam = this.gameState.teams.find((t) => t.id === this.gameState.currentTurnTeamId)
+      const currentTeamName = currentTeam ? currentTeam.name || `隊伍 ${currentTeam.id.split('_')[1]}` : '其他隊伍'
       this.showTurnValidationError(`現在是 ${currentTeamName} 的回合，請等待輪到您的隊伍`)
       return
     }
@@ -839,8 +829,8 @@ class MobileGameApp {
     const isCaptain = this.teamData.currentCaptainId === this.playerData.id
     if (!isCaptain) {
       console.log(`Cannot roll dice - not team captain. Current captain: ${this.teamData.currentCaptainId}, Player: ${this.playerData.id}`)
-      
-      const currentCaptain = this.teamData.members.find(m => m.id === this.teamData.currentCaptainId)
+
+      const currentCaptain = this.teamData.members.find((m) => m.id === this.teamData.currentCaptainId)
       const captainName = currentCaptain ? currentCaptain.nickname : '隊友'
       this.showCaptainValidationError(`只有隊長 ${captainName} 可以擲骰子，請與隊長討論後由隊長操作`)
       return
@@ -859,9 +849,9 @@ class MobileGameApp {
     rollBtn.textContent = '已擲骰'
 
     console.log(`Rolling dice - Team: ${this.teamData.id}, Captain: ${this.playerData.id}`)
-    this.socket.emit('dice_roll', { 
-      teamId: this.teamData.id, 
-      playerId: this.playerData.id 
+    this.socket.emit('dice_roll', {
+      teamId: this.teamData.id,
+      playerId: this.playerData.id,
     })
   }
 
@@ -869,6 +859,10 @@ class MobileGameApp {
     console.log('Turn started for:', data)
     // Reset dice roll flag when a new turn starts
     this.hasRolledThisTurn = false
+    
+    // Disable actions temporarily when turn starts to ensure state stability
+    this.disableActionsTemporarily('turn_start', 4000)
+    
     this.updateGameInterface()
   }
 
@@ -881,34 +875,34 @@ class MobileGameApp {
 
   handleCaptainChange(data) {
     console.log('Captain change event received:', data)
-    
+
     // CRITICAL FIX: Ensure immediate state consistency to prevent race conditions
     if (this.gameState) {
-      const team = this.gameState.teams.find(t => t.id === data.teamId)
+      const team = this.gameState.teams.find((t) => t.id === data.teamId)
       if (team) {
         // Update team's captain info immediately
         team.currentCaptainId = data.captainId
         console.log(`Updated team ${data.teamId} captain to ${data.captainName} (${data.captainId})`)
-        
+
         // If this is our team, update local team data AND force interface refresh
         if (this.teamData && this.teamData.id === data.teamId) {
           console.log('Captain change affects our team, updating all references')
-          
+
           // Update both references to prevent inconsistency
           this.teamData.currentCaptainId = data.captainId
-          
+
           // Clear any pending action attempts to prevent stale actions
           this.lastActionAttempt = 0
-          
-          // ENHANCED: Disable actions temporarily during captain transition
-          this.disableActionsTemporarily('captain_change', 1000)
-          
+
+          // ENHANCED: Disable actions temporarily during captain transition (extended duration)
+          this.disableActionsTemporarily('captain_change', 4000)
+
           // Force complete UI refresh to reflect captain change
           this.updateGameInterface()
-          
+
           // Show captain change notification to reduce confusion
           this.showCaptainChangeNotification(data.captainName, data.captainId === this.playerData.id)
-          
+
           // Additional logging for debugging
           console.log(`Team ${data.teamId} captain updated - Player ${this.playerData.id} is ${this.playerData.id === data.captainId ? 'NOW CAPTAIN' : 'NOT CAPTAIN'}`)
         }
@@ -958,7 +952,7 @@ class MobileGameApp {
       opacity: 0.9;
       min-width: 300px;
     `
-    
+
     // Add title text
     const titleText = document.createElement('div')
     titleText.textContent = '🎲 擲骰子'
@@ -971,7 +965,7 @@ class MobileGameApp {
       font-weight: bold;
     `
     diceContainer.appendChild(titleText)
-    
+
     // Create two dice containers
     const diceRow = document.createElement('div')
     diceRow.style.cssText = `
@@ -981,10 +975,10 @@ class MobileGameApp {
       gap: 30px;
       margin-bottom: 25px;
     `
-    
+
     const dice1Container = this.createMobileDiceSprite()
     const dice2Container = this.createMobileDiceSprite()
-    
+
     diceRow.appendChild(dice1Container)
     const plusSign = document.createElement('div')
     plusSign.textContent = '+'
@@ -995,9 +989,9 @@ class MobileGameApp {
     `
     diceRow.appendChild(plusSign)
     diceRow.appendChild(dice2Container)
-    
+
     diceContainer.appendChild(diceRow)
-    
+
     // Add total text (initially hidden)
     const totalText = document.createElement('div')
     totalText.textContent = `總和: ${total}`
@@ -1011,14 +1005,14 @@ class MobileGameApp {
       transition: opacity 0.3s ease;
     `
     diceContainer.appendChild(totalText)
-    
+
     overlay.appendChild(diceContainer)
     document.body.appendChild(overlay)
 
     // Start rolling animation - same logic as main screen
     this.animateMobileDiceRoll(dice1Container, dice2Container, finalDice, totalText, overlay)
   }
-  
+
   createMobileDiceSprite() {
     // Create dice container
     const diceContainer = document.createElement('div')
@@ -1028,7 +1022,7 @@ class MobileGameApp {
       justify-content: center;
       align-items: center;
     `
-    
+
     const diceBg = document.createElement('div')
     diceBg.style.cssText = `
       width: 50px;
@@ -1042,28 +1036,53 @@ class MobileGameApp {
       position: relative;
     `
     diceContainer.appendChild(diceBg)
-    
+
     // Store reference to background for adding dots
     diceContainer.diceBg = diceBg
-    
+
     return diceContainer
   }
-  
+
   createMobileDiceDots(value) {
     const dots = []
     const dotSize = 4
     const dotColor = '#2c3e50'
-    
+
     // Create dots in mobile-friendly positions
     const positions = {
       1: [[0, 0]], // center
-      2: [[-10, -10], [10, 10]], // diagonal
-      3: [[-12, -12], [0, 0], [12, 12]], // diagonal
-      4: [[-10, -10], [10, -10], [-10, 10], [10, 10]], // corners
-      5: [[-10, -10], [10, -10], [0, 0], [-10, 10], [10, 10]], // corners + center
-      6: [[-10, -12], [10, -12], [-10, 0], [10, 0], [-10, 12], [10, 12]] // two columns
+      2: [
+        [-10, -10],
+        [10, 10],
+      ], // diagonal
+      3: [
+        [-12, -12],
+        [0, 0],
+        [12, 12],
+      ], // diagonal
+      4: [
+        [-10, -10],
+        [10, -10],
+        [-10, 10],
+        [10, 10],
+      ], // corners
+      5: [
+        [-10, -10],
+        [10, -10],
+        [0, 0],
+        [-10, 10],
+        [10, 10],
+      ], // corners + center
+      6: [
+        [-10, -12],
+        [10, -12],
+        [-10, 0],
+        [10, 0],
+        [-10, 12],
+        [10, 12],
+      ], // two columns
     }
-    
+
     if (positions[value]) {
       positions[value].forEach(([x, y]) => {
         const dot = document.createElement('div')
@@ -1075,34 +1094,34 @@ class MobileGameApp {
           border-radius: 50%;
           left: 50%;
           top: 50%;
-          transform: translate(${x - dotSize/2}px, ${y - dotSize/2}px);
+          transform: translate(${x - dotSize / 2}px, ${y - dotSize / 2}px);
         `
         dots.push(dot)
       })
     }
-    
+
     return dots
   }
-  
+
   updateMobileDiceValue(diceSprite, value) {
     // Clear existing dots
     const existingDots = diceSprite.diceBg.querySelectorAll('div')
-    existingDots.forEach(dot => dot.remove())
-    
+    existingDots.forEach((dot) => dot.remove())
+
     // Add new dots
     const newDots = this.createMobileDiceDots(value)
-    newDots.forEach(dot => diceSprite.diceBg.appendChild(dot))
+    newDots.forEach((dot) => diceSprite.diceBg.appendChild(dot))
   }
-  
+
   animateMobileDiceRoll(dice1, dice2, finalValues, totalText, overlay) {
     let rollCount = 0
     const maxRolls = 15 // Same as main screen
     const rollInterval = 100 // Same as main screen
-    
+
     // Add bouncing animation to dice - same as main screen
     dice1.style.animation = 'mobileDiceBounce 0.1s ease infinite'
     dice2.style.animation = 'mobileDiceBounce 0.1s ease infinite'
-    
+
     // Add CSS for mobile dice bounce if not exists
     if (!document.querySelector('#mobileDiceAnimation')) {
       const style = document.createElement('style')
@@ -1120,34 +1139,34 @@ class MobileGameApp {
       `
       document.head.appendChild(style)
     }
-    
+
     const rollTimer = setInterval(() => {
       rollCount++
-      
+
       // Generate random dice values during rolling - same as main screen
       const randomValue1 = Math.floor(Math.random() * 6) + 1
       const randomValue2 = Math.floor(Math.random() * 6) + 1
-      
+
       this.updateMobileDiceValue(dice1, randomValue1)
       this.updateMobileDiceValue(dice2, randomValue2)
-      
+
       if (rollCount >= maxRolls) {
         // Show final values
         this.updateMobileDiceValue(dice1, finalValues[0])
         this.updateMobileDiceValue(dice2, finalValues[1])
-        
+
         // Stop bouncing animation
         dice1.style.animation = 'none'
         dice2.style.animation = 'none'
-        
+
         // Show total with fade in - same as main screen
         totalText.style.opacity = '1'
-        
+
         // Add simple celebration effect
         this.addMobileCelebration(overlay)
-        
+
         clearInterval(rollTimer)
-        
+
         // Remove overlay after showing result - same timing as main screen
         setTimeout(() => {
           overlay.remove()
@@ -1157,7 +1176,7 @@ class MobileGameApp {
       }
     }, rollInterval)
   }
-  
+
   addMobileCelebration(overlay) {
     // Add simple sparkle effect - much more subtle than before
     for (let i = 0; i < 6; i++) {
@@ -1175,13 +1194,13 @@ class MobileGameApp {
         pointer-events: none;
       `
       overlay.appendChild(sparkle)
-      
+
       // Remove sparkle after animation
       setTimeout(() => {
         if (sparkle.parentElement) {
           sparkle.remove()
         }
-      }, 800 + (i * 100))
+      }, 800 + i * 100)
     }
   }
 
@@ -1311,26 +1330,34 @@ class MobileGameApp {
     }
 
     console.log(`Showing mini-game for our team: ${data.teamId}`)
-    
+
     // Check if current player is the captain
-    const isCaptain = data.captainId === this.playerData.id;
-    console.log(`Player ${this.playerData.id} is ${isCaptain ? 'CAPTAIN' : 'ADVISOR'} for this mini-game`);
-    
+    const isCaptain = data.captainId === this.playerData.id
+    console.log(`Player ${this.playerData.id} is ${isCaptain ? 'CAPTAIN' : 'ADVISOR'} for this mini-game`)
+
     this.showInterface('miniGameInterface')
 
     if (window.MiniGames) {
       const miniGameContent = document.getElementById('miniGameContent')
-      
+
       // ALL team members now see the quiz interface, but with different interaction levels
-      window.MiniGames.load(data, miniGameContent, this.socket, this.teamData.id, this.playerData.id, () => {
-        // Only captain needs to notify server to start timer
-        if (isCaptain) {
-          console.log('Captain mini-game UI ready, notifying server to start timer')
-          this.socket.emit('mini_game_ready', { teamId: this.teamData.id })
-        } else {
-          console.log('Advisor mini-game UI ready, captain will start the timer')
-        }
-      }, isCaptain) // Pass captain status to MiniGames
+      window.MiniGames.load(
+        data,
+        miniGameContent,
+        this.socket,
+        this.teamData.id,
+        this.playerData.id,
+        () => {
+          // Only captain needs to notify server to start timer
+          if (isCaptain) {
+            console.log('Captain mini-game UI ready, notifying server to start timer')
+            this.socket.emit('mini_game_ready', { teamId: this.teamData.id })
+          } else {
+            console.log('Advisor mini-game UI ready, captain will start the timer')
+          }
+        },
+        isCaptain
+      ) // Pass captain status to MiniGames
     } else {
       // Fallback: if MiniGames not available, start timer immediately (only for captain)
       if (isCaptain) {
@@ -1340,8 +1367,8 @@ class MobileGameApp {
   }
 
   showAdvisorInterface(data, container) {
-    const captainName = data.captainName || '隊友';
-    
+    const captainName = data.captainName || '隊友'
+
     container.innerHTML = `
       <div class="advisor-interface">
         <style>
@@ -1381,73 +1408,73 @@ class MobileGameApp {
             color: #ff6b6b;
           }
         </style>
-        
+
         <h3>👥 團隊討論時間</h3>
-        
+
         <div class="captain-info">
           <div class="captain-name">🎯 本輪隊長：${captainName}</div>
           <p style="margin: 8px 0 0 0; font-size: 14px;">負責提交最終答案</p>
         </div>
-        
+
         <div class="advisor-tips">
           <p>💡 <strong>討論建議：</strong></p>
           <p>• 與隊友分享你的想法</p>
           <p>• 協助隊長分析選項</p>
           <p>• 確保團隊達成共識</p>
         </div>
-        
+
         <div class="timer-display">
           ⏰ <span id="miniGameTimer">${data.timeLimit / 1000}</span> 秒
         </div>
       </div>
-    `;
+    `
 
     // Start timer for advisor interface
     if (window.MiniGames && window.MiniGames.startTimer) {
-      window.MiniGames.startTimer(data.timeLimit / 1000);
+      window.MiniGames.startTimer(data.timeLimit / 1000)
     }
   }
 
   showChanceCardResult(data) {
-    const { chanceCard, newScore, newPosition } = data;
-    
+    const { chanceCard, newScore, newPosition } = data
+
     // Track modal count
-    this.modalCount++;
-    
+    this.modalCount++
+
     // Determine card color based on type
-    let cardColor, bgGradient;
+    let cardColor, bgGradient
     switch (chanceCard.type) {
       case 'disaster':
-        cardColor = '#8e44ad';
-        bgGradient = 'linear-gradient(135deg, #8e44ad 0%, #732d91 100%)';
-        break;
+        cardColor = '#8e44ad'
+        bgGradient = 'linear-gradient(135deg, #8e44ad 0%, #732d91 100%)'
+        break
       case 'bad':
-        cardColor = '#e74c3c';
-        bgGradient = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
-        break;
+        cardColor = '#e74c3c'
+        bgGradient = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)'
+        break
       case 'neutral':
-        cardColor = '#7f8c8d';
-        bgGradient = 'linear-gradient(135deg, #7f8c8d 0%, #5d6d6e 100%)';
-        break;
+        cardColor = '#7f8c8d'
+        bgGradient = 'linear-gradient(135deg, #7f8c8d 0%, #5d6d6e 100%)'
+        break
       case 'good':
-        cardColor = '#27ae60';
-        bgGradient = 'linear-gradient(135deg, #27ae60 0%, #1e8449 100%)';
-        break;
+        cardColor = '#27ae60'
+        bgGradient = 'linear-gradient(135deg, #27ae60 0%, #1e8449 100%)'
+        break
       case 'excellent':
-        cardColor = '#f1c40f';
-        bgGradient = 'linear-gradient(135deg, #f1c40f 0%, #d4ac0d 100%)';
-        break;
+        cardColor = '#f1c40f'
+        bgGradient = 'linear-gradient(135deg, #f1c40f 0%, #d4ac0d 100%)'
+        break
       default:
-        cardColor = '#34495e';
-        bgGradient = 'linear-gradient(135deg, #34495e 0%, #2c3e50 100%)';
+        cardColor = '#34495e'
+        bgGradient = 'linear-gradient(135deg, #34495e 0%, #2c3e50 100%)'
     }
 
-    const scoreText = chanceCard.scoreChange > 0 ? `+${chanceCard.scoreChange}` : `${chanceCard.scoreChange}`;
-    const positionText = chanceCard.effect === 'reset_to_start' ? '📍 回到起點！' : '';
+    const scoreText = chanceCard.scoreChange > 0 ? `+${chanceCard.scoreChange}` : `${chanceCard.scoreChange}`
+    const positionText = chanceCard.effect === 'reset_to_start' ? '📍 回到起點！' : ''
 
     // Show chance card in a modal-like overlay
-    const overlay = document.createElement('div');
-    overlay.classList.add('game-modal');
+    const overlay = document.createElement('div')
+    overlay.classList.add('game-modal')
     overlay.style.cssText = `
       position: fixed;
       top: 0;
@@ -1460,7 +1487,7 @@ class MobileGameApp {
       align-items: center;
       z-index: 9999;
       animation: fadeIn 0.3s ease-out;
-    `;
+    `
 
     overlay.innerHTML = `
       <style>
@@ -1469,13 +1496,13 @@ class MobileGameApp {
           to { opacity: 1; }
         }
         @keyframes cardSlideIn {
-          from { 
-            transform: scale(0.8) translateY(50px); 
-            opacity: 0; 
+          from {
+            transform: scale(0.8) translateY(50px);
+            opacity: 0;
           }
-          to { 
-            transform: scale(1) translateY(0); 
-            opacity: 1; 
+          to {
+            transform: scale(1) translateY(0);
+            opacity: 1;
           }
         }
         .chance-card {
@@ -1527,7 +1554,7 @@ class MobileGameApp {
           background: rgba(255,255,255,0.3);
         }
       </style>
-      
+
       <div class="chance-card">
         <div class="chance-title">🃏 ${chanceCard.title}</div>
         <div class="chance-description">${chanceCard.description}</div>
@@ -1542,73 +1569,72 @@ class MobileGameApp {
           確認
         </button>
       </div>
-    `;
+    `
 
-    document.body.appendChild(overlay);
+    document.body.appendChild(overlay)
 
     // Auto-close after 5 seconds
     setTimeout(() => {
       if (overlay.parentElement) {
-        overlay.remove();
-        this.modalCount--;
-        this.enableDiceButtonIfReady();
+        overlay.remove()
+        this.modalCount--
+        this.enableDiceButtonIfReady()
       }
-    }, 5000);
+    }, 5000)
   }
 
   showDestinyCardResult(data) {
-    const { destinyCard, newScore, newPosition } = data;
-    
+    const { destinyCard, newScore, newPosition } = data
+
     // Track modal count
-    this.modalCount++;
-    
+    this.modalCount++
+
     // Determine card color based on type (all destiny cards are negative)
-    let cardColor, bgGradient;
+    let cardColor, bgGradient
     switch (destinyCard.type) {
       case 'curse':
-        cardColor = '#8b0000';
-        bgGradient = 'linear-gradient(135deg, #8b0000 0%, #5c0000 100%)';
-        break;
+        cardColor = '#8b0000'
+        bgGradient = 'linear-gradient(135deg, #8b0000 0%, #5c0000 100%)'
+        break
       case 'storm':
-        cardColor = '#4a4a4a';
-        bgGradient = 'linear-gradient(135deg, #4a4a4a 0%, #2f2f2f 100%)';
-        break;
+        cardColor = '#4a4a4a'
+        bgGradient = 'linear-gradient(135deg, #4a4a4a 0%, #2f2f2f 100%)'
+        break
       case 'financial':
-        cardColor = '#b22222';
-        bgGradient = 'linear-gradient(135deg, #b22222 0%, #8b1a1a 100%)';
-        break;
+        cardColor = '#b22222'
+        bgGradient = 'linear-gradient(135deg, #b22222 0%, #8b1a1a 100%)'
+        break
       case 'reputation':
-        cardColor = '#dc143c';
-        bgGradient = 'linear-gradient(135deg, #dc143c 0%, #b71c1c 100%)';
-        break;
+        cardColor = '#dc143c'
+        bgGradient = 'linear-gradient(135deg, #dc143c 0%, #b71c1c 100%)'
+        break
       case 'technical':
-        cardColor = '#800080';
-        bgGradient = 'linear-gradient(135deg, #800080 0%, #4b0082 100%)';
-        break;
+        cardColor = '#800080'
+        bgGradient = 'linear-gradient(135deg, #800080 0%, #4b0082 100%)'
+        break
       case 'competition':
-        cardColor = '#8b4513';
-        bgGradient = 'linear-gradient(135deg, #8b4513 0%, #654321 100%)';
-        break;
+        cardColor = '#8b4513'
+        bgGradient = 'linear-gradient(135deg, #8b4513 0%, #654321 100%)'
+        break
       case 'regulatory':
-        cardColor = '#696969';
-        bgGradient = 'linear-gradient(135deg, #696969 0%, #2f4f4f 100%)';
-        break;
+        cardColor = '#696969'
+        bgGradient = 'linear-gradient(135deg, #696969 0%, #2f4f4f 100%)'
+        break
       case 'economic':
-        cardColor = '#556b2f';
-        bgGradient = 'linear-gradient(135deg, #556b2f 0%, #2f4f2f 100%)';
-        break;
+        cardColor = '#556b2f'
+        bgGradient = 'linear-gradient(135deg, #556b2f 0%, #2f4f2f 100%)'
+        break
       default:
-        cardColor = '#8b0000';
-        bgGradient = 'linear-gradient(135deg, #8b0000 0%, #5c0000 100%)';
+        cardColor = '#8b0000'
+        bgGradient = 'linear-gradient(135deg, #8b0000 0%, #5c0000 100%)'
     }
 
-    const scoreText = `${destinyCard.scoreChange}`;
-    const positionText = destinyCard.effect === 'reset_to_start' ? '📍 回到起點！' :
-                        destinyCard.effect === 'move_back' ? `📍 後退 ${Math.abs(destinyCard.positionChange || 0)} 格！` : '';
+    const scoreText = `${destinyCard.scoreChange}`
+    const positionText = destinyCard.effect === 'reset_to_start' ? '📍 回到起點！' : destinyCard.effect === 'move_back' ? `📍 後退 ${Math.abs(destinyCard.positionChange || 0)} 格！` : ''
 
     // Show destiny card in a modal-like overlay
-    const overlay = document.createElement('div');
-    overlay.classList.add('game-modal');
+    const overlay = document.createElement('div')
+    overlay.classList.add('game-modal')
     overlay.style.cssText = `
       position: fixed;
       top: 0;
@@ -1621,7 +1647,7 @@ class MobileGameApp {
       align-items: center;
       z-index: 9999;
       animation: fadeIn 0.3s ease-out;
-    `;
+    `
 
     overlay.innerHTML = `
       <style>
@@ -1630,13 +1656,13 @@ class MobileGameApp {
           to { opacity: 1; }
         }
         @keyframes destinySlideIn {
-          from { 
-            transform: scale(0.8) translateY(50px); 
-            opacity: 0; 
+          from {
+            transform: scale(0.8) translateY(50px);
+            opacity: 0;
           }
-          to { 
-            transform: scale(1) translateY(0); 
-            opacity: 1; 
+          to {
+            transform: scale(1) translateY(0);
+            opacity: 1;
           }
         }
         .destiny-card {
@@ -1690,7 +1716,7 @@ class MobileGameApp {
           background: rgba(255,255,255,0.3);
         }
       </style>
-      
+
       <div class="destiny-card">
         <div class="destiny-title">💀 ${destinyCard.title}</div>
         <div class="destiny-description">${destinyCard.description}</div>
@@ -1705,18 +1731,18 @@ class MobileGameApp {
           接受命運
         </button>
       </div>
-    `;
+    `
 
-    document.body.appendChild(overlay);
+    document.body.appendChild(overlay)
 
     // Auto-close after 5 seconds
     setTimeout(() => {
       if (overlay.parentElement) {
-        overlay.remove();
-        this.modalCount--;
-        this.enableDiceButtonIfReady();
+        overlay.remove()
+        this.modalCount--
+        this.enableDiceButtonIfReady()
       }
-    }, 5000);
+    }, 5000)
   }
 
   showGameEnd(data) {
@@ -1730,13 +1756,10 @@ class MobileGameApp {
 
     if (winnerDisplay) {
       if (data.winner) {
-        const teamDisplay = data.winner.name || `隊伍 ${data.winner.id.split('_')[1]}`;
+        const teamDisplay = data.winner.name || `隊伍 ${data.winner.id.split('_')[1]}`
         winnerDisplay.innerHTML = `
                   <div style="font-size: 48px; margin-bottom: 10px;">
-                    ${data.winner.image ? 
-                      `<img src="${data.winner.image}" alt="${teamDisplay}" style="width: 48px; height: 48px;">` :
-                      `<span style="font-size: 48px;">${data.winner.emoji}</span>`
-                    }
+                    ${data.winner.image ? `<img src="${data.winner.image}" alt="${teamDisplay}" style="width: 48px; height: 48px;">` : `<span style="font-size: 48px;">${data.winner.emoji}</span>`}
                   </div>
                   <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">
                       ${teamDisplay} 獲勝！
@@ -1761,24 +1784,19 @@ class MobileGameApp {
     if (finalScoresList) {
       finalScoresList.innerHTML = data.finalScores
         .sort((a, b) => b.score - a.score)
-        .map(
-          (team, index) => {
-            const teamDisplay = team.name || `隊伍 ${team.teamId.split('_')[1]}`;
-            return `
+        .map((team, index) => {
+          const teamDisplay = team.name || `隊伍 ${team.teamId.split('_')[1]}`
+          return `
                     <div class="score-item">
                         <div>
                             <span style="margin-right: 10px;">${index + 1}.</span>
-                            ${team.image ? 
-                              `<img src="${team.image}" alt="${teamDisplay}" style="width: 20px; height: 20px; margin-right: 10px; vertical-align: middle;">` :
-                              `<span style="margin-right: 10px; font-size: 20px;">${team.emoji}</span>`
-                            }
+                            ${team.image ? `<img src="${team.image}" alt="${teamDisplay}" style="width: 20px; height: 20px; margin-right: 10px; vertical-align: middle;">` : `<span style="margin-right: 10px; font-size: 20px;">${team.emoji}</span>`}
                             <span>${teamDisplay}</span>
                         </div>
                         <span style="font-weight: bold;">${team.score}</span>
                     </div>
-                `;
-          }
-        )
+                `
+        })
         .join('')
     }
 
@@ -1813,7 +1831,7 @@ class MobileGameApp {
       animation: slideDown 0.5s ease-out;
     `
     joiningMsg.innerHTML = `⏳ 正在加入隊伍...`
-    
+
     // Add animation if not exists
     if (!document.querySelector('#teamJoinAnimation')) {
       const style = document.createElement('style')
@@ -1826,7 +1844,7 @@ class MobileGameApp {
       `
       document.head.appendChild(style)
     }
-    
+
     document.body.appendChild(joiningMsg)
   }
 
@@ -1836,7 +1854,7 @@ class MobileGameApp {
     if (joiningIndicator) {
       joiningIndicator.remove()
     }
-    
+
     // Show success message
     const successMsg = document.createElement('div')
     successMsg.style.cssText = `
@@ -1855,9 +1873,9 @@ class MobileGameApp {
       animation: slideDown 0.5s ease-out;
     `
     successMsg.innerHTML = `✅ 成功加入 ${this.teamData.name}！`
-    
+
     document.body.appendChild(successMsg)
-    
+
     // Remove after 3 seconds
     setTimeout(() => {
       if (successMsg.parentElement) {
@@ -1875,7 +1893,7 @@ class MobileGameApp {
 
     // Remove all game modals (chance cards, destiny cards, mini-game results)
     const gameModals = document.querySelectorAll('.game-modal, .overlay, [class*="modal"]')
-    gameModals.forEach(modal => {
+    gameModals.forEach((modal) => {
       modal.remove()
       console.log('Mobile: Removed modal:', modal.className)
     })
@@ -1913,7 +1931,7 @@ class MobileGameApp {
 
   handleDisconnection(reason) {
     console.log(`🔄 Handling disconnection: ${reason}`)
-    
+
     if (!this.isReconnecting) {
       this.isReconnecting = true
       this.showReconnectingIndicator(0)
@@ -1922,7 +1940,7 @@ class MobileGameApp {
 
   handleConnectionError(error) {
     console.error(`❌ Connection error: ${error.message}`)
-    
+
     if (!this.isReconnecting) {
       this.isReconnecting = true
       this.reconnectAttempts++
@@ -1932,7 +1950,7 @@ class MobileGameApp {
   startHeartbeat() {
     // Clear existing heartbeat
     this.stopHeartbeat()
-    
+
     // Send periodic ping to detect connection issues early
     this.heartbeatInterval = setInterval(() => {
       if (this.socket && this.socket.connected) {
@@ -1953,7 +1971,7 @@ class MobileGameApp {
       console.log('🔄 Rejoining game after reconnection...')
       this.socket.emit('player_join', {
         nickname: this.playerData.nickname,
-        department: this.playerData.department
+        department: this.playerData.department,
       })
     }
   }
@@ -1961,7 +1979,7 @@ class MobileGameApp {
   showReconnectingIndicator(attemptNumber) {
     // Remove existing indicator
     this.hideReconnectingIndicator()
-    
+
     const indicator = document.createElement('div')
     indicator.id = 'reconnectingIndicator'
     indicator.style.cssText = `
@@ -1979,13 +1997,11 @@ class MobileGameApp {
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       animation: pulse 1.5s ease-in-out infinite alternate;
     `
-    
-    const message = attemptNumber > 0 
-      ? `🔄 重新連接中... (${attemptNumber}/${this.maxReconnectAttempts})` 
-      : '🔄 重新連接中...'
-    
+
+    const message = attemptNumber > 0 ? `🔄 重新連接中... (${attemptNumber}/${this.maxReconnectAttempts})` : '🔄 重新連接中...'
+
     indicator.innerHTML = message
-    
+
     // Add pulse animation
     if (!document.querySelector('#reconnectPulseAnimation')) {
       const style = document.createElement('style')
@@ -1998,7 +2014,7 @@ class MobileGameApp {
       `
       document.head.appendChild(style)
     }
-    
+
     document.body.appendChild(indicator)
   }
 
@@ -2027,9 +2043,9 @@ class MobileGameApp {
       animation: slideDown 0.5s ease-out;
     `
     successMsg.innerHTML = `✅ 重新連接成功！`
-    
+
     document.body.appendChild(successMsg)
-    
+
     // Remove after 3 seconds
     setTimeout(() => {
       if (successMsg.parentElement) {
@@ -2040,21 +2056,21 @@ class MobileGameApp {
 
   // Helper methods for enhanced validation and error handling
 
-  disableActionsTemporarily(reason, duration = 1000) {
+  disableActionsTemporarily(reason, duration = 4000) {
     console.log(`Disabling actions temporarily for ${duration}ms due to: ${reason}`)
-    
+
     this.actionsDisabled = true
-    
+
     // Clear any existing timer
     if (this.disableActionsTimer) {
       clearTimeout(this.disableActionsTimer)
     }
-    
+
     // Set new timer to re-enable actions
     this.disableActionsTimer = setTimeout(() => {
       this.actionsDisabled = false
       console.log('Actions re-enabled after temporary disable')
-      
+
       // Refresh UI to reflect enabled state
       if (this.gameState && this.teamData) {
         this.updateGameInterface()
@@ -2158,9 +2174,7 @@ class MobileGameApp {
       animation: slideDown 0.5s ease-out;
     `
 
-    const message = isNowCaptain 
-      ? `🎯 您現在是隊長！` 
-      : `👤 隊長已變更為 ${captainName}`
+    const message = isNowCaptain ? `🎯 您現在是隊長！` : `👤 隊長已變更為 ${captainName}`
 
     notificationEl.innerHTML = message
     document.body.appendChild(notificationEl)
@@ -2195,7 +2209,7 @@ class MobileGameApp {
   setupVisibilityHandling() {
     // Handle page visibility changes for mobile apps going to background/foreground
     let visibilityChangeTimeout = null
-    
+
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         console.log('📱 App went to background')
@@ -2203,23 +2217,22 @@ class MobileGameApp {
         if (visibilityChangeTimeout) {
           clearTimeout(visibilityChangeTimeout)
         }
-        
+
         // Reduce heartbeat frequency when in background
         this.stopHeartbeat()
-        
+
         // Set a longer heartbeat interval for background
         this.heartbeatInterval = setInterval(() => {
           if (this.socket && this.socket.connected) {
             this.socket.emit('ping', Date.now())
           }
         }, 60000) // Every 60 seconds in background
-        
       } else {
         console.log('📱 App came to foreground')
-        
+
         // Restart normal heartbeat when app comes back to foreground
         this.startHeartbeat()
-        
+
         // Check connection status after coming back from background
         visibilityChangeTimeout = setTimeout(() => {
           if (this.socket && !this.socket.connected && !this.isReconnecting) {
@@ -2257,7 +2270,7 @@ class MobileGameApp {
 
   startPreparationCountdown(preparationTime) {
     console.log(`Starting preparation countdown: ${preparationTime}ms`)
-    
+
     // Show preparation overlay
     const preparationOverlay = document.createElement('div')
     preparationOverlay.id = 'preparationOverlay'
@@ -2276,7 +2289,7 @@ class MobileGameApp {
       color: white;
       font-family: Arial, sans-serif;
     `
-    
+
     const preparationText = document.createElement('div')
     preparationText.style.cssText = `
       font-size: 24px;
@@ -2284,14 +2297,14 @@ class MobileGameApp {
       text-align: center;
     `
     preparationText.textContent = '準備時間'
-    
+
     const countdownText = document.createElement('div')
     countdownText.style.cssText = `
       font-size: 48px;
       font-weight: bold;
       color: #ffd700;
     `
-    
+
     const instructionText = document.createElement('div')
     instructionText.style.cssText = `
       font-size: 16px;
@@ -2300,20 +2313,20 @@ class MobileGameApp {
       opacity: 0.8;
     `
     instructionText.textContent = '請仔細閱讀題目內容，準備開始答題'
-    
+
     preparationOverlay.appendChild(preparationText)
     preparationOverlay.appendChild(countdownText)
     preparationOverlay.appendChild(instructionText)
     document.body.appendChild(preparationOverlay)
-    
+
     // Start countdown
     let timeLeft = Math.ceil(preparationTime / 1000)
     countdownText.textContent = timeLeft
-    
+
     const countdownInterval = setInterval(() => {
       timeLeft--
       countdownText.textContent = timeLeft
-      
+
       if (timeLeft <= 0) {
         clearInterval(countdownInterval)
         document.body.removeChild(preparationOverlay)
@@ -2323,7 +2336,7 @@ class MobileGameApp {
 
   startMiniGameTimer(gameData) {
     console.log('Starting mini-game timer with data:', gameData)
-    
+
     if (window.MiniGames && window.MiniGames.startTimer) {
       if (gameData && gameData.timeLimit) {
         // Convert milliseconds to seconds

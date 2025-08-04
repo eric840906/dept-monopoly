@@ -567,6 +567,9 @@ class GameScene extends Phaser.Scene {
     console.log(`Moved from position ${oldPosition} to ${newPosition}`)
     console.log(`Landed on: ${landedTile.name} (${landedTile.type})`)
 
+    // Hide dice roll prompt when dice is actually rolled
+    this.hideDiceRollPrompt()
+
     // Show dice roll animation and wait for it to complete before moving token
     this.showDiceRoll(dice, total, () => {
       // Dice animation complete, now animate token movement
@@ -1840,6 +1843,275 @@ class GameScene extends Phaser.Scene {
         },
       })
     })
+  }
+
+  showTeamSwitchBanner(message, teamInfo) {
+    // Hide any existing transition banner first (with immediate cleanup if needed)
+    if (this.teamSwitchElements) {
+      // Force immediate cleanup if banner exists
+      if (this.teamSwitchElements.tween) {
+        this.teamSwitchElements.tween.destroy()
+      }
+      if (this.teamSwitchElements.autoHideTimer) {
+        this.teamSwitchElements.autoHideTimer.destroy()
+      }
+      if (this.teamSwitchElements) {
+        Object.values(this.teamSwitchElements).forEach((element) => {
+          if (element && element.destroy) {
+            element.destroy()
+          }
+        })
+      }
+      this.teamSwitchElements = null
+    }
+
+    // Create full-screen modal overlay
+    const { width, height } = this.scale
+    const modalOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6)
+
+    // Create banner background
+    const bannerBg = this.add.rectangle(this.centerX, this.centerY, 800, 250, 0x3498db, 0.95)
+    bannerBg.setStrokeStyle(4, 0x2980b9)
+
+    // Add transition message
+    const transitionText = this.add.text(this.centerX, this.centerY - 50, message || '正在切換回合...', {
+      fontSize: '40px',
+      fontFamily: 'Arial',
+      color: '#ffffff',
+      align: 'center',
+      fontStyle: 'bold',
+    })
+    transitionText.setOrigin(0.5)
+
+    // Add team info if available
+    let teamInfoText = null
+    if (teamInfo) {
+      const team = this.gameState?.teams.find(t => t.id === teamInfo.teamId)
+      const teamDisplay = team?.name || 'Unknown Team'
+      const captainName = teamInfo.captainName || 'Unknown'
+      
+      teamInfoText = this.add.text(this.centerX, this.centerY + 10, `${teamDisplay}\n隊長: ${captainName}`, {
+        fontSize: '28px',
+        fontFamily: 'Arial',
+        color: '#ecf0f1',
+        align: 'center',
+        lineSpacing: 5,
+      })
+      teamInfoText.setOrigin(0.5)
+    }
+
+    // Add loading animation
+    const loadingDots = this.add.text(this.centerX, this.centerY + 60, '●●●', {
+      fontSize: '32px',
+      fontFamily: 'Arial',
+      color: '#ecf0f1',
+      align: 'center',
+    })
+    loadingDots.setOrigin(0.5)
+
+    // Animate loading dots
+    const loadingTween = this.tweens.add({
+      targets: loadingDots,
+      alpha: 0.3,
+      duration: 500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Power2',
+    })
+
+    // Store elements for cleanup
+    this.teamSwitchElements = {
+      overlay: modalOverlay,
+      banner: bannerBg,
+      text: transitionText,
+      teamInfo: teamInfoText,
+      dots: loadingDots,
+      tween: loadingTween,
+    }
+
+    // Initial animation
+    modalOverlay.setAlpha(0)
+    bannerBg.setScale(0)
+    transitionText.setScale(0)
+    if (teamInfoText) teamInfoText.setScale(0)
+    loadingDots.setScale(0)
+
+    // Animate in
+    this.tweens.add({
+      targets: modalOverlay,
+      alpha: 0.6,
+      duration: 300,
+      ease: 'Power2',
+    })
+
+    const animationTargets = [bannerBg, transitionText, loadingDots]
+    if (teamInfoText) animationTargets.push(teamInfoText)
+
+    this.tweens.add({
+      targets: animationTargets,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 400,
+      ease: 'Back.easeOut',
+      stagger: 50,
+    })
+
+    console.log('Team switch banner displayed:', message)
+
+    // Auto-hide after 3 seconds
+    const autoHideTimer = this.time.delayedCall(3000, () => {
+      this.hideTeamSwitchBanner()
+      
+      // Activate dice rolling for the new team after banner hides
+      if (teamInfo && teamInfo.teamId === this.gameState?.currentTurnTeamId) {
+        console.log('Activating dice roll for team:', teamInfo.teamId)
+        this.activateDiceRoll()
+      }
+    })
+
+    // Store the timer for cleanup
+    if (this.teamSwitchElements) {
+      this.teamSwitchElements.autoHideTimer = autoHideTimer
+    }
+  }
+
+  hideTeamSwitchBanner() {
+    if (this.teamSwitchElements && !this.teamSwitchElements.isHiding) {
+      console.log('Hiding team switch banner')
+      
+      // Set flag to prevent multiple hide calls
+      this.teamSwitchElements.isHiding = true
+      
+      // Stop loading animation
+      if (this.teamSwitchElements.tween) {
+        this.teamSwitchElements.tween.destroy()
+      }
+
+      // Clear auto-hide timer
+      if (this.teamSwitchElements.autoHideTimer) {
+        this.teamSwitchElements.autoHideTimer.destroy()
+      }
+
+      // Animate out and destroy
+      const animationTargets = [
+        this.teamSwitchElements.overlay,
+        this.teamSwitchElements.banner,
+        this.teamSwitchElements.text,
+        this.teamSwitchElements.dots,
+      ].filter(element => element !== null && element !== undefined)
+      
+      // Add teamInfo if it exists
+      if (this.teamSwitchElements.teamInfo) {
+        animationTargets.push(this.teamSwitchElements.teamInfo)
+      }
+
+      this.tweens.add({
+        targets: animationTargets,
+        alpha: 0,
+        scaleX: 0.8,
+        scaleY: 0.8,
+        duration: 300,
+        ease: 'Power2',
+        onComplete: () => {
+          if (this.teamSwitchElements) {
+            Object.values(this.teamSwitchElements).forEach((element) => {
+              if (element && element.destroy) {
+                element.destroy()
+              }
+            })
+            this.teamSwitchElements = null
+          }
+        },
+      })
+    }
+  }
+
+  activateDiceRoll() {
+    // Show a visual prompt for dice rolling
+    console.log('Activating dice roll prompt')
+    this.showDiceRollPrompt()
+  }
+
+  showDiceRollPrompt() {
+    // Hide any existing prompt first
+    this.hideDiceRollPrompt()
+
+    // Create dice roll prompt overlay
+    const promptOverlay = this.add.rectangle(this.centerX, this.centerY - 150, 600, 120, 0x27ae60, 0.9)
+    promptOverlay.setStrokeStyle(3, 0x2ecc71)
+
+    // Add prompt text
+    const promptText = this.add.text(this.centerX, this.centerY - 170, '🎲 請隊長在手機上擲骰子', {
+      fontSize: '32px',
+      fontFamily: 'Arial',
+      color: '#ffffff',
+      align: 'center',
+      fontStyle: 'bold',
+    })
+    promptText.setOrigin(0.5)
+
+    // Add team name
+    const currentTeam = this.gameState?.teams.find(t => t.id === this.gameState.currentTurnTeamId)
+    const teamDisplay = currentTeam?.name || 'Unknown Team'
+    const teamText = this.add.text(this.centerX, this.centerY - 130, teamDisplay, {
+      fontSize: '24px',
+      fontFamily: 'Arial',
+      color: '#ecf0f1',
+      align: 'center',
+    })
+    teamText.setOrigin(0.5)
+
+    // Add pulsing animation
+    const pulseAnimation = this.tweens.add({
+      targets: [promptOverlay, promptText, teamText],
+      scaleX: 1.05,
+      scaleY: 1.05,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Power2',
+    })
+
+    // Store elements for cleanup
+    this.dicePromptElements = {
+      overlay: promptOverlay,
+      text: promptText,
+      team: teamText,
+      animation: pulseAnimation,
+    }
+
+    // Auto-hide after 10 seconds
+    this.dicePromptTimer = this.time.delayedCall(10000, () => {
+      this.hideDiceRollPrompt()
+    })
+
+    console.log('Dice roll prompt displayed')
+  }
+
+  hideDiceRollPrompt() {
+    if (this.dicePromptElements) {
+      console.log('Hiding dice roll prompt')
+      
+      // Stop animation
+      if (this.dicePromptElements.animation) {
+        this.dicePromptElements.animation.destroy()
+      }
+
+      // Destroy elements
+      Object.values(this.dicePromptElements).forEach((element) => {
+        if (element && element.destroy) {
+          element.destroy()
+        }
+      })
+      
+      this.dicePromptElements = null
+    }
+
+    // Clear timer
+    if (this.dicePromptTimer) {
+      this.dicePromptTimer.destroy()
+      this.dicePromptTimer = null
+    }
   }
 
   showChanceCard(teamId, chanceCard, newScore, newPosition) {
