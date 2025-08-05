@@ -81,13 +81,13 @@ function setupSocketHandlers(io, gameManager) {
     totalConnections: 0,
     activeConnections: 0,
     disconnections: 0,
-    reconnections: 0
+    reconnections: 0,
   }
 
   io.on(SOCKET_EVENTS.CONNECTION, (socket) => {
     connectionStats.totalConnections++
     connectionStats.activeConnections++
-    
+
     // Check if this is a reconnection
     const isReconnection = socket.recovered
     if (isReconnection) {
@@ -100,7 +100,7 @@ function setupSocketHandlers(io, gameManager) {
     // Log connection details for debugging
     console.log(`📊 Connection stats - Active: ${connectionStats.activeConnections}, Total: ${connectionStats.totalConnections}, Reconnections: ${connectionStats.reconnections}`)
     console.log(`🌐 Client info - Transport: ${socket.conn.transport.name}, Upgraded: ${socket.conn.upgraded}`)
-    
+
     // Mobile detection based on user agent
     const userAgent = socket.handshake.headers['user-agent'] || ''
     const isMobile = /Mobile|Android|iPhone|iPad/.test(userAgent)
@@ -109,13 +109,13 @@ function setupSocketHandlers(io, gameManager) {
     // Send current game state to new connection
     socket.emit(SOCKET_EVENTS.GAME_STATE_UPDATE, gameManager.getGameState())
     socket.emit('board_state', gameManager.getBoard())
-    
+
     // Send connection confirmation with recovery info
     socket.emit('connection_status', {
       connected: true,
       socketId: socket.id,
       recovered: isReconnection,
-      serverTime: Date.now()
+      serverTime: Date.now(),
     })
 
     // Handle player joining
@@ -131,7 +131,6 @@ function setupSocketHandlers(io, gameManager) {
         if (
           !validateInput(data, {
             nickname: (val) => typeof val === 'string' && val.length > 0 && val.length <= 20,
-            department: (val) => typeof val === 'string' && val.length > 0 && val.length <= 50,
           })
         ) {
           socket.emit(SOCKET_EVENTS.ERROR, { message: '無效的玩家資訊' })
@@ -250,7 +249,7 @@ function setupSocketHandlers(io, gameManager) {
           console.warn(`Captain validation failed for player ${sanitizedPlayerId} in team ${sanitizedTeamId}: ${captainValidation.reason}`)
           socket.emit(SOCKET_EVENTS.ERROR, {
             message: captainValidation.message,
-            reason: captainValidation.reason
+            reason: captainValidation.reason,
           })
           return
         }
@@ -326,7 +325,7 @@ function setupSocketHandlers(io, gameManager) {
           console.warn(`Captain validation failed for player ${sanitizedPlayerId} in team ${sanitizedTeamId}: ${captainValidation.reason}`)
           socket.emit(SOCKET_EVENTS.ERROR, {
             message: captainValidation.message,
-            reason: captainValidation.reason
+            reason: captainValidation.reason,
           })
           return
         }
@@ -383,7 +382,7 @@ function setupSocketHandlers(io, gameManager) {
         // Check both socket handshake and message payload for token
         const isAuthorizedViaSocket = authorizeHost(socket)
         const isAuthorizedViaPayload = data.token && data.token === process.env.HOST_TOKEN
-        
+
         if (!isAuthorizedViaSocket && !isAuthorizedViaPayload) {
           socket.emit(SOCKET_EVENTS.ERROR, { message: '未授權的主持人操作' })
           return
@@ -426,16 +425,16 @@ function setupSocketHandlers(io, gameManager) {
     socket.on(SOCKET_EVENTS.DISCONNECT, (reason) => {
       connectionStats.activeConnections--
       connectionStats.disconnections++
-      
+
       console.log(`💔 Player disconnected: ${socket.id}`)
       console.log(`📊 Disconnect reason: ${reason}`)
       console.log(`📊 Connection stats - Active: ${connectionStats.activeConnections}, Disconnections: ${connectionStats.disconnections}`)
-      
+
       // Log transport info at disconnect
       if (socket.conn) {
         console.log(`🌐 Transport at disconnect: ${socket.conn.transport.name}`)
       }
-      
+
       gameManager.removePlayer(socket.id)
     })
 
@@ -443,12 +442,12 @@ function setupSocketHandlers(io, gameManager) {
     socket.on('error', (error) => {
       console.error(`⚠️ Socket error for ${socket.id}:`, error)
     })
-    
+
     // Handle transport upgrade
     socket.conn.on('upgrade', () => {
       console.log(`⬆️ Transport upgraded to ${socket.conn.transport.name} for ${socket.id}`)
     })
-    
+
     // Handle transport close
     socket.conn.on('close', (reason) => {
       console.log(`🔌 Transport closed for ${socket.id}: ${reason}`)

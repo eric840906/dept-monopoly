@@ -1,5 +1,6 @@
 node_modules
 results
+debug-screenshots
 # Environment variables
 .env
 .env.local

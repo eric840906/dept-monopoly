@@ -479,10 +479,9 @@ class MobileGameApp {
 
   handleJoin() {
     const nickname = document.getElementById('nickname').value.trim()
-    const department = document.getElementById('department').value
 
-    if (!nickname || !department) {
-      alert('請填寫所有必填欄位')
+    if (!nickname) {
+      alert('請填寫暱稱')
       return
     }
 
@@ -494,7 +493,6 @@ class MobileGameApp {
     // Send join request
     this.socket.emit('player_join', {
       nickname,
-      department,
     })
   }
 
@@ -502,10 +500,8 @@ class MobileGameApp {
     if (!this.playerData) return
 
     const nicknameEl = document.getElementById('playerNickname')
-    const departmentEl = document.getElementById('playerDepartment')
 
     if (nicknameEl) nicknameEl.textContent = this.playerData.nickname
-    if (departmentEl) departmentEl.textContent = this.playerData.department
   }
 
   updateGameState() {
@@ -1971,7 +1967,6 @@ class MobileGameApp {
       console.log('🔄 Rejoining game after reconnection...')
       this.socket.emit('player_join', {
         nickname: this.playerData.nickname,
-        department: this.playerData.department,
       })
     }
   }

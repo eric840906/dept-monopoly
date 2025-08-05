@@ -598,6 +598,8 @@ class MiniGameProcessor {
       feedback,
       timeTaken,
       isTimeout,
+      userAnswer: submission.answer,
+      gameData: data,
     }
   }
 
@@ -606,7 +608,7 @@ class MiniGameProcessor {
     return {
       score: isCorrect ? GAME_CONFIG.SCORING.SUCCESS : GAME_CONFIG.SCORING.FAILURE,
       success: isCorrect,
-      feedback: isCorrect ? '回答正確！' : `回答錯誤。正確答案：${data.options[data.correct]}`,
+      feedback: isCorrect ? '回答正確！' : '回答錯誤。',
     }
   }
 

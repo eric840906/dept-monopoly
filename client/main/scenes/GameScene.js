@@ -617,11 +617,11 @@ class GameScene extends Phaser.Scene {
   }
 
   handleMiniGameResult(data) {
-    const { teamId, score, feedback, success } = data
+    const { teamId, score, feedback, success, eventType, userAnswer, gameData } = data
     console.log(`Mini-game result for team ${teamId}: ${score} points`)
 
     // Show result notification on main screen
-    this.showMiniGameResult(teamId, score, feedback, success)
+    this.showMiniGameResult(teamId, score, feedback, success, eventType, userAnswer, gameData)
   }
 
   handleChanceCard(data) {
@@ -1094,7 +1094,7 @@ class GameScene extends Phaser.Scene {
     countdownText.setOrigin(0.5)
     preparationContainer.add(countdownText)
 
-    const instructionText = this.add.text(0, 100, '隊員正在閱讀題目，準備開始答題', {
+    const instructionText = this.add.text(0, 100, '請準備開始作答', {
       fontSize: '28px',
       fontFamily: 'Arial',
       color: '#ffffff',
@@ -1708,7 +1708,27 @@ class GameScene extends Phaser.Scene {
     }
   }
 
-  showMiniGameResult(teamId, score, feedback, success) {
+  formatUserAnswer(eventType, userAnswer, gameData) {
+    if (!eventType || userAnswer === undefined || userAnswer === null) {
+      return null
+    }
+
+    switch (eventType) {
+      case 'multiple_choice_quiz':
+        if (gameData && gameData.options && typeof userAnswer === 'number') {
+          return gameData.options[userAnswer] || `選項 ${userAnswer + 1}`
+        }
+        return `選項 ${userAnswer + 1}`
+      
+      case 'true_or_false':
+        return userAnswer === true ? '對' : '錯'
+      
+      default:
+        return null
+    }
+  }
+
+  showMiniGameResult(teamId, score, feedback, success, eventType, userAnswer, gameData) {
     const team = this.gameState?.teams.find((t) => t.id === teamId)
     if (!team) return
 
@@ -1751,6 +1771,9 @@ class GameScene extends Phaser.Scene {
       resultImage.setOrigin(0.5)
     }
 
+    // Format user answer display
+    const userAnswerText = this.formatUserAnswer(eventType, userAnswer, gameData)
+
     // Create speech bubble background
     const bubbleColor = 0xffffff
     const speechBubble = this.add.graphics()
@@ -1760,8 +1783,8 @@ class GameScene extends Phaser.Scene {
     // Draw rounded rectangle for speech bubble
     const bubbleX = this.centerX + 50
     const bubbleY = this.centerY - 50
-    const bubbleWidth = 400
-    const bubbleHeight = 150
+    const bubbleWidth = 500
+    const bubbleHeight = (eventType === 'multiple_choice_quiz' && userAnswerText) ? 200 : 150
     speechBubble.fillRoundedRect(bubbleX - bubbleWidth / 2, bubbleY - bubbleHeight / 2, bubbleWidth, bubbleHeight, 20)
     speechBubble.strokeRoundedRect(bubbleX - bubbleWidth / 2, bubbleY - bubbleHeight / 2, bubbleWidth, bubbleHeight, 20)
 
@@ -1784,14 +1807,19 @@ class GameScene extends Phaser.Scene {
     })
     bigResultText.setOrigin(0.5)
 
-    // Speech bubble text without success/failure indicators
-    const resultText = this.add.text(bubbleX, bubbleY, `${teamDisplay}\n${feedback}\n${scoreText} 分`, {
-      fontSize: '36px',
+    // Speech bubble text with user answer (only for multiple choice)
+    const shouldShowAnswer = eventType === 'multiple_choice_quiz' && userAnswerText
+    const bubbleTextContent = shouldShowAnswer
+      ? `${teamDisplay}\n${feedback}\n你的答案: ${userAnswerText}\n${scoreText} 分`
+      : `${teamDisplay}\n${feedback}\n${scoreText} 分`
+    
+    const resultText = this.add.text(bubbleX, bubbleY, bubbleTextContent, {
+      fontSize: '32px',
       fontFamily: 'Arial',
       color: '#333333',
       align: 'center',
       lineSpacing: 8,
-      wordWrap: { width: 350 },
+      wordWrap: { width: 450 },
     })
     resultText.setOrigin(0.5)
 
@@ -1886,10 +1914,10 @@ class GameScene extends Phaser.Scene {
     // Add team info if available
     let teamInfoText = null
     if (teamInfo) {
-      const team = this.gameState?.teams.find(t => t.id === teamInfo.teamId)
+      const team = this.gameState?.teams.find((t) => t.id === teamInfo.teamId)
       const teamDisplay = team?.name || 'Unknown Team'
       const captainName = teamInfo.captainName || 'Unknown'
-      
+
       teamInfoText = this.add.text(this.centerX, this.centerY + 10, `${teamDisplay}\n隊長: ${captainName}`, {
         fontSize: '28px',
         fontFamily: 'Arial',
@@ -1961,7 +1989,7 @@ class GameScene extends Phaser.Scene {
     // Auto-hide after 3 seconds
     const autoHideTimer = this.time.delayedCall(3000, () => {
       this.hideTeamSwitchBanner()
-      
+
       // Activate dice rolling for the new team after banner hides
       if (teamInfo && teamInfo.teamId === this.gameState?.currentTurnTeamId) {
         console.log('Activating dice roll for team:', teamInfo.teamId)
@@ -1978,10 +2006,10 @@ class GameScene extends Phaser.Scene {
   hideTeamSwitchBanner() {
     if (this.teamSwitchElements && !this.teamSwitchElements.isHiding) {
       console.log('Hiding team switch banner')
-      
+
       // Set flag to prevent multiple hide calls
       this.teamSwitchElements.isHiding = true
-      
+
       // Stop loading animation
       if (this.teamSwitchElements.tween) {
         this.teamSwitchElements.tween.destroy()
@@ -1993,13 +2021,8 @@ class GameScene extends Phaser.Scene {
       }
 
       // Animate out and destroy
-      const animationTargets = [
-        this.teamSwitchElements.overlay,
-        this.teamSwitchElements.banner,
-        this.teamSwitchElements.text,
-        this.teamSwitchElements.dots,
-      ].filter(element => element !== null && element !== undefined)
-      
+      const animationTargets = [this.teamSwitchElements.overlay, this.teamSwitchElements.banner, this.teamSwitchElements.text, this.teamSwitchElements.dots].filter((element) => element !== null && element !== undefined)
+
       // Add teamInfo if it exists
       if (this.teamSwitchElements.teamInfo) {
         animationTargets.push(this.teamSwitchElements.teamInfo)
@@ -2051,7 +2074,7 @@ class GameScene extends Phaser.Scene {
     promptText.setOrigin(0.5)
 
     // Add team name
-    const currentTeam = this.gameState?.teams.find(t => t.id === this.gameState.currentTurnTeamId)
+    const currentTeam = this.gameState?.teams.find((t) => t.id === this.gameState.currentTurnTeamId)
     const teamDisplay = currentTeam?.name || 'Unknown Team'
     const teamText = this.add.text(this.centerX, this.centerY - 130, teamDisplay, {
       fontSize: '24px',
@@ -2091,7 +2114,7 @@ class GameScene extends Phaser.Scene {
   hideDiceRollPrompt() {
     if (this.dicePromptElements) {
       console.log('Hiding dice roll prompt')
-      
+
       // Stop animation
       if (this.dicePromptElements.animation) {
         this.dicePromptElements.animation.destroy()
@@ -2103,7 +2126,7 @@ class GameScene extends Phaser.Scene {
           element.destroy()
         }
       })
-      
+
       this.dicePromptElements = null
     }
 
@@ -2375,18 +2398,8 @@ class GameScene extends Phaser.Scene {
         const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`
         const teamDisplay = team.name || `隊伍 ${team.teamId.split('_')[1]}`
 
-        // Add team image if available (centered layout)
-        if (team.image) {
-          const teamImage = this.add.image(this.centerX - 120, yPosition, team.teamId || 'team_default')
-          teamImage.setDisplaySize(40, 40)
-          teamImage.setOrigin(0.5)
-
-          if (!this.leaderboardElements) this.leaderboardElements = []
-          this.leaderboardElements.push(teamImage)
-        }
-
-        // Team rank and info (centered to align with image)
-        const teamRankText = this.add.text(this.centerX + 20, yPosition, `${teamDisplay} ${rankEmoji} - ${team.score} 分`, {
+        // Team rank and info (centered layout without image)
+        const teamRankText = this.add.text(this.centerX, yPosition, `${teamDisplay} ${rankEmoji} - ${team.score} 分`, {
           fontSize: '32px',
           fontFamily: 'Arial',
           color: '#2c3e50',

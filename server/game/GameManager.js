@@ -263,7 +263,7 @@ class GameManager {
       return
     }
 
-    // Find next valid team
+    // Find next valid team with members
     const currentTeamIndex = this.gameState.teams.findIndex((t) => t.id === this.gameState.currentTurnTeamId)
 
     let nextTeamIndex
@@ -273,6 +273,29 @@ class GameManager {
     } else {
       // Move to next team
       nextTeamIndex = (currentTeamIndex + 1) % this.gameState.teams.length
+    }
+
+    // Find next team with members
+    let attempts = 0
+    const maxAttempts = this.gameState.teams.length
+    
+    while (attempts < maxAttempts) {
+      const nextTeam = this.gameState.teams[nextTeamIndex]
+      if (nextTeam.members.length > 0) {
+        // Found a team with members
+        break
+      }
+      
+      console.log(`Skipping empty team ${nextTeam.id} during skip, looking for next team with members`)
+      nextTeamIndex = (nextTeamIndex + 1) % this.gameState.teams.length
+      attempts++
+    }
+
+    // Check if all teams are empty
+    if (attempts >= maxAttempts) {
+      console.log('All teams are empty during skip, ending game')
+      this.endGame('no_teams_remaining')
+      return
     }
 
     this.gameState.currentTurnTeamId = this.gameState.teams[nextTeamIndex].id
@@ -808,10 +831,33 @@ class GameManager {
       console.log(`Team ${currentTeam.id} completed run ${currentTeam.runsCompleted}/${GAME_CONFIG.MAX_RUNS_PER_TEAM}`)
     }
 
-    const nextTeamIndex = (currentTeamIndex + 1) % this.gameState.teams.length
+    // Find next team with members
+    let nextTeamIndex = (currentTeamIndex + 1) % this.gameState.teams.length
+    let attempts = 0
+    const maxAttempts = this.gameState.teams.length
+    
+    while (attempts < maxAttempts) {
+      const nextTeam = this.gameState.teams[nextTeamIndex]
+      if (nextTeam.members.length > 0) {
+        // Found a team with members
+        break
+      }
+      
+      console.log(`Skipping empty team ${nextTeam.id}, looking for next team with members`)
+      nextTeamIndex = (nextTeamIndex + 1) % this.gameState.teams.length
+      attempts++
+    }
+    
+    // Check if all teams are empty
+    if (attempts >= maxAttempts) {
+      console.log('All teams are empty, ending game')
+      this.endGame('no_teams_remaining')
+      return
+    }
+
     this.gameState.currentTurnTeamId = this.gameState.teams[nextTeamIndex].id
 
-    if (nextTeamIndex === 0) {
+    if (nextTeamIndex <= currentTeamIndex) {
       this.gameState.round++
     }
 
