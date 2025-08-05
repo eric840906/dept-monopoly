@@ -1719,10 +1719,10 @@ class GameScene extends Phaser.Scene {
           return gameData.options[userAnswer] || `選項 ${userAnswer + 1}`
         }
         return `選項 ${userAnswer + 1}`
-      
+
       case 'true_or_false':
         return userAnswer === true ? '對' : '錯'
-      
+
       default:
         return null
     }
@@ -1759,14 +1759,14 @@ class GameScene extends Phaser.Scene {
       // Add random bad result image when losing
       const badImages = ['resultBadImg', 'resultBadImg2']
       const randomBadImage = badImages[Math.floor(Math.random() * badImages.length)]
-      resultImage = this.add.image(this.centerX - 300, this.centerY, randomBadImage)
+      resultImage = this.add.image(this.centerX - 350, this.centerY, randomBadImage)
       resultImage.setDisplaySize(200, 200)
       resultImage.setOrigin(0.5)
     } else {
       // Add random good result image when winning
       const goodImages = ['resultGoodImg', 'resultGoodImg2']
       const randomGoodImage = goodImages[Math.floor(Math.random() * goodImages.length)]
-      resultImage = this.add.image(this.centerX - 300, this.centerY, randomGoodImage)
+      resultImage = this.add.image(this.centerX - 350, this.centerY, randomGoodImage)
       resultImage.setDisplaySize(200, 200)
       resultImage.setOrigin(0.5)
     }
@@ -1784,7 +1784,7 @@ class GameScene extends Phaser.Scene {
     const bubbleX = this.centerX + 50
     const bubbleY = this.centerY - 50
     const bubbleWidth = 500
-    const bubbleHeight = (eventType === 'multiple_choice_quiz' && userAnswerText) ? 200 : 150
+    const bubbleHeight = eventType === 'multiple_choice_quiz' && userAnswerText ? 200 : 150
     speechBubble.fillRoundedRect(bubbleX - bubbleWidth / 2, bubbleY - bubbleHeight / 2, bubbleWidth, bubbleHeight, 20)
     speechBubble.strokeRoundedRect(bubbleX - bubbleWidth / 2, bubbleY - bubbleHeight / 2, bubbleWidth, bubbleHeight, 20)
 
@@ -1809,10 +1809,8 @@ class GameScene extends Phaser.Scene {
 
     // Speech bubble text with user answer (only for multiple choice)
     const shouldShowAnswer = eventType === 'multiple_choice_quiz' && userAnswerText
-    const bubbleTextContent = shouldShowAnswer
-      ? `${teamDisplay}\n${feedback}\n你的答案: ${userAnswerText}\n${scoreText} 分`
-      : `${teamDisplay}\n${feedback}\n${scoreText} 分`
-    
+    const bubbleTextContent = shouldShowAnswer ? `${teamDisplay}\n${feedback}\n你的答案: ${userAnswerText}\n${scoreText} 分` : `${teamDisplay}\n${feedback}\n${scoreText} 分`
+
     const resultText = this.add.text(bubbleX, bubbleY, bubbleTextContent, {
       fontSize: '32px',
       fontFamily: 'Arial',
@@ -2254,7 +2252,7 @@ class GameScene extends Phaser.Scene {
     }
 
     // Create destiny card display with darker, more ominous styling - much larger for enlarged container
-    const cardBanner = this.add.rectangle(this.centerX, this.centerY, 1200, 400, bgColor, 0.95)
+    const cardBanner = this.add.rectangle(this.centerX, this.centerY, 1350, 400, bgColor, 0.95)
     cardBanner.setStrokeStyle(8, borderColor)
 
     const scoreText = `${destinyCard.scoreChange}`

@@ -3,7 +3,7 @@ const { GAME_CONFIG } = require('../../shared/constants')
 class MiniGameProcessor {
   constructor() {
     this.activeGames = new Map() // teamId -> gameData
-    this.usedQuestions = new Map() // teamId -> Set of used question IDs
+    this.usedQuestions = new Map() // teamId -> Set of used mini-game IDs (questions, workflows, matching sets)
     this.currentGameSeed = Date.now() // Seed for synchronizing random generation across teams
     this.timeouts = new Map() // teamId -> setTimeout ID
     this.gameManager = null // Will be set by GameManager
@@ -281,29 +281,53 @@ class MiniGameProcessor {
   generateDragDropWorkflow(teamId) {
     const workflows = [
       {
+        id: 'ddw_1',
         title: '格式開發流程',
         correctOrder: ['共同討論需求可行性', 'UI/UX 視覺設計', 'Developer 開發', 'QA 團隊測試'],
         description: '請按正確順序排列',
       },
       {
+        id: 'ddw_2',
         title: 'OnePixel 部署流程',
         correctOrder: ['kanban 接收需求', '檢視部署方案', '執行部署與檢查'],
         description: '請按正確順序排列',
       },
       {
+        id: 'ddw_3',
         title: '媒體廣告投放異常',
         correctOrder: ['定義問題', '共同討論解決方案', '排入工作修正', 'QA 團隊測試', '回報修正'],
         description: '請按照產品設計的完整流程排列',
       },
     ]
 
-    // Use a fixed seed based on current time/round to ensure all teams get the same workflow and shuffle
-    const seed = this.getCurrentGameSeed()
-    const selectedWorkflow = workflows[seed % workflows.length]
+    // Get or initialize used workflows for this team
+    if (!this.usedQuestions.has(teamId)) {
+      this.usedQuestions.set(teamId, new Set())
+    }
     
-    // Use seeded random to ensure all teams get the same shuffle
+    const usedWorkflowIds = this.usedQuestions.get(teamId)
+    
+    // Filter out used workflows
+    const availableWorkflows = workflows.filter(w => !usedWorkflowIds.has(w.id))
+    
+    // If all workflows have been used, reset the used workflows for this team
+    if (availableWorkflows.length === 0) {
+      console.log(`Team ${teamId} has seen all drag drop workflows, resetting pool`)
+      usedWorkflowIds.clear()
+      availableWorkflows.push(...workflows)
+    }
+    
+    // Select a random workflow from available ones
+    const selectedWorkflow = availableWorkflows[Math.floor(Math.random() * availableWorkflows.length)]
+    
+    // Mark this workflow as used for this team
+    usedWorkflowIds.add(selectedWorkflow.id)
+    
+    console.log(`Team ${teamId} got drag drop workflow: ${selectedWorkflow.id}`)
+    
+    // Shuffle the items randomly for this team
     const shuffledItems = [...selectedWorkflow.correctOrder]
-    this.seededShuffle(shuffledItems, seed)
+    this.shuffleArray(shuffledItems)
 
     return {
       eventType: 'drag_drop_workflow',
@@ -318,6 +342,7 @@ class MiniGameProcessor {
   generateFormatMatching(teamId) {
     const matchingSets = [
       {
+        id: 'fm_1',
         title: 'MIR 格式',
         pairs: [
           { left: 'Page', right: '飛天魔毯' },
@@ -328,6 +353,7 @@ class MiniGameProcessor {
         ],
       },
       {
+        id: 'fm_2',
         title: 'MIB 格式',
         pairs: [
           { left: 'Flash', right: '快閃焦點' },
@@ -338,6 +364,7 @@ class MiniGameProcessor {
         ],
       },
       {
+        id: 'fm_3',
         title: '其他格式',
         pairs: [
           { left: 'Cover', right: '大蓋板' },
@@ -346,6 +373,7 @@ class MiniGameProcessor {
         ],
       },
       {
+        id: 'fm_4',
         title: 'MTO 成員名字 1',
         pairs: [
           { left: 'Sam', right: '張碩吟' },
@@ -356,6 +384,7 @@ class MiniGameProcessor {
         ],
       },
       {
+        id: 'fm_5',
         title: 'MTO 成員名字 2',
         pairs: [
           { left: 'Jack', right: '鄭仲傑' },
@@ -366,21 +395,41 @@ class MiniGameProcessor {
       },
     ]
 
-    // Use a fixed seed to ensure all teams get the same matching set and pairs
-    const seed = this.getCurrentGameSeed()
-    const selectedSet = matchingSets[seed % matchingSets.length]
+    // Get or initialize used matching sets for this team
+    if (!this.usedQuestions.has(teamId)) {
+      this.usedQuestions.set(teamId, new Set())
+    }
     
-    // Use seeded random to select pairs consistently across all teams
+    const usedMatchingIds = this.usedQuestions.get(teamId)
+    
+    // Filter out used matching sets
+    const availableMatchingSets = matchingSets.filter(s => !usedMatchingIds.has(s.id))
+    
+    // If all matching sets have been used, reset the used sets for this team
+    if (availableMatchingSets.length === 0) {
+      console.log(`Team ${teamId} has seen all format matching sets, resetting pool`)
+      usedMatchingIds.clear()
+      availableMatchingSets.push(...matchingSets)
+    }
+    
+    // Select a random matching set from available ones
+    const selectedSet = availableMatchingSets[Math.floor(Math.random() * availableMatchingSets.length)]
+    
+    // Mark this matching set as used for this team
+    usedMatchingIds.add(selectedSet.id)
+    
+    console.log(`Team ${teamId} got format matching set: ${selectedSet.id}`)
+    
+    // Select pairs randomly for this team
     const shuffledPairs = [...selectedSet.pairs]
-    this.seededShuffle(shuffledPairs, seed)
+    this.shuffleArray(shuffledPairs)
     const selectedPairs = shuffledPairs.slice(0, Math.min(5, selectedSet.pairs.length))
 
-    // Create synchronized shuffled left and right columns for consistent display
-    // Create shuffled versions using seeded randomization
+    // Create shuffled left and right columns for display
     const shuffledLeft = [...selectedPairs]
     const shuffledRight = [...selectedPairs]
-    this.seededShuffle(shuffledLeft, seed + 1) // Different seed for left shuffle
-    this.seededShuffle(shuffledRight, seed + 2) // Different seed for right shuffle
+    this.shuffleArray(shuffledLeft)
+    this.shuffleArray(shuffledRight)
 
     return {
       eventType: 'format_matching',
@@ -722,6 +771,14 @@ class MiniGameProcessor {
   }
 
   // Fisher-Yates shuffle with seeded randomization
+  shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[array[i], array[j]] = [array[j], array[i]]
+    }
+    return array
+  }
+
   seededShuffle(array, seed) {
     let currentIndex = array.length
     let temporaryValue, randomIndex
